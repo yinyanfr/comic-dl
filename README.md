@@ -1,8 +1,8 @@
 # zerobyw-dl
 
-[![npm](https://img.shields.io/npm/v/zerobyw-downloader.svg)](https://www.npmjs.com/package/zerobyw-downloader)
-![license](https://img.shields.io/npm/l/zerobyw-downloader.svg)
-![size](https://img.shields.io/github/repo-size/yinyanfr/zerobyw-downloader)
+[![npm](https://img.shields.io/npm/v/zerobyw-dl.svg)](https://www.npmjs.com/package/zerobyw-dl)
+![license](https://img.shields.io/npm/l/zerobyw-dl.svg)
+![size](https://img.shields.io/github/repo-size/yinyanfr/zerobyw-dl)
 
 Yet another batch downloader for zerobyw.
 
@@ -14,7 +14,7 @@ This library is not for browsers.
 npm i zerobyw-dl
 # or
 # CLI Upcoming
-npx zerobyw-downloader help
+npx zerobyw-dl help
 ```
 
 ### Library
@@ -54,7 +54,7 @@ await downloader.downloadSerie("some_manga_url", 1, 8);
 
 /**
  * Get chapter list
- * @param url Series Url
+ * @param url Serie Url
  * @returns Promise, list of chapters with array index, name and url
  */
 const chapterList = await downloader.getChapterList("some_manga_url");
@@ -79,23 +79,36 @@ await downloader.downloadChapter("1", "chapter_url");
 The cli is not ready yet.
 
 ```bash
-  Usage: zerobyw downloader [options] [command]
+  Usage: zerobyw-dl [options] [command]
 
   Commands:
-    chapter   Download images from one chapter.
-    download  Download chapters from a manga serie.
-    help      Display help
-    list      List all chapters of a manga serie.
-    version   Display version
+    chapter, c, ch   Download images from one chapter.
+    download, d, dl  Download chapters from a manga serie.
+    help             Display help
+    list, l, ls      List all chapters of a manga serie.
+    version          Display version
 
   Options:
     -b, --batch    Optional: Set the number or images to be downloaded simultaneously, default to 10.
     -c, --cookie   Optional (but recommanded): Provide the path to a text file that contains your cookie.
-    -h, --help     Output usage information
+    -f, --from     Optional: Starting chapter when downloading a serie, default to 0.
+    -H, --help     Output usage information
+    -h, --host     Optional: Provide the base url to ZeroByw in case that the default one is taken down.
     -n, --name     The name to the serie or the chapter, optional for series.
     -o, --output   Optional: The path where downloaded files are saved (default to .).
     -s, --slience  Optional: Silence the console output.
-    -t, --timeout  Optional: Override the default 10s request timeout
+    -T, --timeout  Optional: Override the default 10s request timeout
+    -t, --to       Optional: Ending chapter when downloading a serie, defaults to chapter.length - 1.
     -u, --url      The url to the serie or the chapter.
     -v, --version  Output the version number
+
+  Examples:
+    - Download a serie from its 10th chapter to 20th chapter to the given destination.
+    $ npx zerobyw-dl dl -u serie_url -f 10 -t 20 -o ~/Download/zerobyw
+
+    - List all chapters of the given serie.
+    $ npx zerobyw-dl ls -u serie_url
+
+    - Download a chapter named Chapter1.
+    $ npx chapter -n Chapter1 -u chapter_url
 ```

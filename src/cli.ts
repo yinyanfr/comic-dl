@@ -47,11 +47,11 @@ args
     "Optional: Set the number or images to be downloaded simultaneously, default to 10."
   )
   .example(
-    "npx zerobyw-dl download -u serie_url -f 10 -t 20 -o ~/Download/zerobyw",
+    "npx zerobyw-dl dl -u serie_url -f 10 -t 20 -o ~/Download/zerobyw",
     "Download a serie from its 10th chapter to 20th chapter to the given destination."
   )
   .example(
-    "npx zerobyw-dl list -u serie_url",
+    "npx zerobyw-dl ls -u serie_url",
     "List all chapters of the given serie."
   )
   .example(
@@ -59,7 +59,8 @@ args
     "Download a chapter named Chapter1."
   );
 
-args.parse(process.argv);
+const flags = args.parse(process.argv);
 
 console.log("The CLI is under development and will be available soon.");
 console.log("Thanks for your interests.");
+console.log(flags);
