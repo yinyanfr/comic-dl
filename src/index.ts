@@ -42,6 +42,11 @@ export default class ZeroBywDownloader {
     }
   }
 
+  /**
+   * Get chapter list
+   * @param url Series Url
+   * @returns Promise, list of chapters with array index, name and url
+   */
   async getChapterList(url: string) {
     const res = await this.axios.get<string>(url);
     if (!res?.data) throw new Error("Request Failed.");
@@ -69,7 +74,7 @@ export default class ZeroBywDownloader {
     return chapters;
   }
 
-  async getImageList(url: string) {
+  private async getImageList(url: string) {
     const res = await this.axios.get<string>(url);
     if (!res?.data) throw new Error("Request Failed.");
 
@@ -94,7 +99,7 @@ export default class ZeroBywDownloader {
     return imageList;
   }
 
-  async downloadImage(
+  private async downloadImage(
     chapterName: string,
     imageUri: string,
     imageName?: string
@@ -134,6 +139,11 @@ export default class ZeroBywDownloader {
     return res.filter((e) => e.status === "rejected");
   }
 
+  /**
+   * Download and write all images from a chapter
+   * @param name Chapter name
+   * @param uri Chapter uri
+   */
   async downloadChapter(name: string, uri?: string | null) {
     if (!uri) throw new Error("Invalid Chapter Uri");
     const imgList = await this.getImageList(uri);
@@ -150,6 +160,12 @@ export default class ZeroBywDownloader {
     this.log(`Finished Chapter: ${name}`);
   }
 
+  /**
+   * Download the entire series
+   * @param url Serie Url
+   * @param start Starting chapter index (default to 0, included)
+   * @param end Ending chapter index (default to chapters.length, not included)
+   */
   async downloadSeries(url: string, start?: number, end?: number) {
     const chapters = await this.getChapterList(url);
     for (const chapter of chapters.slice(start ?? 0, end ?? chapters.length)) {

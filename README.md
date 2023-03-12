@@ -38,7 +38,40 @@ const configs = {
   // numbers of images to be downloaded simutanously (Optional: default to 10)
   batchSize: 10,
 };
+
 const downloader = new ZeroBywDownloader(baseURL, destination, configs);
+
+/**
+ * Download the entire series
+ * @param url Serie Url
+ * @param start Starting chapter index (default to 0, included)
+ * @param end Ending chapter index (default to chapters.length, not included)
+ */
+// Download all chapters of this manga
+await downloader.downloadSeries("some_manga_url");
+// Download this manga from the 2nd chapter (index 1) to the 9th (index 8) chapter ordered on the webpage
+await downloader.downloadSeries("some_manga_url", 1, 9);
+
+/**
+ * Get chapter list
+ * @param url Series Url
+ * @returns Promise, list of chapters with array index, name and url
+ */
+const chapterList = await downloader.getChapterList("some_manga_url");
+
+// chapterList
+// [{
+//   index: 0,
+//   name: "1",
+//   uri: "chapter_uri"
+// }]
+
+/**
+ * Download and write all images from a chapter
+ * @param name Chapter name
+ * @param uri Chapter uri
+ */
+await downloader.downloadChapter("1", "chapter_uri");
 ```
 
 ### Cli (Upcoming)
