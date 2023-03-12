@@ -6,6 +6,7 @@ import path from "node:path";
 import type { Stream } from "node:stream";
 
 interface Configs {
+  baseUrl?: string;
   cookie?: string;
   timeout?: number;
   silence?: boolean;
@@ -18,17 +19,20 @@ interface Chapter {
   uri: string | null;
 }
 
+const Selectors = {
+  chapters: ".uk-grid-collapse .muludiv a",
+  page: ".wp",
+  auth: ".jameson_manhua",
+  images: ".uk-zjimg img",
+};
+
 export default class ZeroBywDownloader {
   private axios: AxiosInstance;
   private title: string = "Untitled";
 
-  constructor(
-    baseURL: string,
-    private destination: string,
-    private configs: Configs = {}
-  ) {
+  constructor(private destination: string, private configs: Configs = {}) {
     this.axios = axios.create({
-      baseURL,
+      baseURL: configs?.baseUrl,
       timeout: configs?.timeout ?? 10000,
       headers: {
         Cookie: configs?.cookie,
@@ -39,6 +43,13 @@ export default class ZeroBywDownloader {
   private log(content: string) {
     if (!this.configs?.silence) {
       console.log(content);
+    }
+  }
+
+  private detectBaseUrl(url: string) {
+    const match = url.match(/^https?:\/\/[^.]+\.[^/]+/);
+    if (match?.[0]) {
+      this.axios.defaults.baseURL = match?.[0];
     }
   }
 
@@ -59,7 +70,7 @@ export default class ZeroBywDownloader {
     this.log(`Found ${this.title}.`);
 
     const chapterElements = document.querySelectorAll<HTMLAnchorElement>(
-      ".uk-grid-collapse .muludiv a"
+      Selectors.chapters
     );
 
     const chapters: Chapter[] = [];
@@ -80,14 +91,15 @@ export default class ZeroBywDownloader {
 
     const dom = new JSDOM(res.data);
     const document = dom.window.document;
-    if (!document.querySelectorAll(".wp")?.length) {
+    if (!document.querySelectorAll(Selectors.page)?.length) {
       throw new Error("Invalid Page.");
     }
-    if (!document.querySelectorAll(".jameson_manhua")?.length) {
+    if (!document.querySelectorAll(Selectors.auth)?.length) {
       throw new Error("Unauthorized.");
     }
-    const imageElements =
-      document.querySelectorAll<HTMLImageElement>(".uk-zjimg img");
+    const imageElements = document.querySelectorAll<HTMLImageElement>(
+      Selectors.images
+    );
     if (!imageElements?.length) {
       throw new Error("Forbidden.");
     }
@@ -104,10 +116,6 @@ export default class ZeroBywDownloader {
     imageUri: string,
     imageName?: string
   ) {
-    const writePath = path.join(this.destination, this.title, chapterName);
-    if (!fs.existsSync(writePath)) {
-      fs.mkdirSync(writePath, { recursive: true });
-    }
     const res = await this.axios.get<Stream>(imageUri, {
       responseType: "stream",
     });
@@ -117,7 +125,13 @@ export default class ZeroBywDownloader {
     const filenameMatch = imageUri.match(/[^./]+\.[^.]+$/);
     const filename = imageName ?? filenameMatch?.[0];
     if (filename) {
-      const writer = fs.createWriteStream(path.join(writePath, filename));
+      const writePath = path.join(
+        this.destination,
+        this.title,
+        chapterName,
+        filename
+      );
+      const writer = fs.createWriteStream(writePath);
       res.data.pipe(writer);
 
       return new Promise((resolve, reject) => {
@@ -146,7 +160,17 @@ export default class ZeroBywDownloader {
    */
   async downloadChapter(name: string, uri?: string | null) {
     if (!uri) throw new Error("Invalid Chapter Uri");
+    if (!this.axios.defaults.baseURL) {
+      this.detectBaseUrl(uri);
+    }
     const imgList = await this.getImageList(uri);
+    if (!imgList?.length) {
+      throw new Error("Cannot get image list.");
+    }
+    const chapterWritePath = path.join(this.destination, this.title, name);
+    if (!fs.existsSync(chapterWritePath)) {
+      fs.mkdirSync(chapterWritePath, { recursive: true });
+    }
     const step = this.configs?.batchSize ?? 10;
     for (let i = 0; i < imgList.length; i += step) {
       const failed = await this.downloadSegment(
@@ -154,7 +178,9 @@ export default class ZeroBywDownloader {
         imgList.slice(i, Math.min(i + step, imgList.length))
       );
       if (failed?.length) {
-        this.log(`Failed: ${failed.length}`);
+        this.log(
+          `Failed: Chapter ${name} - ${failed.length} images not downloaded`
+        );
       }
     }
     this.log(`Finished Chapter: ${name}`);
@@ -164,11 +190,15 @@ export default class ZeroBywDownloader {
    * Download the entire series
    * @param url Serie Url
    * @param start Starting chapter index (default to 0, included)
-   * @param end Ending chapter index (default to chapters.length, not included)
+   * @param end Ending chapter index (default to chapters.length, included)
    */
-  async downloadSeries(url: string, start?: number, end?: number) {
+  async downloadSerie(url: string, start?: number, end?: number) {
+    this.detectBaseUrl(url);
     const chapters = await this.getChapterList(url);
-    for (const chapter of chapters.slice(start ?? 0, end ?? chapters.length)) {
+    for (const chapter of chapters.slice(
+      start ?? 0,
+      end ? end + 1 : chapters.length
+    )) {
       await this.downloadChapter(chapter.name, chapter.uri);
     }
     this.log("Download Success.");
