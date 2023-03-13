@@ -16,6 +16,7 @@ interface CliOptions {
   silence: boolean;
   batch: number;
   verbose: boolean;
+  yes: boolean;
 }
 
 type Command = (
@@ -64,12 +65,16 @@ export const listCommand: Command = async (name, sub, options = {}) => {
 };
 
 export const downloadCommand: Command = async (name, sub, options = {}) => {
-  const { url, from, to } = options;
+  const { url, from, to, yes } = options;
   const downloader = buildDownloader(options);
 
   try {
     if (url) {
-      await downloader.downloadSerie(url, { start: from, end: to });
+      await downloader.downloadSerie(url, {
+        start: from,
+        end: to,
+        confirm: !yes,
+      });
     } else {
       console.log("Please Provide URL.");
     }

@@ -6,6 +6,7 @@ import path from "node:path";
 import type { ReadStream } from "node:fs";
 import archiver from "archiver";
 import type { Archiver } from "archiver";
+import yesno from "yesno";
 
 interface Configs {
   cookie?: string;
@@ -14,6 +15,7 @@ interface Configs {
   batchSize?: number;
   verbose?: boolean;
   archive?: "zip" | "cbz" | boolean;
+  headers?: Record<string, any>;
 }
 
 interface Chapter {
@@ -32,6 +34,7 @@ interface DownloadProgress {
 interface SerieDownloadOptions {
   start?: number;
   end?: number;
+  confirm?: boolean;
   onProgress?: (progress: DownloadProgress) => void;
 }
 
@@ -62,6 +65,7 @@ export default class ZeroBywDownloader {
       timeout: configs?.timeout ?? 10000,
       headers: {
         Cookie: configs?.cookie,
+        ...(configs?.headers || {}),
       },
     });
   }
@@ -254,7 +258,7 @@ export default class ZeroBywDownloader {
       }
     }
     archive?.finalize();
-    this.log(`Finished Chapter: ${name}`);
+    this.log(`Saved Chapter: ${name}`);
     options?.onProgress?.({
       index: options?.index,
       name,
@@ -266,11 +270,22 @@ export default class ZeroBywDownloader {
   /**
    * Download from a serie
    * @param url serie url
-   * @param options start, end, onProgress
+   * @param options start, end, confirm, onProgress
    */
   async downloadSerie(url: string, options: SerieDownloadOptions = {}) {
     this.detectBaseUrl(url);
     const info = await this.getSerieInfo(url);
+
+    if (options?.confirm) {
+      const ok = await yesno({
+        question: `Downloading ${info.title} to ${this.destination}, Proceed? (Y/n)`,
+        defaultValue: true,
+      });
+      if (!ok) {
+        console.log("Abort.");
+        return 0;
+      }
+    }
 
     this.log("Start Downloading...");
     for (const chapter of info.chapters.slice(

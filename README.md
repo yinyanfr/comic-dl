@@ -12,7 +12,7 @@ This library is not for browsers.
 
 - CLI tools
 - Chapter list
-- Download as ZIP/CBR, or just a folder of pictures
+- Download as ZIP/CBZ, or just a folder of pictures
 - Downloading progress watch
 
 ## :green_book: Quick Start
@@ -29,7 +29,7 @@ npx zerobyw-dl help
 ## :wrench: Cli
 
 ```
-Usage: zerobyw-dl [options] [command]
+Usage: zerobyw dl [options] [command]
 
 Commands:
   chapter, c, ch   Download images from one chapter.
@@ -44,24 +44,25 @@ Options:
   -c, --cookie   Optional (but recommanded): Provide the path to a text file that contains your cookie.
   -f, --from     Optional: Starting chapter when downloading a serie, default to 0.
   -h, --help     Output usage information
-  -n, --name     The name to the serie or the chapter, optional for series.
+  -n, --name     The name to the chapter, not the title for the serie.
   -o, --output   Optional: The path where downloaded files are saved (default to .).
   -s, --slience  Optional: Silence the console output.
-  -T, --timeout  Optional: Override the default 10s request timeout
+  -T, --timeout  Optional: Override the default 10s request timeout.
   -t, --to       Optional: Ending chapter when downloading a serie, defaults to chapter.length - 1.
   -u, --url      The url to the serie or the chapter.
   -v, --verbose  Optional: Display detailed error message.
   -V, --version  Output the version number
+  -y, --yes      Optional: Skipping confirmation prompt when downloading series.
 
 Examples:
   - Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives by chapter.
-  $ npx zerobyw-dl dl -u serie_url -f 10 -t 20 -o ~/Download/zerobyw -a zip
+  $ npx zerobyw-dl dl -u serie_url -c cookie.txt -f 10 -t 20 -o ~/Download/zerobyw -a zip
 
   - List all chapters of the given serie.
   $ npx zerobyw-dl ls -u serie_url
 
-  - Download a chapter named Chapter1.
-  $ npx chapter -n Chapter1 -u chapter_url
+  - Download a chapter named Chapter1 to current path.
+  $ npx zerobyw-dl ch -n Chapter1 -u chapter_url -c cookie.txt
 ```
 
 ## :book: Library
@@ -88,6 +89,8 @@ const configs = {
   verbose: false,
   // Output zip or cbz archives grouped by chapters (Optional)
   archive: "zip",
+  // Additional headers for HTTP Requests (Using axios under the hood) (Optional)
+  headers: {},
 }; // Optional
 
 const downloader = new ZeroBywDownloader(destination, configs);
@@ -114,6 +117,7 @@ const info = await downloader.getSerieInfo("serie_url");
 const options = {
   start: 10, // Optional: Starting chapter, inclusive, default to 0
   end: 20, // Optional: Ending chapter, inclusive, default to the last (length - 1)
+  confirm: false, // Optional: Launch a console prompt asking for user's confirmation before starting downloading, default to false
   onProgress: (progress) => {
     console.log(progress);
   }, // Optional: Called when a chapter is downloaded or failed to do so
@@ -150,3 +154,7 @@ await downloader.downloadChapter(
   options
 );
 ```
+
+## :information_source: Credits
+
+- [zero 漫画下载](https://greasyfork.org/zh-CN/scripts/459982-zero%E6%BC%AB%E7%94%BB%E4%B8%8B%E8%BD%BD)
