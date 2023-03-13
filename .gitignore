@@ -105,3 +105,6 @@ dist
 
 # Trash OS
 .DS_Store
+
+# tmp
+tmp/

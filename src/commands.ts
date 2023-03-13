@@ -42,38 +42,53 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
 export const listCommand: Command = async (name, sub, options = {}) => {
   const { url } = options;
   const downloader = buildDownloader(options);
-  if (url) {
-    const info = await downloader.getSerieInfo(url);
-    if (info) {
-      console.log(`Title: ${info.title}`);
-      console.log("----");
-      info.chapters?.forEach((e) => {
-        console.log(`${e.index}  ${e.name}`);
-        console.log(`${e.uri}`);
+
+  try {
+    if (url) {
+      const info = await downloader.getSerieInfo(url);
+      if (info) {
+        console.log(`Title: ${info.title}`);
         console.log("----");
-      });
-    } else {
-      console.log("Please Provide URL.");
+        info.chapters?.forEach((e) => {
+          console.log(`${e.index}  ${e.name}`);
+          console.log(`${e.uri}`);
+          console.log("----");
+        });
+      } else {
+        console.log("Please Provide URL.");
+      }
     }
+  } catch (error) {
+    console.error(error);
   }
 };
 
 export const downloadCommand: Command = async (name, sub, options = {}) => {
   const { url, from, to } = options;
   const downloader = buildDownloader(options);
-  if (url) {
-    await downloader.downloadSerie(url, { start: from, end: to });
-  } else {
-    console.log("Please Provide URL.");
+
+  try {
+    if (url) {
+      await downloader.downloadSerie(url, { start: from, end: to });
+    } else {
+      console.log("Please Provide URL.");
+    }
+  } catch (error) {
+    console.error(error);
   }
 };
 
 export const chapterCommand: Command = async (name, sub, options = {}) => {
   const { url, name: chapterName } = options;
   const downloader = buildDownloader(options);
-  if (url) {
-    await downloader.downloadChapter(chapterName ?? "Untitled", url);
-  } else {
-    console.log("Please Provide URL.");
+
+  try {
+    if (url) {
+      await downloader.downloadChapter(chapterName ?? "Untitled", url);
+    } else {
+      console.log("Please Provide URL.");
+    }
+  } catch (error) {
+    console.error(error);
   }
 };

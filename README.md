@@ -4,11 +4,20 @@
 ![license](https://img.shields.io/npm/l/zerobyw-dl.svg)
 ![size](https://img.shields.io/github/repo-size/yinyanfr/zerobyw-dl)
 
-Yet another batch downloader for zerobyw.
+Yet another batch downloader for [zerobyw](https://zerobyw.github.io/).
 
 This library is not for browsers.
 
+## :star2: Features
+
+- CLI tools
+- Chapter list
+- Download as ZIP/CBR, or just a folder of pictures
+- Downloading progress watch
+
 ## :green_book: Quick Start
+
+You need Node.js (LTS or the current version) to run this project.
 
 ```bash
 npm i zerobyw-dl
@@ -17,96 +26,7 @@ npm i zerobyw-dl
 npx zerobyw-dl help
 ```
 
-## :book: Library
-
-### Initializing downloader
-
-```typescript
-import ZeroBywDownloader from "zerobyw-dl";
-
-// Path for downloaded files
-const destination = "~/Download/zerobyw";
-// Configs
-const configs = {
-  // Get your cookie from the network inspector of your browser
-  // Optional but highly recommanded, as ZeroByw partially blocks content for non-paid users
-  cookie: "your_cookie",
-  // Request timeout in ms (Optional: default to 10 seconds)
-  timeout: 10000,
-  // Silencing console output (Optional)
-  silence: false,
-  // numbers of images to be downloaded simultaneously (Optional: default to 10)
-  batchSize: 10,
-  // Display detailed error message, will override silence (Optional)
-  verbose: false,
-  // Output zip or cbz archives grouped by chapters (Optional)
-  archive: "zip",
-}; // Optional
-
-const downloader = new ZeroBywDownloader(destination, configs);
-```
-
-### Getting serie info
-
-```typescript
-const info = await downloader.getSerieInfo("serie_url");
-// info
-// {
-//   title: "Serie Title",
-//   chapters: [{
-//     index: 0,
-//     name: "Chapter Name",
-//     uri: "chapter_uri", // without baseUrl
-//   }]
-// }
-```
-
-### Downloading from a serie
-
-```typescript
-const options = {
-  start: 10, // Optional: Starting chapter, inclusive, default to 0
-  end: 20, // Optional: Ending chapter, inclusive, default to the last (length - 1)
-  onProgress: (progress) => {
-    console.log(progress);
-  }, // Optional: Called when a chapter is downloaded or failed to do so
-}; // Optional
-
-// progress
-// {
-//   index: 0, // chapter index
-//   name: "Chapter Name",
-//   status: "completed", // or "failed"
-//   failed: 1, // numbers of images failed to be downloaded
-//   // status is completed as the download queue is cleared, even with failed images.
-// }
-
-// Download all chapters from a serie
-await downloader.downloadSerie("serie_url");
-
-// Download from the 10th to the 20th chapter (11 chapters in total)
-await downloader.downloadSerie("serie_url", options);
-```
-
-### Downloading a chapter
-
-```typescript
-const options = {
-  index: 0, // chapter index
-  title: "Serie Title",
-  onProgress: (progress) => {}, // Optional: Called when a chapter is downloaded or failed to do so, the same as in serie options
-}; // Optional
-
-await downloader.downloadChapter(
-  "Chapter Name",
-  "chapter_url_with_base",
-  options
-);
-```
-
-## :wrench: Cli (Upcoming)
-
-The cli is not ready yet.
+## :wrench: Cli
 
 ```
 Usage: zerobyw-dl [options] [command]
@@ -142,4 +62,91 @@ Examples:
 
   - Download a chapter named Chapter1.
   $ npx chapter -n Chapter1 -u chapter_url
+```
+
+## :book: Library
+
+### Initializing downloader
+
+```typescript
+import ZeroBywDownloader from "zerobyw-dl";
+
+// Path for downloaded files
+const destination = "~/Download/zerobyw";
+// Configs
+const configs = {
+  // Get your cookie from the network inspector of your browser
+  // Optional but highly recommanded, as ZeroByw partially blocks content for non-paid users
+  cookie: "your_cookie",
+  // Request timeout in ms (Optional: default to 10 seconds)
+  timeout: 10000,
+  // Silencing console output (Optional)
+  silence: false,
+  // numbers of images to be downloaded simultaneously (Optional: default to 10)
+  batchSize: 10,
+  // Display detailed error message, will override silence (Optional)
+  verbose: false,
+  // Output zip or cbz archives grouped by chapters (Optional)
+  archive: "zip",
+}; // Optional
+
+const downloader = new ZeroBywDownloader(destination, configs);
+```
+
+### :scroll: Getting serie info
+
+```typescript
+const info = await downloader.getSerieInfo("serie_url");
+// info
+// {
+//   title: "Serie Title",
+//   chapters: [{
+//     index: 0,
+//     name: "Chapter Name",
+//     uri: "chapter_uri", // without baseUrl
+//   }]
+// }
+```
+
+### :books: Downloading from a serie
+
+```typescript
+const options = {
+  start: 10, // Optional: Starting chapter, inclusive, default to 0
+  end: 20, // Optional: Ending chapter, inclusive, default to the last (length - 1)
+  onProgress: (progress) => {
+    console.log(progress);
+  }, // Optional: Called when a chapter is downloaded or failed to do so
+}; // Optional
+
+// progress
+// {
+//   index: 0, // chapter index
+//   name: "Chapter Name",
+//   status: "completed", // or "failed"
+//   failed: 1, // numbers of images failed to be downloaded
+//   // status is completed as the download queue is cleared, even with failed images.
+// }
+
+// Download all chapters from a serie
+await downloader.downloadSerie("serie_url");
+
+// Download from the 10th to the 20th chapter (11 chapters in total)
+await downloader.downloadSerie("serie_url", options);
+```
+
+### :bookmark: Downloading a chapter
+
+```typescript
+const options = {
+  index: 0, // chapter index
+  title: "Serie Title",
+  onProgress: (progress) => {}, // Optional: Called when a chapter is downloaded or failed to do so, the same as in serie options
+}; // Optional
+
+await downloader.downloadChapter(
+  "Chapter Name",
+  "chapter_url_with_base",
+  options
+);
 ```

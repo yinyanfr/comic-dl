@@ -45,7 +45,7 @@ args
   )
   .option("verbose", "Optional: Display detailed error message.")
   .example(
-    "npx zerobyw-dl dl -u serie_url -f 10 -t 20 -o ~/Download/zerobyw -a zip",
+    "npx zerobyw-dl dl -u serie_url -c cookie.txt -f 10 -t 20 -o ~/Download/zerobyw -a zip",
     "Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives by chapter."
   )
   .example(
@@ -53,12 +53,8 @@ args
     "List all chapters of the given serie."
   )
   .example(
-    "npx chapter -n Chapter1 -u chapter_url",
-    "Download a chapter named Chapter1."
+    "npx zerobyw-dl ch -n Chapter1 -u chapter_url -c cookie.txt",
+    "Download a chapter named Chapter1 to current path."
   );
 
-const flags = args.parse(process.argv);
-
-console.log("The CLI is under development and will be available soon.");
-console.log("Thanks for your interests.");
-console.log(flags);
+args.parse(process.argv);

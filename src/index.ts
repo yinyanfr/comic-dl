@@ -150,18 +150,19 @@ export default class ZeroBywDownloader {
     }
     const filenameMatch = imageUri.match(/[^./]+\.[^.]+$/);
     const filename = options?.imageName ?? filenameMatch?.[0];
-    if (filename) {
-      const writePath = path.join(
-        this.destination,
-        options?.title ? "Untitled" : ".",
-        chapterName,
-        filename
-      );
-      const writer = fs.createWriteStream(writePath);
 
+    if (filename) {
       if (options?.archive) {
         options.archive.append(res.data, { name: filename });
+        return Promise.resolve();
       } else {
+        const writePath = path.join(
+          this.destination,
+          options?.title ? "Untitled" : ".",
+          chapterName,
+          filename
+        );
+        const writer = fs.createWriteStream(writePath);
         res.data.pipe(writer);
         return new Promise((resolve, reject) => {
           writer.on("finish", resolve);
@@ -173,8 +174,9 @@ export default class ZeroBywDownloader {
           });
         });
       }
+    } else {
+      throw new Error("Cannot Detect Filename.");
     }
-    throw new Error("Cannot Detect Filename.");
   }
 
   private async downloadSegment(
@@ -215,10 +217,8 @@ export default class ZeroBywDownloader {
     }
     const chapterWritePath = path.join(
       this.destination,
-      options?.title ? "Untitled" : ".",
-      this.configs?.archive
-        ? `${name}.${this.configs?.archive === "cbz" ? "cbz" : "zip"}`
-        : name
+      options?.title ? options.title : ".",
+      this.configs?.archive ? "." : name
     );
     if (!fs.existsSync(chapterWritePath)) {
       fs.mkdirSync(chapterWritePath, { recursive: true });
@@ -228,7 +228,12 @@ export default class ZeroBywDownloader {
       : undefined;
 
     if (this.configs?.archive) {
-      const archiveStream = fs.createWriteStream(chapterWritePath);
+      const archiveStream = fs.createWriteStream(
+        path.join(
+          chapterWritePath,
+          `${name}.${this.configs?.archive === "cbz" ? "cbz" : "zip"}`
+        )
+      );
       archive?.pipe(archiveStream);
     }
 
@@ -267,6 +272,7 @@ export default class ZeroBywDownloader {
     this.detectBaseUrl(url);
     const info = await this.getSerieInfo(url);
 
+    this.log("Start Downloading...");
     for (const chapter of info.chapters.slice(
       options?.start ?? 0,
       options?.end ? options.end + 1 : info.chapters.length
