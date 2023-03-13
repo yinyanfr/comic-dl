@@ -3,7 +3,9 @@ import type { AxiosInstance } from "axios";
 import { JSDOM } from "jsdom";
 import fs from "node:fs";
 import path from "node:path";
-import type { Stream } from "node:stream";
+import type { ReadStream } from "node:fs";
+import archiver from "archiver";
+import type { Archiver } from "archiver";
 
 interface Configs {
   cookie?: string;
@@ -11,7 +13,7 @@ interface Configs {
   silence?: boolean;
   batchSize?: number;
   verbose?: boolean;
-  archive?: "zip" | "cbz";
+  archive?: "zip" | "cbz" | boolean;
 }
 
 interface Chapter {
@@ -31,6 +33,12 @@ interface SerieDownloadOptions {
   start?: number;
   end?: number;
   onProgress?: (progress: DownloadProgress) => void;
+}
+
+interface ImageDownloadOptions {
+  imageName?: string;
+  title?: string;
+  archive?: Archiver;
 }
 
 interface ChpaterDownloadOptions {
@@ -132,36 +140,39 @@ export default class ZeroBywDownloader {
   private async downloadImage(
     chapterName: string,
     imageUri: string,
-    imageName?: string,
-    title?: string
+    options: ImageDownloadOptions = {}
   ) {
-    const res = await this.axios.get<Stream>(imageUri, {
+    const res = await this.axios.get<ReadStream>(imageUri, {
       responseType: "stream",
     });
     if (!res?.data) {
       throw new Error("Image Request Failed");
     }
     const filenameMatch = imageUri.match(/[^./]+\.[^.]+$/);
-    const filename = imageName ?? filenameMatch?.[0];
+    const filename = options?.imageName ?? filenameMatch?.[0];
     if (filename) {
       const writePath = path.join(
         this.destination,
-        title ?? "Untitled",
+        options?.title ? "Untitled" : ".",
         chapterName,
         filename
       );
       const writer = fs.createWriteStream(writePath);
-      res.data.pipe(writer);
 
-      return new Promise((resolve, reject) => {
-        writer.on("finish", resolve);
-        writer.on("error", (err) => {
-          if (this.configs?.verbose) {
-            console.error(err);
-          }
-          reject();
+      if (options?.archive) {
+        options.archive.append(res.data, { name: filename });
+      } else {
+        res.data.pipe(writer);
+        return new Promise((resolve, reject) => {
+          writer.on("finish", resolve);
+          writer.on("error", (err) => {
+            if (this.configs?.verbose) {
+              console.error(err);
+            }
+            reject();
+          });
         });
-      });
+      }
     }
     throw new Error("Cannot Detect Filename.");
   }
@@ -169,10 +180,11 @@ export default class ZeroBywDownloader {
   private async downloadSegment(
     name: string,
     segment: (string | null)[],
-    title?: string
+    title?: string,
+    archive?: Archiver
   ) {
     const reqs = segment.map((e) =>
-      e ? this.downloadImage(name, e, title) : Promise.reject()
+      e ? this.downloadImage(name, e, { title, archive }) : Promise.reject()
     );
     const res = await Promise.allSettled(reqs);
     return res.filter((e) => e.status === "rejected");
@@ -203,19 +215,31 @@ export default class ZeroBywDownloader {
     }
     const chapterWritePath = path.join(
       this.destination,
-      options?.title ?? "Untitled",
-      name
+      options?.title ? "Untitled" : ".",
+      this.configs?.archive
+        ? `${name}.${this.configs?.archive === "cbz" ? "cbz" : "zip"}`
+        : name
     );
     if (!fs.existsSync(chapterWritePath)) {
       fs.mkdirSync(chapterWritePath, { recursive: true });
     }
-    const step = this.configs?.batchSize ?? 10;
+    const archive = this.configs?.archive
+      ? archiver("zip", { zlib: { level: 5 } })
+      : undefined;
+
+    if (this.configs?.archive) {
+      const archiveStream = fs.createWriteStream(chapterWritePath);
+      archive?.pipe(archiveStream);
+    }
+
     let failures = 0;
+    const step = this.configs?.batchSize ?? 10;
     for (let i = 0; i < imgList.length; i += step) {
       const failed = await this.downloadSegment(
         name,
         imgList.slice(i, Math.min(i + step, imgList.length)),
-        options?.title
+        options?.title,
+        archive
       );
       if (failed?.length) {
         failures += failed.length;
@@ -224,6 +248,7 @@ export default class ZeroBywDownloader {
         );
       }
     }
+    archive?.finalize();
     this.log(`Finished Chapter: ${name}`);
     options?.onProgress?.({
       index: options?.index,

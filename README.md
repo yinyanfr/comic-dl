@@ -49,7 +49,7 @@ const downloader = new ZeroBywDownloader(destination, configs);
 ### Getting serie info
 
 ```typescript
-const info = await downloader.getSerieInfo("serie_url")
+const info = await downloader.getSerieInfo("serie_url");
 // info
 // {
 //   title: "Serie Title",
@@ -67,8 +67,10 @@ const info = await downloader.getSerieInfo("serie_url")
 const options = {
   start: 10, // Optional: Starting chapter, inclusive, default to 0
   end: 20, // Optional: Ending chapter, inclusive, default to the last (length - 1)
-  onProgress: (progress) => {}, // Optional: Called when a chapter is downloaded or failed to do so
-} // Optional
+  onProgress: (progress) => {
+    console.log(progress);
+  }, // Optional: Called when a chapter is downloaded or failed to do so
+}; // Optional
 
 // progress
 // {
@@ -80,10 +82,10 @@ const options = {
 // }
 
 // Download all chapters from a serie
-await downloader.downloadSerie("serie_url")
+await downloader.downloadSerie("serie_url");
 
 // Download from the 10th to the 20th chapter (11 chapters in total)
-await downloader.downloadSerie("serie_url", options)
+await downloader.downloadSerie("serie_url", options);
 ```
 
 ### Downloading a chapter
@@ -93,9 +95,13 @@ const options = {
   index: 0, // chapter index
   title: "Serie Title",
   onProgress: (progress) => {}, // Optional: Called when a chapter is downloaded or failed to do so, the same as in serie options
-} // Optional
+}; // Optional
 
-await downloader.downloadChapter("Chapter Name", "chapter_url_with_base", options)
+await downloader.downloadChapter(
+  "Chapter Name",
+  "chapter_url_with_base",
+  options
+);
 ```
 
 ## :wrench: Cli (Upcoming)
@@ -113,22 +119,23 @@ Commands:
   version          Display version
 
 Options:
+  -a, --archive  Optional: Output zip or cbz archive grouped by chapters.
   -b, --batch    Optional: Set the number or images to be downloaded simultaneously, default to 10.
   -c, --cookie   Optional (but recommanded): Provide the path to a text file that contains your cookie.
   -f, --from     Optional: Starting chapter when downloading a serie, default to 0.
-  -H, --help     Output usage information
-  -h, --host     Optional: Provide the base url to ZeroByw in case that the default one is taken down.
+  -h, --help     Output usage information
   -n, --name     The name to the serie or the chapter, optional for series.
   -o, --output   Optional: The path where downloaded files are saved (default to .).
   -s, --slience  Optional: Silence the console output.
   -T, --timeout  Optional: Override the default 10s request timeout
   -t, --to       Optional: Ending chapter when downloading a serie, defaults to chapter.length - 1.
   -u, --url      The url to the serie or the chapter.
-  -v, --version  Output the version number
+  -v, --verbose  Optional: Display detailed error message.
+  -V, --version  Output the version number
 
 Examples:
-  - Download a serie from its 10th chapter to 20th chapter to the given destination.
-  $ npx zerobyw-dl dl -u serie_url -f 10 -t 20 -o ~/Download/zerobyw
+  - Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives by chapter.
+  $ npx zerobyw-dl dl -u serie_url -f 10 -t 20 -o ~/Download/zerobyw -a zip
 
   - List all chapters of the given serie.
   $ npx zerobyw-dl ls -u serie_url
