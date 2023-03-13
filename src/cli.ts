@@ -21,10 +21,6 @@ args
   .option("url", "The url to the serie or the chapter.")
   .option("name", "The name to the serie or the chapter, optional for series.")
   .option(
-    "host",
-    "Optional: Provide the base url to ZeroByw in case that the default one is taken down."
-  )
-  .option(
     "output",
     "Optional: The path where downloaded files are saved (default to .)."
   )
@@ -40,15 +36,17 @@ args
     "to",
     "Optional: Ending chapter when downloading a serie, defaults to chapter.length - 1."
   )
+  .option("archive", "Optional: Output zip or cbz archive grouped by chapters.")
   .option("timeout", "Optional: Override the default 10s request timeout")
   .option("slience", "Optional: Silence the console output.")
   .option(
     "batch",
     "Optional: Set the number or images to be downloaded simultaneously, default to 10."
   )
+  .option("verbose", "Optional: Display detailed error message.")
   .example(
-    "npx zerobyw-dl dl -u serie_url -f 10 -t 20 -o ~/Download/zerobyw",
-    "Download a serie from its 10th chapter to 20th chapter to the given destination."
+    "npx zerobyw-dl dl -u serie_url -f 10 -t 20 -o ~/Download/zerobyw -a zip",
+    "Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives by chapter."
   )
   .example(
     "npx zerobyw-dl ls -u serie_url",

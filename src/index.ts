@@ -6,17 +6,37 @@ import path from "node:path";
 import type { Stream } from "node:stream";
 
 interface Configs {
-  baseUrl?: string;
   cookie?: string;
   timeout?: number;
   silence?: boolean;
   batchSize?: number;
+  verbose?: boolean;
+  archive?: "zip" | "cbz";
 }
 
 interface Chapter {
   index: number;
   name: string;
   uri: string | null;
+}
+
+interface DownloadProgress {
+  index?: number;
+  name: string;
+  status: "completed" | "failed";
+  failed?: number;
+}
+
+interface SerieDownloadOptions {
+  start?: number;
+  end?: number;
+  onProgress?: (progress: DownloadProgress) => void;
+}
+
+interface ChpaterDownloadOptions {
+  index?: number;
+  title?: string;
+  onProgress?: (progress: DownloadProgress) => void;
 }
 
 const Selectors = {
@@ -28,11 +48,9 @@ const Selectors = {
 
 export default class ZeroBywDownloader {
   private axios: AxiosInstance;
-  private title: string = "Untitled";
 
   constructor(private destination: string, private configs: Configs = {}) {
     this.axios = axios.create({
-      baseURL: configs?.baseUrl,
       timeout: configs?.timeout ?? 10000,
       headers: {
         Cookie: configs?.cookie,
@@ -41,7 +59,7 @@ export default class ZeroBywDownloader {
   }
 
   private log(content: string) {
-    if (!this.configs?.silence) {
+    if (this.configs?.verbose || !this.configs?.silence) {
       console.log(content);
     }
   }
@@ -54,20 +72,20 @@ export default class ZeroBywDownloader {
   }
 
   /**
-   * Get chapter list
+   * Get title and chapter list
    * @param url Series Url
-   * @returns Promise, list of chapters with array index, name and url
+   * @returns Promise, title and list of chapters with array index, name and url
    */
-  async getChapterList(url: string) {
+  async getSerieInfo(url: string) {
     const res = await this.axios.get<string>(url);
     if (!res?.data) throw new Error("Request Failed.");
 
     const dom = new JSDOM(res.data);
     const document = dom.window.document;
-    this.title =
+    const title =
       document.querySelector("title")?.innerHTML.replace(/[ \s]+/g, "") ??
       "Untitled";
-    this.log(`Found ${this.title}.`);
+    this.log(`Found ${title}.`);
 
     const chapterElements = document.querySelectorAll<HTMLAnchorElement>(
       Selectors.chapters
@@ -82,7 +100,7 @@ export default class ZeroBywDownloader {
       });
     });
     this.log(`Chapter Length: ${chapters.length}`);
-    return chapters;
+    return { title, chapters };
   }
 
   private async getImageList(url: string) {
@@ -114,7 +132,8 @@ export default class ZeroBywDownloader {
   private async downloadImage(
     chapterName: string,
     imageUri: string,
-    imageName?: string
+    imageName?: string,
+    title?: string
   ) {
     const res = await this.axios.get<Stream>(imageUri, {
       responseType: "stream",
@@ -127,7 +146,7 @@ export default class ZeroBywDownloader {
     if (filename) {
       const writePath = path.join(
         this.destination,
-        this.title,
+        title ?? "Untitled",
         chapterName,
         filename
       );
@@ -137,7 +156,9 @@ export default class ZeroBywDownloader {
       return new Promise((resolve, reject) => {
         writer.on("finish", resolve);
         writer.on("error", (err) => {
-          console.error(err);
+          if (this.configs?.verbose) {
+            console.error(err);
+          }
           reject();
         });
       });
@@ -145,9 +166,13 @@ export default class ZeroBywDownloader {
     throw new Error("Cannot Detect Filename.");
   }
 
-  private async downloadSegment(name: string, segment: (string | null)[]) {
+  private async downloadSegment(
+    name: string,
+    segment: (string | null)[],
+    title?: string
+  ) {
     const reqs = segment.map((e) =>
-      e ? this.downloadImage(name, e) : Promise.reject()
+      e ? this.downloadImage(name, e, title) : Promise.reject()
     );
     const res = await Promise.allSettled(reqs);
     return res.filter((e) => e.status === "rejected");
@@ -157,49 +182,75 @@ export default class ZeroBywDownloader {
    * Download and write all images from a chapter
    * @param name Chapter name
    * @param uri Chapter uri
+   * @param options title, index, onProgress
    */
-  async downloadChapter(name: string, uri?: string | null) {
-    if (!uri) throw new Error("Invalid Chapter Uri");
+  async downloadChapter(
+    name: string,
+    uri?: string | null,
+    options: ChpaterDownloadOptions = {}
+  ) {
+    if (!uri) {
+      options?.onProgress?.({ index: options?.index, name, status: "failed" });
+      throw new Error("Invalid Chapter Uri");
+    }
     if (!this.axios.defaults.baseURL) {
       this.detectBaseUrl(uri);
     }
     const imgList = await this.getImageList(uri);
     if (!imgList?.length) {
+      options?.onProgress?.({ index: options?.index, name, status: "failed" });
       throw new Error("Cannot get image list.");
     }
-    const chapterWritePath = path.join(this.destination, this.title, name);
+    const chapterWritePath = path.join(
+      this.destination,
+      options?.title ?? "Untitled",
+      name
+    );
     if (!fs.existsSync(chapterWritePath)) {
       fs.mkdirSync(chapterWritePath, { recursive: true });
     }
     const step = this.configs?.batchSize ?? 10;
+    let failures = 0;
     for (let i = 0; i < imgList.length; i += step) {
       const failed = await this.downloadSegment(
         name,
-        imgList.slice(i, Math.min(i + step, imgList.length))
+        imgList.slice(i, Math.min(i + step, imgList.length)),
+        options?.title
       );
       if (failed?.length) {
+        failures += failed.length;
         this.log(
           `Failed: Chapter ${name} - ${failed.length} images not downloaded`
         );
       }
     }
     this.log(`Finished Chapter: ${name}`);
+    options?.onProgress?.({
+      index: options?.index,
+      name,
+      status: "completed",
+      failed: failures,
+    });
   }
 
   /**
-   * Download the entire series
-   * @param url Serie Url
-   * @param start Starting chapter index (default to 0, included)
-   * @param end Ending chapter index (default to chapters.length, included)
+   * Download from a serie
+   * @param url serie url
+   * @param options start, end, onProgress
    */
-  async downloadSerie(url: string, start?: number, end?: number) {
+  async downloadSerie(url: string, options: SerieDownloadOptions = {}) {
     this.detectBaseUrl(url);
-    const chapters = await this.getChapterList(url);
-    for (const chapter of chapters.slice(
-      start ?? 0,
-      end ? end + 1 : chapters.length
+    const info = await this.getSerieInfo(url);
+
+    for (const chapter of info.chapters.slice(
+      options?.start ?? 0,
+      options?.end ? options.end + 1 : info.chapters.length
     )) {
-      await this.downloadChapter(chapter.name, chapter.uri);
+      await this.downloadChapter(chapter.name, chapter.uri, {
+        index: chapter.index,
+        title: info.title,
+        onProgress: options?.onProgress,
+      });
     }
     this.log("Download Success.");
   }
