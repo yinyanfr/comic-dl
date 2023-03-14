@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0
+
+`2023-03-14`
+
+### Features
+
+- [CLI] Added a summary of failed pages when downloading a serie
+
 ## 1.1.0
 
 `2023-03-14`

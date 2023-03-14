@@ -53,6 +53,7 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
   const { url, from, to, yes, verbose } = options;
   const downloader = buildDownloader(options);
   let current: Partial<DownloadProgress> = {};
+  const failed: Partial<DownloadProgress>[] = [];
 
   try {
     if (url) {
@@ -62,10 +63,20 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
         confirm: !yes,
         onProgress(progress) {
           current = progress;
+          if (current.failed) {
+            failed.push(current);
+          }
         },
       });
     } else {
       console.log("Please Provide URL.");
+    }
+
+    if (failed.length) {
+      console.log(`Download completed with failures.`);
+      failed.forEach((e) => {
+        console.log(`Index: ${e.index}, pages not downloaded: ${e.failed}.`);
+      });
     }
   } catch (error) {
     if (verbose) {
