@@ -1,12 +1,14 @@
 {
   "name": "zerobyw-dl",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Yet another batch downloader for zerobyw",
   "main": "dist/index.js",
   "bin": "dist/cli.js",
+  "types": "src/global.d.ts",
   "scripts": {
     "tsc": "tsc",
     "build": "tsc",
+    "clean": "rm -rf dist/",
     "prepublishOnly": "tsc"
   },
   "keywords": [

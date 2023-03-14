@@ -22,14 +22,14 @@ You need Node.js (LTS or the current version) to run this project.
 ```bash
 npm i zerobyw-dl
 # or
-# CLI Upcoming
+# CLI
 npx zerobyw-dl help
 ```
 
 ## :wrench: Cli
 
 ```
-Usage: zerobyw dl [options] [command]
+Usage: zerobyw-dl [options] [command]
 
 Commands:
   chapter, c, ch   Download images from one chapter.
@@ -153,6 +153,15 @@ await downloader.downloadChapter(
   "chapter_url_with_base",
   options
 );
+```
+
+### :pencil2: Modify configs
+
+```typescript
+// change one config
+downloader.setConfig("archive", "cbz");
+// merge configs
+downloader.setConfigs({ archive: "cbz" }); // Will merge
 ```
 
 ## :information_source: Credits

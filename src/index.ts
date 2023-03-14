@@ -8,48 +8,6 @@ import archiver from "archiver";
 import type { Archiver } from "archiver";
 import yesno from "yesno";
 
-interface Configs {
-  cookie?: string;
-  timeout?: number;
-  silence?: boolean;
-  batchSize?: number;
-  verbose?: boolean;
-  archive?: "zip" | "cbz" | boolean;
-  headers?: Record<string, any>;
-}
-
-interface Chapter {
-  index: number;
-  name: string;
-  uri: string | null;
-}
-
-interface DownloadProgress {
-  index?: number;
-  name: string;
-  status: "completed" | "failed";
-  failed?: number;
-}
-
-interface SerieDownloadOptions {
-  start?: number;
-  end?: number;
-  confirm?: boolean;
-  onProgress?: (progress: DownloadProgress) => void;
-}
-
-interface ImageDownloadOptions {
-  imageName?: string;
-  title?: string;
-  archive?: Archiver;
-}
-
-interface ChpaterDownloadOptions {
-  index?: number;
-  title?: string;
-  onProgress?: (progress: DownloadProgress) => void;
-}
-
 const Selectors = {
   chapters: ".uk-grid-collapse .muludiv a",
   page: ".wp",
@@ -81,6 +39,15 @@ export default class ZeroBywDownloader {
     if (match?.[0]) {
       this.axios.defaults.baseURL = match?.[0];
     }
+  }
+
+  setConfig(key: keyof typeof this.configs, value: any) {
+    this.configs[key] = value;
+  }
+
+  setConfigs(configs: Record<keyof typeof this.configs, any>) {
+    // Will merge
+    this.configs = { ...this.configs, ...configs };
   }
 
   /**
@@ -125,13 +92,13 @@ export default class ZeroBywDownloader {
       throw new Error("Invalid Page.");
     }
     if (!document.querySelectorAll(Selectors.auth)?.length) {
-      throw new Error("Unauthorized.");
+      throw new Error("Unauthorized: Please log in.");
     }
     const imageElements = document.querySelectorAll<HTMLImageElement>(
       Selectors.images
     );
     if (!imageElements?.length) {
-      throw new Error("Forbidden.");
+      throw new Error("Forbidden: This chapter requires a VIP user rank.");
     }
 
     const imageList: (string | null)[] = [];
@@ -205,7 +172,7 @@ export default class ZeroBywDownloader {
   async downloadChapter(
     name: string,
     uri?: string | null,
-    options: ChpaterDownloadOptions = {}
+    options: ChapterDownloadOptions = {}
   ) {
     if (!uri) {
       options?.onProgress?.({ index: options?.index, name, status: "failed" });
@@ -258,7 +225,7 @@ export default class ZeroBywDownloader {
       }
     }
     archive?.finalize();
-    this.log(`Saved Chapter: ${name}`);
+    this.log(`Saved Chapter: [${options?.index}] ${name}`);
     options?.onProgress?.({
       index: options?.index,
       name,
