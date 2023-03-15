@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.0
+
+`2023-03-15`
+
+### Features
+
+- New configs
+  - maxTitleLength (-m, --max-title-length): Restrict length of titles as folder names, default to undefined.
+  - zipLevel (-z, --zip-level): Zip level for archive files, default to 5
+
+### Fix
+
+- Fixed a bug that would cause downloading chapters from 0 to 0 not working as intended.
+
 ## 1.2.0
 
 `2023-03-14`

@@ -5,7 +5,8 @@ import path from "node:path";
 import ZeroBywDownloader from ".";
 
 function buildDownloader(options: Partial<CliOptions> = {}) {
-  const { output, cookie, archive, timeout, silence, batch, verbose } = options;
+  const { output, cookie, archive, timeout, silence, batch, verbose, m, z } =
+    options;
 
   const downloader = new ZeroBywDownloader(output ?? ".", {
     cookie: cookie && fs.readFileSync(path.resolve(cookie)).toString(),
@@ -14,6 +15,8 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     batchSize: batch,
     verbose,
     archive,
+    maxTitleLength: m,
+    zipLevel: z,
   });
 
   return downloader;
@@ -95,7 +98,7 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
       console.log(
         `Retry from the next chapter: Use -f ${
           current.status === "completed" ? current.index + 1 : current.index
-        }`
+        } ${to ? `-t ${to}` : ""}`
       );
     } else {
       console.log(

@@ -79,7 +79,12 @@ export default class ZeroBywDownloader {
       });
     });
     this.log(`Chapter Length: ${chapters.length}`);
-    return { title, chapters };
+    return {
+      title: this.configs?.maxTitleLength
+        ? title.slice(0, this.configs?.maxTitleLength)
+        : title,
+      chapters,
+    };
   }
 
   private async getImageList(url: string) {
@@ -195,7 +200,7 @@ export default class ZeroBywDownloader {
       fs.mkdirSync(chapterWritePath, { recursive: true });
     }
     const archive = this.configs?.archive
-      ? archiver("zip", { zlib: { level: 5 } })
+      ? archiver("zip", { zlib: { level: this.configs?.zipLevel ?? 5 } })
       : undefined;
 
     if (this.configs?.archive) {
@@ -257,7 +262,7 @@ export default class ZeroBywDownloader {
     this.log("Start Downloading...");
     for (const chapter of info.chapters.slice(
       options?.start ?? 0,
-      options?.end ? options.end + 1 : info.chapters.length
+      options?.end !== undefined ? options.end + 1 : info.chapters.length
     )) {
       await this.downloadChapter(chapter.name, chapter.uri, {
         index: chapter.index,

@@ -43,11 +43,19 @@ args
     "batch",
     "Optional: Set the number or images to be downloaded simultaneously, default to 10."
   )
-  .option("verbose", "Optional: Display detailed error message.")
+  .option(
+    "verbose",
+    "Optional: Display detailed error message, overrides silence."
+  )
   .option(
     "yes",
     "Optional: Skipping confirmation prompt when downloading series."
   )
+  .option(
+    "max-title-length",
+    "Optional: restrict the length of title as the folder name."
+  )
+  .option("zip-level", "Optional: zip level for archive, default to 5.")
   .example(
     "npx zerobyw-dl dl -u serie_url -c cookie.txt -f 10 -t 20 -o ~/Download/zerobyw -a zip",
     "Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives by chapter."

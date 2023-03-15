@@ -6,6 +6,8 @@ interface Configs {
   verbose?: boolean;
   archive?: "zip" | "cbz" | boolean;
   headers?: Record<string, any>;
+  maxTitleLength?: number;
+  zipLevel?: number;
 }
 
 interface Chapter {
@@ -53,6 +55,8 @@ interface CliOptions {
   batch: number;
   verbose: boolean;
   yes: boolean;
+  m: number; // max-title-length
+  z: number; // zip-level
 }
 
 type Command = (

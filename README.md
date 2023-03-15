@@ -29,7 +29,7 @@ npx zerobyw-dl help
 ## :wrench: Cli
 
 ```
-Usage: zerobyw-dl [options] [command]
+Usage: zerobyw dl [options] [command]
 
 Commands:
   chapter, c, ch   Download images from one chapter.
@@ -39,20 +39,22 @@ Commands:
   version          Display version
 
 Options:
-  -a, --archive  Optional: Output zip or cbz archive grouped by chapters.
-  -b, --batch    Optional: Set the number or images to be downloaded simultaneously, default to 10.
-  -c, --cookie   Optional (but recommanded): Provide the path to a text file that contains your cookie.
-  -f, --from     Optional: Starting chapter when downloading a serie, default to 0.
-  -h, --help     Output usage information
-  -n, --name     The name to the chapter, not the title for the serie.
-  -o, --output   Optional: The path where downloaded files are saved (default to .).
-  -s, --slience  Optional: Silence the console output.
-  -T, --timeout  Optional: Override the default 10s request timeout.
-  -t, --to       Optional: Ending chapter when downloading a serie, defaults to chapter.length - 1.
-  -u, --url      The url to the serie or the chapter.
-  -v, --verbose  Optional: Display detailed error message.
-  -V, --version  Output the version number
-  -y, --yes      Optional: Skipping confirmation prompt when downloading series.
+  -a, --archive           Optional: Output zip or cbz archive grouped by chapters.
+  -b, --batch             Optional: Set the number or images to be downloaded simultaneously, default to 10.
+  -c, --cookie            Optional (but recommanded): Provide the path to a text file that contains your cookie.
+  -f, --from              Optional: Starting chapter when downloading a serie, default to 0.
+  -h, --help              Output usage information
+  -m, --max-title-length  Optional: restrict the length of title as the folder name.
+  -n, --name              The name to the chapter, not the title for the serie.
+  -o, --output            Optional: The path where downloaded files are saved (default to .).
+  -s, --slience           Optional: Silence the console output.
+  -T, --timeout           Optional: Override the default 10s request timeout.
+  -t, --to                Optional: Ending chapter when downloading a serie, defaults to chapter.length - 1.
+  -u, --url               The url to the serie or the chapter.
+  -v, --verbose           Optional: Display detailed error message, overrides silence.
+  -V, --version           Output the version number
+  -y, --yes               Optional: Skipping confirmation prompt when downloading series.
+  -z, --zip-level         Optional: zip level for archive, default to 5.
 
 Examples:
   - Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives by chapter.
@@ -91,6 +93,9 @@ const configs = {
   archive: "zip",
   // Additional headers for HTTP Requests (Using axios under the hood) (Optional)
   headers: {},
+  // Restrict the length of title's length, in case your file system has such limitation (Optional: default to undefined)
+  maxTitleLength: 30,
+  // Zip level for archives (Optional: default to 5)
 }; // Optional
 
 const downloader = new ZeroBywDownloader(destination, configs);
