@@ -5,8 +5,17 @@ import path from "node:path";
 import ZeroBywDownloader from ".";
 
 function buildDownloader(options: Partial<CliOptions> = {}) {
-  const { output, cookie, archive, timeout, silence, batch, verbose, m, z } =
-    options;
+  const {
+    output,
+    cookie,
+    archive,
+    timeout,
+    silence,
+    batch,
+    verbose,
+    maxTitleLength,
+    zipLevel,
+  } = options;
 
   const downloader = new ZeroBywDownloader(output ?? ".", {
     cookie: cookie && fs.readFileSync(path.resolve(cookie)).toString(),
@@ -15,8 +24,8 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     batchSize: batch,
     verbose,
     archive,
-    maxTitleLength: m,
-    zipLevel: z,
+    maxTitleLength,
+    zipLevel,
   });
 
   return downloader;
@@ -53,10 +62,18 @@ export const listCommand: Command = async (name, sub, options = {}) => {
 };
 
 export const downloadCommand: Command = async (name, sub, options = {}) => {
-  const { url, from, to, yes, verbose } = options;
+  const {
+    url,
+    from,
+    to,
+    yes,
+    verbose,
+    name: rename,
+    retry,
+    chapters,
+  } = options;
   const downloader = buildDownloader(options);
   let current: Partial<DownloadProgress> = {};
-  const failed: Partial<DownloadProgress>[] = [];
 
   try {
     if (url) {
@@ -64,22 +81,14 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
         start: from,
         end: to,
         confirm: !yes,
-        onProgress(progress) {
-          current = progress;
-          if (current.failed) {
-            failed.push(current);
-          }
-        },
+        rename,
+        retry,
+        chapters: chapters
+          ? chapters.split(",").map((e) => parseInt(e))
+          : undefined,
       });
     } else {
       console.log("Please Provide URL.");
-    }
-
-    if (failed.length) {
-      console.log(`Download completed with failures.`);
-      failed.forEach((e) => {
-        console.log(`Index: ${e.index}, pages not downloaded: ${e.failed}.`);
-      });
     }
   } catch (error) {
     if (verbose) {

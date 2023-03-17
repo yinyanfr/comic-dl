@@ -26,6 +26,9 @@ interface DownloadProgress {
 interface SerieDownloadOptions {
   start?: number;
   end?: number;
+  rename?: string;
+  retry?: boolean;
+  chapters?: number[];
   confirm?: boolean;
   onProgress?: (progress: DownloadProgress) => void;
 }
@@ -55,8 +58,10 @@ interface CliOptions {
   batch: number;
   verbose: boolean;
   yes: boolean;
-  m: number; // max-title-length
-  z: number; // zip-level
+  maxTitleLength: number; // max-title-length
+  zipLevel: number; // zip-level
+  retry: boolean;
+  chapters: string; // 1,2,4,7
 }
 
 type Command = (

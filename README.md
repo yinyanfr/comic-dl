@@ -123,6 +123,7 @@ const options = {
   start: 10, // Optional: Starting chapter, inclusive, default to 0
   end: 20, // Optional: Ending chapter, inclusive, default to the last (length - 1)
   confirm: false, // Optional: Launch a console prompt asking for user's confirmation before starting downloading, default to false
+  rename: undefined, // Optional: Changing the folder name, default to undefined
   onProgress: (progress) => {
     console.log(progress);
   }, // Optional: Called when a chapter is downloaded or failed to do so

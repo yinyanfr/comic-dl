@@ -19,7 +19,10 @@ args
     "ch",
   ])
   .option("url", "The url to the serie or the chapter.")
-  .option("name", "The name to the chapter, not the title for the serie.")
+  .option(
+    "name",
+    "Optional: Proride the serie title and override the folder name."
+  )
   .option(
     "output",
     "Optional: The path where downloaded files are saved (default to .)."
@@ -56,6 +59,14 @@ args
     "Optional: restrict the length of title as the folder name."
   )
   .option("zip-level", "Optional: zip level for archive, default to 5.")
+  .option(
+    "retry",
+    "Optional: Automatically re-download chapters with failed images."
+  )
+  .option(
+    "chapters",
+    "Optional: Only downloading given list of chapters, example: -C 1,2,4,7"
+  )
   .example(
     "npx zerobyw-dl dl -u serie_url -c cookie.txt -f 10 -t 20 -o ~/Download/zerobyw -a zip",
     "Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives by chapter."

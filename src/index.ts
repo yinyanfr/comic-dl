@@ -20,16 +20,16 @@ export default class ZeroBywDownloader {
 
   constructor(private destination: string, private configs: Configs = {}) {
     this.axios = axios.create({
-      timeout: configs?.timeout ?? 10000,
+      timeout: configs.timeout ?? 10000,
       headers: {
-        Cookie: configs?.cookie,
-        ...(configs?.headers || {}),
+        Cookie: configs.cookie,
+        ...(configs.headers || {}),
       },
     });
   }
 
   private log(content: string) {
-    if (this.configs?.verbose || !this.configs?.silence) {
+    if (this.configs.verbose || !this.configs.silence) {
       console.log(content);
     }
   }
@@ -173,6 +173,7 @@ export default class ZeroBywDownloader {
    * @param name Chapter name
    * @param uri Chapter uri
    * @param options title, index, onProgress
+   * @returns DownloadProgress
    */
   async downloadChapter(
     name: string,
@@ -231,12 +232,15 @@ export default class ZeroBywDownloader {
     }
     archive?.finalize();
     this.log(`Saved Chapter: [${options?.index}] ${name}`);
-    options?.onProgress?.({
+    const progress = {
       index: options?.index,
       name,
-      status: "completed",
+      status: "completed" as const,
       failed: failures,
-    });
+    };
+    options?.onProgress?.(progress);
+
+    return progress;
   }
 
   /**
@@ -249,8 +253,15 @@ export default class ZeroBywDownloader {
     const info = await this.getSerieInfo(url);
 
     if (options?.confirm) {
+      let queue = "the entire seire";
+      if (options.start || options.end) {
+        queue = `from ${options.start ?? 0} to ${options.end || "the end"}`;
+      }
+      if (options.chapters?.length) {
+        queue = `chapters ${options.chapters?.join(", ")}`;
+      }
       const ok = await yesno({
-        question: `Downloading ${info.title} to ${this.destination}, Proceed? (Y/n)`,
+        question: `Downloading ${info.title} to ${this.destination}, ${queue}, Proceed? (Y/n)`,
         defaultValue: true,
       });
       if (!ok) {
@@ -260,16 +271,31 @@ export default class ZeroBywDownloader {
     }
 
     this.log("Start Downloading...");
-    for (const chapter of info.chapters.slice(
-      options?.start ?? 0,
-      options?.end !== undefined ? options.end + 1 : info.chapters.length
-    )) {
-      await this.downloadChapter(chapter.name, chapter.uri, {
-        index: chapter.index,
-        title: info.title,
-        onProgress: options?.onProgress,
-      });
+    const summary: DownloadProgress[] = [];
+    const start = options.start ?? 0;
+    const end =
+      options.end !== undefined ? options.end + 1 : info.chapters.length;
+
+    for (let i = start; i < end; i++) {
+      const chapter = info.chapters[i];
+      if (!options.chapters || options.chapters?.includes(i)) {
+        const progress = await this.downloadChapter(chapter.name, chapter.uri, {
+          index: chapter.index,
+          title: options.rename ?? info.title,
+          onProgress: options?.onProgress,
+        });
+        summary.push(progress);
+      }
     }
-    this.log("Download Success.");
+
+    const failed = summary.filter((e) => e.failed);
+    if (failed.length) {
+      this.log(`Download completed with failures.`);
+      failed.forEach((e) => {
+        this.log(`Index: ${e.index}, pages not downloaded: ${e.failed}.`);
+      });
+    } else {
+      this.log("Download Success.");
+    }
   }
 }
