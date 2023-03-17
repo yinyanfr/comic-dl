@@ -41,12 +41,14 @@ Commands:
 Options:
   -a, --archive           Optional: Output zip or cbz archive grouped by chapters.
   -b, --batch             Optional: Set the number or images to be downloaded simultaneously, default to 10.
+  -C, --chapters          Optional: Only downloading given list of chapters, example: -C 1,2,4,7
   -c, --cookie            Optional (but recommanded): Provide the path to a text file that contains your cookie.
   -f, --from              Optional: Starting chapter when downloading a serie, default to 0.
   -h, --help              Output usage information
   -m, --max-title-length  Optional: restrict the length of title as the folder name.
-  -n, --name              The name to the chapter, not the title for the serie.
+  -n, --name              Optional: Proride the serie title and override the folder name.
   -o, --output            Optional: The path where downloaded files are saved (default to .).
+  -r, --retry             Optional: Automatically re-download chapters with failed images.
   -s, --slience           Optional: Silence the console output.
   -T, --timeout           Optional: Override the default 10s request timeout.
   -t, --to                Optional: Ending chapter when downloading a serie, defaults to chapter.length - 1.
@@ -124,6 +126,8 @@ const options = {
   end: 20, // Optional: Ending chapter, inclusive, default to the last (length - 1)
   confirm: false, // Optional: Launch a console prompt asking for user's confirmation before starting downloading, default to false
   rename: undefined, // Optional: Changing the folder name, default to undefined
+  retry: false, // Optional: Automatically re-download chapters with failed images.
+  chapters: undefined, // Optional: Automatically re-download chapters with failed images.
   onProgress: (progress) => {
     console.log(progress);
   }, // Optional: Called when a chapter is downloaded or failed to do so
@@ -133,6 +137,7 @@ const options = {
 // {
 //   index: 0, // chapter index
 //   name: "Chapter Name",
+//   uri: "chapter_uri",
 //   status: "completed", // or "failed"
 //   failed: 1, // numbers of images failed to be downloaded
 //   // status is completed as the download queue is cleared, even with failed images.

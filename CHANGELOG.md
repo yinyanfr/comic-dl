@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.4.0
+## 1.4.1
 
 `2023-03-17`
 
@@ -10,7 +10,9 @@
   - rename: Override the serie title, for CLI: reusing -n, --name
   - retry: Automatically redownload failed chapters, for CLI: -r, --retry
   - chapters: Only downloading given list of chapter indexes, for CLI: -c, --chapters 1,2,4,7
-- Better logs when partially downloading series
+- Better logs when partially downloading serie
+- Improved type consistency
+- Add uri to `DownloadProgress`
 
 ## 1.3.0
 

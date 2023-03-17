@@ -75,7 +75,7 @@ export default class ZeroBywDownloader {
       chapters.push({
         index: i,
         name: e.innerHTML,
-        uri: e.getAttribute("href"),
+        uri: e.getAttribute("href") as string | undefined,
       });
     });
     this.log(`Chapter Length: ${chapters.length}`);
@@ -177,11 +177,16 @@ export default class ZeroBywDownloader {
    */
   async downloadChapter(
     name: string,
-    uri?: string | null,
+    uri?: string,
     options: ChapterDownloadOptions = {}
   ) {
     if (!uri) {
-      options?.onProgress?.({ index: options?.index, name, status: "failed" });
+      options?.onProgress?.({
+        index: options?.index,
+        name,
+        uri,
+        status: "failed",
+      });
       throw new Error("Invalid Chapter Uri");
     }
     if (!this.axios.defaults.baseURL) {
@@ -189,7 +194,12 @@ export default class ZeroBywDownloader {
     }
     const imgList = await this.getImageList(uri);
     if (!imgList?.length) {
-      options?.onProgress?.({ index: options?.index, name, status: "failed" });
+      options?.onProgress?.({
+        index: options?.index,
+        name,
+        uri,
+        status: "failed",
+      });
       throw new Error("Cannot get image list.");
     }
     const chapterWritePath = path.join(
@@ -294,6 +304,16 @@ export default class ZeroBywDownloader {
       failed.forEach((e) => {
         this.log(`Index: ${e.index}, pages not downloaded: ${e.failed}.`);
       });
+      if (options.retry) {
+        this.log("Retrying...");
+        for (const chapter of failed) {
+          await this.downloadChapter(chapter.name, chapter.uri, {
+            index: chapter.index,
+            title: options.rename ?? info.title,
+            onProgress: options?.onProgress,
+          });
+        }
+      }
     } else {
       this.log("Download Success.");
     }

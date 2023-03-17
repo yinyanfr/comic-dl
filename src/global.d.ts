@@ -13,12 +13,13 @@ interface Configs {
 interface Chapter {
   index: number;
   name: string;
-  uri: string | null;
+  uri?: string;
 }
 
 interface DownloadProgress {
   index?: number;
   name: string;
+  uri?: string;
   status: "completed" | "failed";
   failed?: number;
 }
