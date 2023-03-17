@@ -25,7 +25,7 @@ args
   )
   .option(
     "output",
-    "Optional: The path where downloaded files are saved (default to .)."
+    "Optional: The path where downloaded files are saved (default to .), setting this flag when using list will save a ComicInfo.xml to the path."
   )
   .option(
     "cookie",
@@ -67,9 +67,14 @@ args
     "chapters",
     "Optional: Only downloading given list of chapters, example: -C 1,2,4,7"
   )
+  .option("info", "Optional: Generate ComicInfo.xml.")
   .example(
-    "npx zerobyw-dl dl -u serie_url -c cookie.txt -f 10 -t 20 -o ~/Download/zerobyw -a zip",
-    "Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives by chapter."
+    "npx zerobyw-dl dl -c cookie.txt -f 10 -t 20 -o ~/Download/zerobyw -a zip -r -i -u serie_url",
+    "Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives with ComicInfo.xml by chapter, retry if a chapter is not properly downloaded."
+  )
+  .example(
+    "npx zerobyw-dl dl -c cookie.txt -o ~/Download/zerobyw -i -u serie_url -c 0,4,12",
+    "Download chapter index 0, 4, 12 from a serie"
   )
   .example(
     "npx zerobyw-dl ls -u serie_url",

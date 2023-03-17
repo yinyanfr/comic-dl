@@ -7,13 +7,18 @@ import type { ReadStream } from "node:fs";
 import archiver from "archiver";
 import type { Archiver } from "archiver";
 import yesno from "yesno";
+import { isString } from "./lib";
 
 const Selectors = {
   chapters: ".uk-grid-collapse .muludiv a",
   page: ".wp",
   auth: ".jameson_manhua",
   images: ".uk-zjimg img",
+  tags1: "div.cl > a.uk-label",
+  tags2: "div.cl > span.uk-label",
 };
+
+const ComicInfoFilename = "ComicInfo.xml";
 
 export default class ZeroBywDownloader {
   private axios: AxiosInstance;
@@ -32,6 +37,18 @@ export default class ZeroBywDownloader {
     if (this.configs.verbose || !this.configs.silence) {
       console.log(content);
     }
+  }
+
+  private generateComicInfoXMLString(info: ComicInfo) {
+    // the xml module somehow doesn't work as intended
+    // TODO: find a reliable module for possible more complicated structures
+    const identifier = `<?xml version="1.0"?>`;
+    const open = `<ComicInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">`;
+    const close = "</ComicInfo>";
+    const content = Object.keys(info)
+      .map((key) => `\t<${key}>${info[key]?.replace?.("\n", "")}</${key}>`)
+      .join("\n");
+    return `${identifier}\n${open}\n${content}\n${close}\n`;
   }
 
   private detectBaseUrl(url: string) {
@@ -55,15 +72,21 @@ export default class ZeroBywDownloader {
    * @param url Series Url
    * @returns Promise, title and list of chapters with array index, name and url
    */
-  async getSerieInfo(url: string) {
+  async getSerieInfo(
+    url: string,
+    options: SerieInfoOptions = {}
+  ): Promise<SerieInfo> {
     const res = await this.axios.get<string>(url);
     if (!res?.data) throw new Error("Request Failed.");
 
     const dom = new JSDOM(res.data);
     const document = dom.window.document;
+    const info: ComicInfo = { Manga: "YesAndRightToLeft", Web: url };
+
     const title =
-      document.querySelector("title")?.innerHTML.replace(/[ \s]+/g, "") ??
+      document.querySelector("title")?.textContent?.replace(/[ \s]+/g, "") ??
       "Untitled";
+    info.Serie = title;
     this.log(`Found ${title}.`);
 
     const chapterElements = document.querySelectorAll<HTMLAnchorElement>(
@@ -74,17 +97,75 @@ export default class ZeroBywDownloader {
     chapterElements.forEach((e, i) => {
       chapters.push({
         index: i,
-        name: e.innerHTML,
-        uri: e.getAttribute("href") as string | undefined,
+        name: e.textContent ?? `${i}`,
+        uri: (e.getAttribute("href") as string) ?? undefined,
       });
     });
+    info.Count = chapters.length;
     this.log(`Chapter Length: ${chapters.length}`);
-    return {
+
+    const tagGroup1 = document.querySelectorAll<HTMLAnchorElement>(
+      Selectors.tags1
+    );
+    const tags: string[] = [];
+    tagGroup1?.forEach((tag, i) => {
+      if (i == 0) {
+        // plugin.php?id=jameson_manhua&a=zz&zuozhe_name=陈某
+        const match = tag.getAttribute("href")?.match(/zuozhe_name=(.+)$/);
+        if (match) {
+          info.Penciller = match[1];
+        } else {
+          if (tag.textContent) {
+            tags.push(tag.textContent);
+          }
+        }
+      }
+    });
+
+    const tagGroup2 = document.querySelectorAll<HTMLSpanElement>(
+      Selectors.tags2
+    );
+    const lang = tagGroup2[0]?.textContent;
+    info.Language = lang === "全生肉" ? "jp" : "zh";
+    info.Location = tagGroup2[1]?.textContent ?? undefined;
+    const status = tagGroup2[2]?.textContent;
+    if (status === "连载中") {
+      info.Status = "Ongoing";
+    }
+    if (status === "已完结") {
+      info.Status = "End";
+    }
+
+    const summary = document.querySelector("li > div.uk-alert");
+    info.Summary = summary?.textContent ?? undefined;
+
+    const serieInfo: SerieInfo = {
       title: this.configs?.maxTitleLength
         ? title.slice(0, this.configs?.maxTitleLength)
         : title,
       chapters,
+      info,
     };
+    if (options.output) {
+      const xmlString = this.generateComicInfoXMLString(info);
+      const chapterPath = path.join(
+        isString(options.output)
+          ? (options.output as string)
+          : this.destination,
+        options.rename ?? title
+      );
+      if (!fs.existsSync(chapterPath)) {
+        fs.mkdirSync(chapterPath, { recursive: true });
+      }
+      const writePath = path.join(
+        chapterPath,
+        options.filename ?? ComicInfoFilename
+      );
+      await fs.promises.writeFile(writePath, xmlString);
+      this.log(`Written: ${writePath}`);
+    }
+
+    return serieInfo;
   }
 
   private async getImageList(url: string) {
@@ -240,6 +321,19 @@ export default class ZeroBywDownloader {
         );
       }
     }
+
+    if (options.info) {
+      const xmlString = this.generateComicInfoXMLString(options.info);
+      if (archive) {
+        archive.append(xmlString, { name: ComicInfoFilename });
+      } else {
+        await fs.promises.writeFile(
+          path.join(chapterWritePath, ComicInfoFilename),
+          xmlString
+        );
+      }
+    }
+
     archive?.finalize();
     this.log(`Saved Chapter: [${options?.index}] ${name}`);
     const progress = {
@@ -260,10 +354,10 @@ export default class ZeroBywDownloader {
    */
   async downloadSerie(url: string, options: SerieDownloadOptions = {}) {
     this.detectBaseUrl(url);
-    const info = await this.getSerieInfo(url);
+    const serie = await this.getSerieInfo(url);
 
     if (options?.confirm) {
-      let queue = "the entire seire";
+      let queue = "the entire serie";
       if (options.start || options.end) {
         queue = `from ${options.start ?? 0} to ${options.end || "the end"}`;
       }
@@ -271,7 +365,7 @@ export default class ZeroBywDownloader {
         queue = `chapters ${options.chapters?.join(", ")}`;
       }
       const ok = await yesno({
-        question: `Downloading ${info.title} to ${this.destination}, ${queue}, Proceed? (Y/n)`,
+        question: `Downloading ${serie.title} to ${this.destination}, ${queue}, Proceed? (Y/n)`,
         defaultValue: true,
       });
       if (!ok) {
@@ -284,14 +378,15 @@ export default class ZeroBywDownloader {
     const summary: DownloadProgress[] = [];
     const start = options.start ?? 0;
     const end =
-      options.end !== undefined ? options.end + 1 : info.chapters.length;
+      options.end !== undefined ? options.end + 1 : serie.chapters.length;
 
     for (let i = start; i < end; i++) {
-      const chapter = info.chapters[i];
+      const chapter = serie.chapters[i];
       if (!options.chapters || options.chapters?.includes(i)) {
         const progress = await this.downloadChapter(chapter.name, chapter.uri, {
           index: chapter.index,
-          title: options.rename ?? info.title,
+          title: options.rename ?? serie.title,
+          info: options.info ? serie.info : undefined,
           onProgress: options?.onProgress,
         });
         summary.push(progress);
@@ -309,7 +404,8 @@ export default class ZeroBywDownloader {
         for (const chapter of failed) {
           await this.downloadChapter(chapter.name, chapter.uri, {
             index: chapter.index,
-            title: options.rename ?? info.title,
+            title: options.rename ?? serie.title,
+            info: options.info ? serie.info : undefined,
             onProgress: options?.onProgress,
           });
         }

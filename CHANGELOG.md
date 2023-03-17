@@ -1,5 +1,21 @@
 # Changelog
 
+# 1.5.0
+
+`2023-03-18`
+
+### Features
+
+- You can now download or embbed a ComicInfo.xml in chapters
+  - `getSerieInfo` and `list`(CLI) now displays ComicInfo fields
+  - [Library] added `info` (boolean) as an option for serie, you can also pass it to chapter download, but you need to provide the info object
+  - [Library] Added options for list so that you can generate and write ComicInfo.xml
+  - [CLI] added `-i, --info` flag for `dl` to write ComicInfo.xml and for `ls` to display it, use `-o` for `ls` to write the ComicInfo.xml
+
+### Fix
+
+- [CLI] Fixed a bug that would cause folder name to be wrongly set when downloading a single chapter
+
 ## 1.4.1
 
 `2023-03-17`
@@ -12,7 +28,7 @@
   - chapters: Only downloading given list of chapter indexes, for CLI: -c, --chapters 1,2,4,7
 - Better logs when partially downloading serie
 - Improved type consistency
-- Add uri to `DownloadProgress`
+- Added uri to `DownloadProgress`
 
 ## 1.3.0
 

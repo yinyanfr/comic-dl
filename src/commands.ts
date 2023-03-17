@@ -32,20 +32,26 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
 }
 
 export const listCommand: Command = async (name, sub, options = {}) => {
-  const { url, verbose } = options;
+  const { url, verbose, silence, output, name: rename } = options;
   const downloader = buildDownloader(options);
 
   try {
     if (url) {
-      const info = await downloader.getSerieInfo(url);
-      if (info) {
-        console.log(`Title: ${info.title}`);
-        console.log("----");
-        info.chapters?.forEach((e) => {
-          console.log(`${e.index}  ${e.name}`);
-          console.log(`${e.uri}`);
+      const serie = await downloader.getSerieInfo(url, { output, rename });
+      if (serie) {
+        if (!silence) {
+          console.log(`Title: ${serie.title}`);
           console.log("----");
-        });
+          serie.chapters?.forEach((e) => {
+            console.log(`${e.index}  ${e.name}`);
+            console.log(`${e.uri}`);
+            console.log("----");
+          });
+
+          Object.keys(serie.info).forEach((e) => {
+            console.log(`${e}: ${serie.info[e]}`);
+          });
+        }
       } else {
         console.log("Please Provide URL.");
       }
@@ -71,6 +77,7 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
     name: rename,
     retry,
     chapters,
+    info,
   } = options;
   const downloader = buildDownloader(options);
   let current: Partial<DownloadProgress> = {};
@@ -83,6 +90,7 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
         confirm: !yes,
         rename,
         retry,
+        info,
         chapters: chapters
           ? chapters.split(",").map((e) => parseInt(e))
           : undefined,
@@ -118,12 +126,18 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
 };
 
 export const chapterCommand: Command = async (name, sub, options = {}) => {
-  const { url, name: chapterName, verbose } = options;
+  const { url, name: chapterName, verbose, output } = options;
   const downloader = buildDownloader(options);
 
   try {
     if (url) {
-      await downloader.downloadChapter(chapterName ?? "Untitled", url);
+      let serie: SerieInfo | undefined;
+      if (output) {
+        serie = await downloader.getSerieInfo(url);
+      }
+      await downloader.downloadChapter(chapterName ?? "Untitled", url, {
+        info: serie?.info,
+      });
     } else {
       console.log("Please Provide URL.");
     }
@@ -132,7 +146,7 @@ export const chapterCommand: Command = async (name, sub, options = {}) => {
       console.error(error);
     } else {
       console.log(
-        `Failed to download ${name}. (Use -v or --verbose flag for detailed error messages.)`
+        `Failed to download ${chapterName}. (Use -v or --verbose flag for detailed error messages.)`
       );
     }
   }

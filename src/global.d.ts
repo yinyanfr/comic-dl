@@ -16,6 +16,45 @@ interface Chapter {
   uri?: string;
 }
 
+/**
+ * ComicInfo.xml
+ * https://anansi-project.github.io/docs/comicinfo/documentation
+ */
+interface ComicInfo {
+  Serie?: string; // serie title
+  Summary?: string;
+  Writer?: string;
+  Penciller?: string;
+  Language?: string;
+  Genre?: string;
+  Year?: string;
+  Month?: string;
+  Day?: string;
+  Location?: string;
+  Count?: string | number;
+  Tags?: string;
+  Web?: string;
+  Note?: string;
+  Manga?: "YesAndRightToLeft";
+  Status?: "Ongoing" | "End" | "Abandoned" | "Hiatus"; // This one isn't in the schema but it should
+  [Key: string]: any; // and many more
+}
+
+interface SerieInfoOptions {
+  output?: boolean | string;
+  rename?: string;
+  filename?: string;
+}
+
+/**
+ * This is what getSerieInfo returns
+ */
+interface SerieInfo {
+  title: string;
+  chapters: Chapter[];
+  info: ComicInfo;
+}
+
 interface DownloadProgress {
   index?: number;
   name: string;
@@ -31,6 +70,7 @@ interface SerieDownloadOptions {
   retry?: boolean;
   chapters?: number[];
   confirm?: boolean;
+  info?: boolean;
   onProgress?: (progress: DownloadProgress) => void;
 }
 
@@ -43,6 +83,7 @@ interface ImageDownloadOptions {
 interface ChapterDownloadOptions {
   index?: number;
   title?: string;
+  info?: ComicInfo;
   onProgress?: (progress: DownloadProgress) => void;
 }
 
@@ -63,6 +104,7 @@ interface CliOptions {
   zipLevel: number; // zip-level
   retry: boolean;
   chapters: string; // 1,2,4,7
+  info?: boolean;
 }
 
 type Command = (
