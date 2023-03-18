@@ -92,7 +92,7 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
         retry,
         info,
         chapters: chapters
-          ? chapters.split(",").map((e) => parseInt(e))
+          ? `${chapters}`.split(",").map((e) => parseInt(e))
           : undefined,
       });
     } else {

@@ -16,6 +16,16 @@ This library is not for browsers.
 - Downloading progress watch
 - Generates [ComicInfo.xml](https://anansi-project.github.io/docs/comicinfo/intro)
 
+## :framed_picture: Gallery
+
+### List of chapters
+
+![List of chapters](asset/ls.png)
+
+### Downloading
+
+![Downloading](asset/dl.png)
+
 ## :green_book: Quick Start
 
 You need Node.js (LTS or the current version) to run this project.

@@ -1,6 +1,15 @@
 # Changelog
 
-# 1.5.0
+## 1.5.1
+
+`2023-03-18`
+
+### Fix
+
+- [CLI] Fixed the error when using `--chapters` with one single index
+- [Library] Fixed the bug where tags are not added to ComicInfo.xml
+
+## 1.5.0
 
 `2023-03-18`
 
@@ -8,9 +17,9 @@
 
 - You can now download or embbed a ComicInfo.xml in chapters
   - `getSerieInfo` and `list`(CLI) now displays ComicInfo fields
-  - [Library] added `info` (boolean) as an option for serie, you can also pass it to chapter download, but you need to provide the info object
+  - [Library] Added `info` (boolean) as an option for serie, you can also pass it to chapter download, but you need to provide the info object
   - [Library] Added options for list so that you can generate and write ComicInfo.xml
-  - [CLI] added `-i, --info` flag for `dl` to write ComicInfo.xml and for `ls` to display it, use `-o` for `ls` to write the ComicInfo.xml
+  - [CLI] Added `-i, --info` flag for `download` to write ComicInfo.xml and for `list` to display it, use `-o` for `ls` to write the ComicInfo.xml
 
 ### Fix
 

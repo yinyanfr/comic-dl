@@ -121,6 +121,9 @@ export default class ZeroBywDownloader {
         }
       }
     });
+    if (tags.length) {
+      info.Tags = tags.join(",");
+    }
 
     const tagGroup2 = document.querySelectorAll<HTMLSpanElement>(
       Selectors.tags2

@@ -103,7 +103,7 @@ interface CliOptions {
   maxTitleLength: number; // max-title-length
   zipLevel: number; // zip-level
   retry: boolean;
-  chapters: string; // 1,2,4,7
+  chapters: string | number; // 1,2,4,7 as string or a single number
   info?: boolean;
 }
 
