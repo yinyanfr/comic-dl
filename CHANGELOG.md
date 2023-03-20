@@ -1,5 +1,48 @@
 # Changelog
 
+## 2.0.0
+
+`2023-03-20`
+
+**`zerobyw-dl` now becomes `comic-dl`.** Now this library is for generic uses.
+
+### Changes
+
+- [library] The code has been refactored and can now add sites as plugins.
+
+```typescript
+// Before
+import ZeroBywDownloader from "zerobyw-dl";
+const downloader = new ZeroBywDownloader(destination, configs);
+
+// Now
+import { ZeroBywDownloader } from "comic-dl";
+const downloader = new ZeroBywDownloader(destination, configs);
+```
+
+- [Library] Writing ComicInfo.xml to file is removed from `getSerieInfo`, thus a seperate function `writeComicInfo` has taken place, options from `getSerieInfo` is moved to `writeComicinfo`, and the typedef is renamed `WriteInfoOptions`.
+
+```typescript
+// Before
+const serie = await downloader.getSerieInfo("url", { output: true });
+
+// Now
+const serie = await downloader.getSerieInfo("url");
+await writeComicInfo(serie, { output: true });
+```
+
+- [CLI] New flag `-m, --module` is added to specify the module (site) to use, as a matter of which, the short-hand flag to `--max-title-length` is changed to `-M`.
+
+```bash
+# Before
+npx zerobyw-dl dl -c cookie.txt -o ~/Download/zerobyw -a zip -r -i -u serie_url
+
+# Now
+npx comic-dl dl -m zerobyw -c cookie.txt -o ~/Download/zerobyw -a zip -r -i -u serie_url
+```
+
+- [CLI] the `-s, --silence` flag now skips the confirm prompt when downloading series.
+
 ## 1.5.1
 
 `2023-03-18`

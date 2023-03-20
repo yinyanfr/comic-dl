@@ -1,3 +1,8 @@
+/**
+ * MIT License
+ * Copyright (c) 2023 Yan
+ */
+
 interface Configs {
   cookie?: string;
   timeout?: number;
@@ -40,7 +45,7 @@ interface ComicInfo {
   [Key: string]: any; // and many more
 }
 
-interface SerieInfoOptions {
+interface WriteInfoOptions {
   output?: boolean | string;
   rename?: string;
   filename?: string;
@@ -52,7 +57,7 @@ interface SerieInfoOptions {
 interface SerieInfo {
   title: string;
   chapters: Chapter[];
-  info: ComicInfo;
+  info?: ComicInfo;
 }
 
 interface DownloadProgress {
@@ -88,6 +93,7 @@ interface ChapterDownloadOptions {
 }
 
 interface CliOptions {
+  module: string;
   url: string;
   name: string;
   output: string;

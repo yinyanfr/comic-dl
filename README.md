@@ -1,20 +1,26 @@
-# zerobyw-dl
+# comic-dl
 
-[![npm](https://img.shields.io/npm/v/zerobyw-dl.svg)](https://www.npmjs.com/package/zerobyw-dl)
-![license](https://img.shields.io/npm/l/zerobyw-dl.svg)
-![size](https://img.shields.io/github/repo-size/yinyanfr/zerobyw-dl)
+[![npm](https://img.shields.io/npm/v/comic-dl.svg)](https://www.npmjs.com/package/comic-dl)
+![license](https://img.shields.io/npm/l/comic-dl.svg)
+![size](https://img.shields.io/github/repo-size/yinyanfr/comic-dl)
 
-Yet another batch downloader for [zerobyw](https://zerobyw.github.io/).
+As of the version 2, **`zerobyw-dl` now becomes `comic-dl`.** Now this library is for generic uses.
+
+Looking for `zero-byw`? [Check here](https://github.com/yinyanfr/comic-dl/tree/v1).
 
 This library is not for browsers.
 
 ## :star2: Features
 
 - CLI tools
-- Chapter list
+- Supports multiple sites (More on the road).
 - Download as ZIP/CBZ, or just a folder of pictures
 - Downloading progress watch
 - Generates [ComicInfo.xml](https://anansi-project.github.io/docs/comicinfo/intro)
+
+## Site List
+
+- [Zerobyw](https://zerobyw.github.io/)
 
 ## :framed_picture: Gallery
 

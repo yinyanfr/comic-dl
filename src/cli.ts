@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 
+/**
+ * MIT License
+ * Copyright (c) 2023 Yan
+ */
+
 import args from "args";
 import { chapterCommand, downloadCommand, listCommand } from "./commands";
 
@@ -18,6 +23,7 @@ args
     "c",
     "ch",
   ])
+  .option("module", "Specify the module (site) name.")
   .option("url", "The url to the serie or the chapter.")
   .option(
     "name",
@@ -41,7 +47,10 @@ args
   )
   .option("archive", "Optional: Output zip or cbz archive grouped by chapters.")
   .option("timeout", "Optional: Override the default 10s request timeout.")
-  .option("slience", "Optional: Silence the console output.")
+  .option(
+    "slience",
+    "Optional: Silence the console output, including the confirm prompt."
+  )
   .option(
     "batch",
     "Optional: Set the number or images to be downloaded simultaneously, default to 10."
@@ -69,19 +78,19 @@ args
   )
   .option("info", "Optional: Generate ComicInfo.xml.")
   .example(
-    "npx zerobyw-dl dl -c cookie.txt -f 10 -t 20 -o ~/Download/zerobyw -a zip -r -i -u serie_url",
+    "npx comic-dl dl -c cookie.txt -f 10 -t 20 -o ~/Download/manga -a zip -r -i -u serie_url",
     "Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives with ComicInfo.xml by chapter, retry if a chapter is not properly downloaded."
   )
   .example(
-    "npx zerobyw-dl dl -c cookie.txt -o ~/Download/zerobyw -i -u serie_url -c 0,4,12",
+    "npx comic-dl dl -c cookie.txt -o ~/Download/manga -i -u serie_url -c 0,4,12",
     "Download chapter index 0, 4, 12 from a serie"
   )
   .example(
-    "npx zerobyw-dl ls -u serie_url",
+    "npx comic-dl ls -u serie_url",
     "List all chapters of the given serie."
   )
   .example(
-    "npx zerobyw-dl ch -n Chapter1 -u chapter_url -c cookie.txt",
+    "npx comic-dl ch -n Chapter1 -u chapter_url -c cookie.txt",
     "Download a chapter named Chapter1 to current path."
   );
 

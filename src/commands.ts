@@ -1,11 +1,27 @@
 #!/usr/bin/env node
 
+/**
+ * MIT License
+ * Copyright (c) 2023 Yan
+ */
+
 import fs from "node:fs";
 import path from "node:path";
-import ZeroBywDownloader from ".";
+import * as plugins from "./modules";
+
+function findModule(name: string) {
+  const downloaders = Object.values(plugins);
+  for (let j = 0; j < downloaders.length; j++) {
+    const Downloader = downloaders[j];
+    if (Downloader.siteName === name) {
+      return Downloader;
+    }
+  }
+}
 
 function buildDownloader(options: Partial<CliOptions> = {}) {
   const {
+    module,
     output,
     cookie,
     archive,
@@ -16,8 +32,15 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     maxTitleLength,
     zipLevel,
   } = options;
+  if (!module?.length) {
+    throw "Please specify module name, i.e. zerobyw";
+  }
+  const Downloader = findModule(module);
+  if (!Downloader) {
+    throw "This module is not found.";
+  }
 
-  const downloader = new ZeroBywDownloader(output ?? ".", {
+  const downloader = new Downloader(output ?? ".", {
     cookie: cookie && fs.readFileSync(path.resolve(cookie)).toString(),
     timeout,
     silence,
@@ -33,11 +56,11 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
 
 export const listCommand: Command = async (name, sub, options = {}) => {
   const { url, verbose, silence, output, name: rename } = options;
-  const downloader = buildDownloader(options);
 
   try {
     if (url) {
-      const serie = await downloader.getSerieInfo(url, { output, rename });
+      const downloader = buildDownloader(options);
+      const serie = await downloader.getSerieInfo(url);
       if (serie) {
         if (!silence) {
           console.log(`Title: ${serie.title}`);
@@ -48,10 +71,16 @@ export const listCommand: Command = async (name, sub, options = {}) => {
             console.log("----");
           });
 
-          Object.keys(serie.info).forEach((e) => {
-            console.log(`${e}: ${serie.info[e]}`);
-          });
+          if (serie?.info) {
+            Object.keys(serie.info).forEach((e) => {
+              console.log(`${e}: ${serie.info?.[e]}`);
+            });
+          }
         }
+
+        // if(output) {
+        //   await downloader.writeCominInfo(serie, { output, rename })
+        // }
       } else {
         console.log("Please Provide URL.");
       }
@@ -79,11 +108,12 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
     chapters,
     info,
   } = options;
-  const downloader = buildDownloader(options);
+
   let current: Partial<DownloadProgress> = {};
 
   try {
     if (url) {
+      const downloader = buildDownloader(options);
       await downloader.downloadSerie(url, {
         start: from,
         end: to,
@@ -119,7 +149,7 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
       );
     } else {
       console.log(
-        "No chapter is downloaded, please check the availabiliy of zerobyw or your Internet connection."
+        "No chapter is downloaded, please check the availabiliy of the module (site) or your Internet connection."
       );
     }
   }
@@ -127,10 +157,10 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
 
 export const chapterCommand: Command = async (name, sub, options = {}) => {
   const { url, name: chapterName, verbose, output } = options;
-  const downloader = buildDownloader(options);
 
   try {
     if (url) {
+      const downloader = buildDownloader(options);
       let serie: SerieInfo | undefined;
       if (output) {
         serie = await downloader.getSerieInfo(url);
