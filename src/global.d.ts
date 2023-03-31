@@ -1,3 +1,8 @@
+/**
+ * MIT License
+ * Copyright (c) 2023 Yan
+ */
+
 interface Configs {
   cookie?: string;
   timeout?: number;
@@ -8,6 +13,7 @@ interface Configs {
   headers?: Record<string, any>;
   maxTitleLength?: number;
   zipLevel?: number;
+  format?: string;
 }
 
 interface Chapter {
@@ -40,7 +46,7 @@ interface ComicInfo {
   [Key: string]: any; // and many more
 }
 
-interface SerieInfoOptions {
+interface WriteInfoOptions {
   output?: boolean | string;
   rename?: string;
   filename?: string;
@@ -52,14 +58,14 @@ interface SerieInfoOptions {
 interface SerieInfo {
   title: string;
   chapters: Chapter[];
-  info: ComicInfo;
+  info?: ComicInfo;
 }
 
 interface DownloadProgress {
   index?: number;
   name: string;
   uri?: string;
-  status: "completed" | "failed";
+  status: "completed" | "failed" | "skipped";
   failed?: number;
 }
 
@@ -71,6 +77,7 @@ interface SerieDownloadOptions {
   chapters?: number[];
   confirm?: boolean;
   info?: boolean;
+  override?: boolean;
   onProgress?: (progress: DownloadProgress) => void;
 }
 
@@ -84,10 +91,18 @@ interface ChapterDownloadOptions {
   index?: number;
   title?: string;
   info?: ComicInfo;
+  override?: boolean;
   onProgress?: (progress: DownloadProgress) => void;
 }
 
+interface SegmentDownloadOptions {
+  offset?: number;
+  title?: string;
+  archive?: Archiver;
+}
+
 interface CliOptions {
+  module: string;
   url: string;
   name: string;
   output: string;
@@ -104,7 +119,9 @@ interface CliOptions {
   zipLevel: number; // zip-level
   retry: boolean;
   chapters: string | number; // 1,2,4,7 as string or a single number
-  info?: boolean;
+  info: boolean;
+  format: string;
+  override: boolean;
 }
 
 type Command = (

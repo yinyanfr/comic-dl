@@ -1,11 +1,38 @@
 #!/usr/bin/env node
 
+/**
+ * MIT License
+ * Copyright (c) 2023 Yan
+ */
+
 import fs from "node:fs";
 import path from "node:path";
-import ZeroBywDownloader from ".";
+import * as plugins from "./modules";
+
+function detectModule(url?: string) {
+  if (!url) return undefined;
+  const downloaders = Object.values(plugins);
+  for (let j = 0; j < downloaders.length; j++) {
+    const Downloader = downloaders[j];
+    if (Downloader.canHandleUrl(url)) {
+      return Downloader;
+    }
+  }
+}
+
+function findModule(name: string) {
+  const downloaders = Object.values(plugins);
+  for (let j = 0; j < downloaders.length; j++) {
+    const Downloader = downloaders[j];
+    if (Downloader.siteName === name) {
+      return Downloader;
+    }
+  }
+}
 
 function buildDownloader(options: Partial<CliOptions> = {}) {
   const {
+    module,
     output,
     cookie,
     archive,
@@ -15,17 +42,24 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     verbose,
     maxTitleLength,
     zipLevel,
+    url,
+    format,
   } = options;
+  const Downloader = module?.length ? findModule(module) : detectModule(url);
+  if (!Downloader) {
+    throw new Error("Module not found.");
+  }
 
-  const downloader = new ZeroBywDownloader(output ?? ".", {
+  const downloader = new Downloader(output ?? ".", {
     cookie: cookie && fs.readFileSync(path.resolve(cookie)).toString(),
     timeout,
     silence,
-    batchSize: batch,
+    batchSize: batch ?? 1,
     verbose,
     archive,
     maxTitleLength,
     zipLevel,
+    format,
   });
 
   return downloader;
@@ -33,11 +67,11 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
 
 export const listCommand: Command = async (name, sub, options = {}) => {
   const { url, verbose, silence, output, name: rename } = options;
-  const downloader = buildDownloader(options);
 
   try {
     if (url) {
-      const serie = await downloader.getSerieInfo(url, { output, rename });
+      const downloader = buildDownloader(options);
+      const serie = await downloader.getSerieInfo(url);
       if (serie) {
         if (!silence) {
           console.log(`Title: ${serie.title}`);
@@ -48,9 +82,15 @@ export const listCommand: Command = async (name, sub, options = {}) => {
             console.log("----");
           });
 
-          Object.keys(serie.info).forEach((e) => {
-            console.log(`${e}: ${serie.info[e]}`);
-          });
+          if (serie?.info) {
+            Object.keys(serie.info).forEach((e) => {
+              console.log(`${e}: ${serie.info?.[e]}`);
+            });
+          }
+        }
+
+        if (output) {
+          await downloader.writeComicInfo(serie, { output, rename });
         }
       } else {
         console.log("Please Provide URL.");
@@ -78,12 +118,14 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
     retry,
     chapters,
     info,
+    override,
   } = options;
-  const downloader = buildDownloader(options);
+
   let current: Partial<DownloadProgress> = {};
 
   try {
     if (url) {
+      const downloader = buildDownloader(options);
       await downloader.downloadSerie(url, {
         start: from,
         end: to,
@@ -91,9 +133,11 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
         rename,
         retry,
         info,
-        chapters: chapters
-          ? `${chapters}`.split(",").map((e) => parseInt(e))
-          : undefined,
+        override,
+        chapters:
+          chapters !== undefined
+            ? `${chapters}`.split(",").map((e) => parseInt(e))
+            : undefined,
       });
     } else {
       console.log("Please Provide URL.");
@@ -119,24 +163,25 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
       );
     } else {
       console.log(
-        "No chapter is downloaded, please check the availabiliy of zerobyw or your Internet connection."
+        "No chapter is downloaded, please check the availabiliy of the module (site) or your Internet connection."
       );
     }
   }
 };
 
 export const chapterCommand: Command = async (name, sub, options = {}) => {
-  const { url, name: chapterName, verbose, output } = options;
-  const downloader = buildDownloader(options);
+  const { url, name: chapterName, verbose, output, override } = options;
 
   try {
     if (url) {
+      const downloader = buildDownloader(options);
       let serie: SerieInfo | undefined;
       if (output) {
         serie = await downloader.getSerieInfo(url);
       }
       await downloader.downloadChapter(chapterName ?? "Untitled", url, {
         info: serie?.info,
+        override,
       });
     } else {
       console.log("Please Provide URL.");

@@ -1,7 +1,7 @@
 {
-  "name": "zerobyw-dl",
-  "version": "1.5.1",
-  "description": "Yet another batch downloader for zerobyw",
+  "name": "comic-dl",
+  "version": "2.0.0",
+  "description": "Yet another batch downloader for manga/comic sites",
   "main": "dist/index.js",
   "bin": "dist/cli.js",
   "types": "src/global.d.ts",
@@ -13,22 +13,29 @@
   },
   "keywords": [
     "scraper",
-    "zerobyw"
+    "zerobyw",
+    "copymanga",
+    "manga",
+    "comic",
+    "manga-downloader",
+    "comic-downloader"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yinyanfr/zerobyw-dl.git"
+    "url": "git+https://github.com/yinyanfr/comic-dl.git"
   },
   "bugs": {
-    "url": "https://github.com/yinyanfr/zerobyw-dl/issues"
+    "url": "https://github.com/yinyanfr/comic-dl/issues"
   },
-  "homepage": "https://github.com/yinyanfr/zerobyw-dl#readme",
+  "homepage": "https://github.com/yinyanfr/comic-dl#readme",
   "author": "Yan",
   "license": "MIT",
   "devDependencies": {
     "@types/archiver": "^5.3.2",
     "@types/args": "^5.0.0",
+    "@types/crypto-js": "^4.1.1",
     "@types/jsdom": "^21.1.0",
+    "@types/mime-types": "^2.1.1",
     "@types/node": "^18.15.0",
     "typescript": "^4.9.5"
   },
@@ -36,7 +43,10 @@
     "archiver": "^5.3.1",
     "args": "^5.0.3",
     "axios": "^1.3.4",
+    "crypto-js": "^4.1.1",
+    "dayjs": "^1.11.7",
     "jsdom": "^21.1.1",
+    "mime-types": "^2.1.35",
     "yesno": "^0.4.0"
   }
 }
