@@ -1,7 +1,7 @@
 {
   "name": "comic-dl",
-  "version": "2.0.0-alpha",
-  "description": "Yet another batch downloader for manga / comic sites",
+  "version": "2.0.0",
+  "description": "Yet another batch downloader for manga/comic sites",
   "main": "dist/index.js",
   "bin": "dist/cli.js",
   "types": "src/global.d.ts",
@@ -13,7 +13,12 @@
   },
   "keywords": [
     "scraper",
-    "zerobyw"
+    "zerobyw",
+    "copymanga",
+    "manga",
+    "comic",
+    "manga-downloader",
+    "comic-downloader"
   ],
   "repository": {
     "type": "git",

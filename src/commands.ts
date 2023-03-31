@@ -118,6 +118,7 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
     retry,
     chapters,
     info,
+    override,
   } = options;
 
   let current: Partial<DownloadProgress> = {};
@@ -132,6 +133,7 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
         rename,
         retry,
         info,
+        override,
         chapters:
           chapters !== undefined
             ? `${chapters}`.split(",").map((e) => parseInt(e))
@@ -168,7 +170,7 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
 };
 
 export const chapterCommand: Command = async (name, sub, options = {}) => {
-  const { url, name: chapterName, verbose, output } = options;
+  const { url, name: chapterName, verbose, output, override } = options;
 
   try {
     if (url) {
@@ -179,6 +181,7 @@ export const chapterCommand: Command = async (name, sub, options = {}) => {
       }
       await downloader.downloadChapter(chapterName ?? "Untitled", url, {
         info: serie?.info,
+        override,
       });
     } else {
       console.log("Please Provide URL.");

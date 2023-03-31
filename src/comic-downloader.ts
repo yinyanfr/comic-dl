@@ -216,14 +216,33 @@ export default abstract class ComicDownloader {
       ? archiver("zip", { zlib: { level: this.configs?.zipLevel ?? 5 } })
       : undefined;
 
+    const skippedProgress = {
+      index: options?.index,
+      name,
+      status: "skipped" as const,
+      failures: 0,
+    };
     if (this.configs?.archive) {
-      const archiveStream = fs.createWriteStream(
-        path.join(
-          chapterWritePath,
-          `${name}.${this.configs?.archive === "cbz" ? "cbz" : "zip"}`
-        )
+      const archiveWritePath = path.join(
+        chapterWritePath,
+        `${name}.${this.configs?.archive === "cbz" ? "cbz" : "zip"}`
       );
-      archive?.pipe(archiveStream);
+      if (!options.override && fs.existsSync(archiveWritePath)) {
+        this.log(
+          `Skipped: ${options?.index} - ${name} has already been downloaded`
+        );
+        return skippedProgress;
+      } else {
+        const archiveStream = fs.createWriteStream(archiveWritePath);
+        archive?.pipe(archiveStream);
+      }
+    } else {
+      if (!options.override && fs.existsSync(chapterWritePath)) {
+        this.log(
+          `Skipped: ${options?.index} - ${name} has already been downloaded`
+        );
+        return skippedProgress;
+      }
     }
 
     let failures = 0;
@@ -313,6 +332,7 @@ export default abstract class ComicDownloader {
           index: chapter.index,
           title: options.rename ?? serie.title,
           info: options.info ? serie.info : undefined,
+          override: options.override,
           onProgress: options?.onProgress,
         });
         summary.push(progress);

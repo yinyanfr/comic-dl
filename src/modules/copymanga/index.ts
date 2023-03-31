@@ -17,7 +17,6 @@ export default class CopymangaDownloader extends ComicDownloader {
   static siteName = "copymanga";
 
   static canHandleUrl(url: string): boolean {
-    console.log(url);
     return /copymanga/.test(url);
   }
 

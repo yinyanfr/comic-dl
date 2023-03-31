@@ -17,7 +17,7 @@ Now this library is designed to be used with multiple manga / comic sites.
 - [library] The code has been refactored and can now add sites as plugins.
 - [CLI] The `-b, --batch` flag is now default to 1 when not set.
 - Downloaded images are now renamed by index (01 ~ ).
-- Downloaders now ignores downloaded chapters by default, set `configs.override` to `true` or for CLI use `-O, --override` if you want to override.
+- Downloaders now ignores downloaded chapters by default, set `options.override` to `true` or for CLI use `-O, --override` if you want to override.
 
 ```typescript
 // Before

@@ -14,7 +14,6 @@ interface Configs {
   maxTitleLength?: number;
   zipLevel?: number;
   format?: string;
-  override?: boolean;
 }
 
 interface Chapter {
@@ -66,7 +65,7 @@ interface DownloadProgress {
   index?: number;
   name: string;
   uri?: string;
-  status: "completed" | "failed";
+  status: "completed" | "failed" | "skipped";
   failed?: number;
 }
 
@@ -78,6 +77,7 @@ interface SerieDownloadOptions {
   chapters?: number[];
   confirm?: boolean;
   info?: boolean;
+  override?: boolean;
   onProgress?: (progress: DownloadProgress) => void;
 }
 
@@ -91,6 +91,7 @@ interface ChapterDownloadOptions {
   index?: number;
   title?: string;
   info?: ComicInfo;
+  override?: boolean;
   onProgress?: (progress: DownloadProgress) => void;
 }
 
