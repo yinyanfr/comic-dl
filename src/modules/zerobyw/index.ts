@@ -1,5 +1,5 @@
 import { JSDOM } from "jsdom";
-import ComicDownloader from "../comic-downloader";
+import ComicDownloader from "../../comic-downloader";
 
 const Selectors = {
   chapters: ".uk-grid-collapse .muludiv a",
@@ -13,6 +13,17 @@ const Selectors = {
 export default class ZeroBywDownloader extends ComicDownloader {
   static readonly siteName = "zerobyw";
 
+  static canHandleUrl(url: string): boolean {
+    return /zerobyw/.test(url);
+  }
+
+  protected detectBaseUrl(url: string): void {
+    const match = url.match(/^https?:\/\/[^.]+\.[^/]+/);
+    if (match?.[0]) {
+      this.axios.defaults.baseURL = match?.[0];
+    }
+  }
+
   async getSerieInfo(url: string): Promise<SerieInfo> {
     const res = await this.axios.get<string>(url);
     if (!res?.data) throw new Error("Request Failed.");
@@ -25,7 +36,6 @@ export default class ZeroBywDownloader extends ComicDownloader {
       document.querySelector("title")?.textContent?.replace(/[ \s]+/g, "") ??
       "Untitled";
     info.Serie = title;
-    this.log(`Found ${title}.`);
 
     const chapterElements = document.querySelectorAll<HTMLAnchorElement>(
       Selectors.chapters
@@ -40,7 +50,6 @@ export default class ZeroBywDownloader extends ComicDownloader {
       });
     });
     info.Count = chapters.length;
-    this.log(`Chapter Length: ${chapters.length}`);
 
     const tagGroup1 = document.querySelectorAll<HTMLAnchorElement>(
       Selectors.tags1

@@ -13,6 +13,8 @@ interface Configs {
   headers?: Record<string, any>;
   maxTitleLength?: number;
   zipLevel?: number;
+  format?: string;
+  override?: boolean;
 }
 
 interface Chapter {
@@ -92,6 +94,12 @@ interface ChapterDownloadOptions {
   onProgress?: (progress: DownloadProgress) => void;
 }
 
+interface SegmentDownloadOptions {
+  offset?: number;
+  title?: string;
+  archive?: Archiver;
+}
+
 interface CliOptions {
   module: string;
   url: string;
@@ -110,7 +118,9 @@ interface CliOptions {
   zipLevel: number; // zip-level
   retry: boolean;
   chapters: string | number; // 1,2,4,7 as string or a single number
-  info?: boolean;
+  info: boolean;
+  format: string;
+  override: boolean;
 }
 
 type Command = (

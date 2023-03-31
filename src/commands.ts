@@ -9,6 +9,17 @@ import fs from "node:fs";
 import path from "node:path";
 import * as plugins from "./modules";
 
+function detectModule(url?: string) {
+  if (!url) return undefined;
+  const downloaders = Object.values(plugins);
+  for (let j = 0; j < downloaders.length; j++) {
+    const Downloader = downloaders[j];
+    if (Downloader.canHandleUrl(url)) {
+      return Downloader;
+    }
+  }
+}
+
 function findModule(name: string) {
   const downloaders = Object.values(plugins);
   for (let j = 0; j < downloaders.length; j++) {
@@ -31,24 +42,24 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     verbose,
     maxTitleLength,
     zipLevel,
+    url,
+    format,
   } = options;
-  if (!module?.length) {
-    throw "Please specify module name, i.e. zerobyw";
-  }
-  const Downloader = findModule(module);
+  const Downloader = module?.length ? findModule(module) : detectModule(url);
   if (!Downloader) {
-    throw "This module is not found.";
+    throw new Error("Module not found.");
   }
 
   const downloader = new Downloader(output ?? ".", {
     cookie: cookie && fs.readFileSync(path.resolve(cookie)).toString(),
     timeout,
     silence,
-    batchSize: batch,
+    batchSize: batch ?? 1,
     verbose,
     archive,
     maxTitleLength,
     zipLevel,
+    format,
   });
 
   return downloader;
@@ -78,9 +89,9 @@ export const listCommand: Command = async (name, sub, options = {}) => {
           }
         }
 
-        // if(output) {
-        //   await downloader.writeCominInfo(serie, { output, rename })
-        // }
+        if (output) {
+          await downloader.writeComicInfo(serie, { output, rename });
+        }
       } else {
         console.log("Please Provide URL.");
       }
@@ -121,9 +132,10 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
         rename,
         retry,
         info,
-        chapters: chapters
-          ? `${chapters}`.split(",").map((e) => parseInt(e))
-          : undefined,
+        chapters:
+          chapters !== undefined
+            ? `${chapters}`.split(",").map((e) => parseInt(e))
+            : undefined,
       });
     } else {
       console.log("Please Provide URL.");

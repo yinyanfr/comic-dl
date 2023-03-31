@@ -23,7 +23,10 @@ args
     "c",
     "ch",
   ])
-  .option("module", "Specify the module (site) name.")
+  .option(
+    "module",
+    "Optional: Specify the module (site) name. Will attempt to detect module by url if not set."
+  )
   .option("url", "The url to the serie or the chapter.")
   .option(
     "name",
@@ -53,7 +56,7 @@ args
   )
   .option(
     "batch",
-    "Optional: Set the number or images to be downloaded simultaneously, default to 10."
+    "Optional: Set the number or images to be downloaded simultaneously, default to 1."
   )
   .option(
     "verbose",
@@ -77,13 +80,18 @@ args
     "Optional: Only downloading given list of chapters, example: -C 1,2,4,7"
   )
   .option("info", "Optional: Generate ComicInfo.xml.")
+  .option(
+    "format",
+    "Optional: the format of downloaded picture, depending on the modules, example: webp / jpg."
+  )
+  .option("override", "Optional: overrides downloaded chapters.")
   .example(
-    "npx comic-dl dl -c cookie.txt -f 10 -t 20 -o ~/Download/manga -a zip -r -i -u serie_url",
-    "Download a serie from its 10th chapter to 20th chapter to the given destination, output zip archives with ComicInfo.xml by chapter, retry if a chapter is not properly downloaded."
+    "npx comic-dl dl -c cookie.txt -f 10 -t 20 -o ~/Download/manga -a zip -r -i -b 10 -u serie_url",
+    "Download a serie from its 10th chapter to 20th chapter to the given destination, 10 images at a time, output zip archives with ComicInfo.xml by chapter, retry if a chapter is not properly downloaded."
   )
   .example(
-    "npx comic-dl dl -c cookie.txt -o ~/Download/manga -i -u serie_url -c 0,4,12",
-    "Download chapter index 0, 4, 12 from a serie"
+    "npx comic-dl dl -c cookie.txt -o ~/Download/manga -i -O -u serie_url -c 0,4,12",
+    "Download chapter index 0, 4, 12 from a serie, overriding downloaded files."
   )
   .example(
     "npx comic-dl ls -u serie_url",

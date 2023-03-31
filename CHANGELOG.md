@@ -4,11 +4,20 @@
 
 `2023-03-20`
 
-**`zerobyw-dl` now becomes `comic-dl`.** Now this library is for generic uses.
+**`zerobyw-dl` now becomes `comic-dl`.**
+
+Now this library is designed to be used with multiple manga / comic sites.
+
+### Site Support
+
+- Added [Copymanga](https://www.copymanga.site/)
 
 ### Changes
 
 - [library] The code has been refactored and can now add sites as plugins.
+- [CLI] The `-b, --batch` flag is now default to 1 when not set.
+- Downloaded images are now renamed by index (01 ~ ).
+- Downloaders now ignores downloaded chapters by default, set `configs.override` to `true` or for CLI use `-O, --override` if you want to override.
 
 ```typescript
 // Before
@@ -31,17 +40,23 @@ const serie = await downloader.getSerieInfo("url");
 await writeComicInfo(serie, { output: true });
 ```
 
-- [CLI] New flag `-m, --module` is added to specify the module (site) to use, as a matter of which, the short-hand flag to `--max-title-length` is changed to `-M`.
+- [CLI] New flag `-m, --module` is added to specify the module (site) to use, as a matter of which, the short-hand flag to `--max-title-length` is changed to `-M`. If `--module` is not defined, comic-dl will attempt to detect the matching module by url.
 
 ```bash
 # Before
 npx zerobyw-dl dl -c cookie.txt -o ~/Download/zerobyw -a zip -r -i -u serie_url
 
 # Now
-npx comic-dl dl -m zerobyw -c cookie.txt -o ~/Download/zerobyw -a zip -r -i -u serie_url
+npx comic-dl dl -m zerobyw -c cookie.txt -o ~/Download/zerobyw -a zip -r -i -u serie_url -b 10
+# You can skip -m flag unless comic-dl fails to detect the site module
+# Batch download is now default to 1, set it manually for download speed
 ```
 
 - [CLI] the `-s, --silence` flag now skips the confirm prompt when downloading series.
+
+### Fix
+
+- [CLI] Fixed an error that causes the downloader to download the entire serie when `-C, --chapters` is set to `0`.
 
 ## 1.5.1
 

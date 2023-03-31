@@ -9,14 +9,18 @@ import fs from "node:fs";
 import path from "node:path";
 import type { ReadStream } from "node:fs";
 import archiver from "archiver";
-import type { Archiver } from "archiver";
 import yesno from "yesno";
-import { isString } from "./lib";
+import { formatImageName, isString } from "./lib";
+import mime from "mime-types";
 
 const ComicInfoFilename = "ComicInfo.xml";
 
 export default abstract class ComicDownloader {
   static readonly siteName: string;
+
+  static canHandleUrl(url: string): boolean {
+    return false;
+  }
 
   protected axios: AxiosInstance;
 
@@ -71,12 +75,7 @@ export default abstract class ComicDownloader {
     return `${identifier}\n${open}\n${content}\n${close}\n`;
   }
 
-  protected detectBaseUrl(url: string) {
-    const match = url.match(/^https?:\/\/[^.]+\.[^/]+/);
-    if (match?.[0]) {
-      this.axios.defaults.baseURL = match?.[0];
-    }
-  }
+  protected detectBaseUrl(url: string): void {}
 
   setConfig(key: keyof typeof this.configs, value: any) {
     this.configs[key] = value;
@@ -87,7 +86,7 @@ export default abstract class ComicDownloader {
     this.configs = { ...this.configs, ...configs };
   }
 
-  protected async writeComicInfo(serie: SerieInfo, options: WriteInfoOptions) {
+  async writeComicInfo(serie: SerieInfo, options: WriteInfoOptions) {
     if (serie.info) {
       const xmlString = this.generateComicInfoXMLString(serie.info);
       const chapterPath = path.join(
@@ -119,8 +118,11 @@ export default abstract class ComicDownloader {
     if (!res?.data) {
       throw new Error("Image Request Failed");
     }
+    const ext = mime.extension(res.headers["content-type"]);
     const filenameMatch = imageUri.match(/[^./]+\.[^.]+$/);
-    const filename = options?.imageName ?? filenameMatch?.[0];
+    const filename = options?.imageName
+      ? `${options.imageName}.${ext ?? "jpg"}`
+      : filenameMatch?.[0];
 
     if (filename) {
       if (options?.archive) {
@@ -153,11 +155,16 @@ export default abstract class ComicDownloader {
   protected async downloadSegment(
     name: string,
     segment: (string | null)[],
-    title?: string,
-    archive?: Archiver
+    options: SegmentDownloadOptions = {}
   ) {
-    const reqs = segment.map((e) =>
-      e ? this.downloadImage(name, e, { title, archive }) : Promise.reject()
+    const reqs = segment.map((e, i) =>
+      e
+        ? this.downloadImage(name, e, {
+            title: options.title,
+            archive: options.archive,
+            imageName: formatImageName((options.offset ?? 0) + i + 1),
+          })
+        : Promise.reject()
     );
     const res = await Promise.allSettled(reqs);
     return res.filter((e) => e.status === "rejected");
@@ -225,8 +232,11 @@ export default abstract class ComicDownloader {
       const failed = await this.downloadSegment(
         name,
         imgList.slice(i, Math.min(i + step, imgList.length)),
-        options?.title,
-        archive
+        {
+          offset: i,
+          title: options?.title,
+          archive,
+        }
       );
       if (failed?.length) {
         failures += failed.length;
@@ -269,6 +279,8 @@ export default abstract class ComicDownloader {
   async downloadSerie(url: string, options: SerieDownloadOptions = {}) {
     this.detectBaseUrl(url);
     const serie = await this.getSerieInfo(url);
+    this.log(`Found ${serie.title}`);
+    this.log(`Chapters Count: ${serie.chapters?.length}`);
 
     if (options?.confirm || !this.configs.silence) {
       let queue = "the entire serie";
