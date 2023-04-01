@@ -6,7 +6,12 @@
  */
 
 import args from "args";
-import { chapterCommand, downloadCommand, listCommand } from "./commands";
+import {
+  chapterCommand,
+  downloadCommand,
+  genCommand,
+  listCommand,
+} from "./commands";
 
 args
   .command("list", "List all chapters of a manga serie.", listCommand, [
@@ -22,6 +27,10 @@ args
   .command("chapter", "Download images from one chapter.", chapterCommand, [
     "c",
     "ch",
+  ])
+  .command("generate", "Generate template for your module.", genCommand, [
+    "g",
+    "gen",
   ])
   .option(
     "module",
@@ -85,6 +94,8 @@ args
     "Optional: the format of downloaded picture, depending on the modules, example: webp / jpg."
   )
   .option("override", "Optional: overrides downloaded chapters.")
+  .option("presets", "Optional: loading a JSON file of site presets.")
+  .option("auth", "Optional: A string that contains token or cookie.")
   .example(
     "npx comic-dl dl -c cookie.txt -f 10 -t 20 -o ~/Download/manga -a zip -r -i -b 10 -u serie_url",
     "Download a serie from its 10th chapter to 20th chapter to the given destination, 10 images at a time, output zip archives with ComicInfo.xml by chapter, retry if a chapter is not properly downloaded."
@@ -100,6 +111,7 @@ args
   .example(
     "npx comic-dl ch -n Chapter1 -u chapter_url -c cookie.txt",
     "Download a chapter named Chapter1 to current path."
-  );
+  )
+  .example("npx . gen -n mySite", "Generate a new module named mySite.");
 
 args.parse(process.argv);

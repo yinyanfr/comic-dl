@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "Yet another batch downloader for manga/comic sites",
   "main": "dist/index.js",
-  "bin": "dist/cli.js",
+  "bin": "dist/cli/index.js",
   "types": "src/global.d.ts",
   "scripts": {
     "tsc": "tsc",
@@ -13,12 +13,13 @@
   },
   "keywords": [
     "scraper",
-    "zerobyw",
-    "copymanga",
     "manga",
     "comic",
+    "downloader",
     "manga-downloader",
-    "comic-downloader"
+    "comic-downloader",
+    "zerobyw",
+    "copymanga"
   ],
   "repository": {
     "type": "git",

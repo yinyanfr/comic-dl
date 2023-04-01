@@ -6,7 +6,7 @@
 
 As of the version 2, **`zerobyw-dl` now becomes `comic-dl`.** Now this library is for generic uses.
 
-Looking for `zero-byw`? [Check here](https://github.com/yinyanfr/comic-dl/tree/v1).
+Looking for `zerobyw-dl`? [Check here](https://github.com/yinyanfr/comic-dl/tree/v1).
 
 This library is not for browsers.
 
@@ -18,7 +18,7 @@ This library is not for browsers.
 - Downloading progress watch
 - Generates [ComicInfo.xml](https://anansi-project.github.io/docs/comicinfo/intro)
 
-## Site List
+## :rainbow: Site List
 
 - [Zerobyw](https://zerobyw.github.io/)
 - [Copymanga](https://www.copymanga.site/)
@@ -40,10 +40,10 @@ This library is not for browsers.
 You need Node.js (LTS or the current version) to run this project.
 
 ```bash
-npm i zerobyw-dl
+npm i comic-dl
 # or
 # CLI
-npx zerobyw-dl help
+npx comic-dl help
 ```
 
 ### Nightly
@@ -60,17 +60,19 @@ npx . help
 ## :wrench: Cli
 
 ```
-Usage: comic-dl [options] [command]
+Usage: comic dl [options] [command]
 
 Commands:
-  chapter, c, ch   Download images from one chapter.
-  download, d, dl  Download chapters from a manga serie.
-  help             Display help
-  list, l, ls      List all chapters of a manga serie.
-  version          Display version
+  chapter, c, ch    Download images from one chapter.
+  download, d, dl   Download chapters from a manga serie.
+  generate, g, gen  Generate template for your module.
+  help              Display help
+  list, l, ls       List all chapters of a manga serie.
+  version           Display version
 
 Options:
   -a, --archive           Optional: Output zip or cbz archive grouped by chapters.
+  -A, --auth              Optional: A string that contains token or cookie.
   -b, --batch             Optional: Set the number or images to be downloaded simultaneously, default to 1.
   -C, --chapters          Optional: Only downloading given list of chapters, example: -C 1,2,4,7
   -c, --cookie            Optional (but recommanded): Provide the path to a text file that contains your cookie.
@@ -83,6 +85,7 @@ Options:
   -n, --name              Optional: Proride the serie title and override the folder name.
   -o, --output            Optional: The path where downloaded files are saved (default to .), setting this flag when using list will save a ComicInfo.xml to the path.
   -O, --override          Optional: overrides downloaded chapters.
+  -p, --presets           Optional: loading a JSON file of site presets.
   -r, --retry             Optional: Automatically re-download chapters with failed images.
   -s, --slience           Optional: Silence the console output, including the confirm prompt.
   -T, --timeout           Optional: Override the default 10s request timeout.
@@ -105,6 +108,9 @@ Examples:
 
   - Download a chapter named Chapter1 to current path.
   $ npx comic-dl ch -n Chapter1 -u chapter_url -c cookie.txt
+
+  - Generate a new module named mySite.
+  $ npx . gen -n mySite
 ```
 
 ## :book: Library
@@ -226,7 +232,14 @@ await downloader.downloadChapter(
 downloader.setConfig("archive", "cbz");
 // merge configs
 downloader.setConfigs({ archive: "cbz" }); // Will merge
+
+// get and set baseUrl
+downloader.baseUrl = "your_url";
 ```
+
+## Development Guide
+
+Dev Guide can be found [here](docs/README.md)
 
 ## :information_source: Information
 

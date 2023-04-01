@@ -34,6 +34,14 @@ export default abstract class ComicDownloader {
     });
   }
 
+  get baseUrl() {
+    return this.axios.defaults.baseURL;
+  }
+
+  set baseUrl(url: string | undefined) {
+    this.axios.defaults.baseURL = url;
+  }
+
   /**
    * -------------------------------------------------
    * For children

@@ -1,5 +1,10 @@
 /// <reference path="./index.d.ts" />
 
+/**
+ * MIT License
+ * Copyright (c) 2023 Yan
+ */
+
 import dayjs from "dayjs";
 import ComicDownloader from "../../comic-downloader";
 
@@ -14,7 +19,7 @@ const API_HEADERS = {
 const API_URL = "https://api.copymanga.org/";
 
 export default class CopymangaDownloader extends ComicDownloader {
-  static siteName = "copymanga";
+  static readonly siteName = "copymanga";
 
   static canHandleUrl(url: string): boolean {
     return /copymanga/.test(url);

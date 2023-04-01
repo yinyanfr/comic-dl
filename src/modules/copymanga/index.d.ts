@@ -1,3 +1,8 @@
+/**
+ * MIT License
+ * Copyright (c) 2023 Yan
+ */
+
 declare namespace CopymangaAPI {
   declare namespace Serie {
     export interface Data {

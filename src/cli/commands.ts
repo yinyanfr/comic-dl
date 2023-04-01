@@ -7,7 +7,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import * as plugins from "./modules";
+import * as plugins from "../modules";
+import { exportDefault, indexDts, indexTs } from "./templates";
 
 function detectModule(url?: string) {
   if (!url) return undefined;
@@ -195,4 +196,37 @@ export const chapterCommand: Command = async (name, sub, options = {}) => {
       );
     }
   }
+};
+
+export const genCommand: Command = async (_, sub, options = {}) => {
+  const { name } = options;
+  if (!name) {
+    throw new Error("Please provide module name with -n flag.");
+  }
+  // This will be running from dist/
+  const modulePath = path.join(__dirname, "..", "..", "src", "modules", name);
+  const exportPath = path.join(
+    __dirname,
+    "..",
+    "..",
+    "src",
+    "modules",
+    "index.ts"
+  );
+  await fs.promises.mkdir(modulePath);
+  await fs.promises.writeFile(
+    path.join(modulePath, "index.d.ts"),
+    indexDts(name)
+  );
+  await fs.promises.writeFile(path.join(modulePath, "index.ts"), indexTs(name));
+
+  const exportDefaultReader = await fs.promises.readFile(exportPath);
+  const defaults = exportDefaultReader
+    .toString()
+    .split("\n")
+    .filter((e) => e.length);
+  defaults.push(exportDefault(name));
+  await fs.promises.writeFile(exportPath, `${defaults.join("\n")}\n`);
+
+  console.log(`Module ${name} is created at ${modulePath}`);
 };
