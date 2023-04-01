@@ -10,6 +10,8 @@
 
 Ganma is a non-pirate site where contents are behind the paywall, you need a subscription purchased via Google Play Store and App Store and link it to your Ganma account, then log in to the website, open the Network inspector (F12 for mainstream browsers) and get your cookie from the request header.
 
+Ganma provides official Japanese manga series.
+
 ### Feature
 
 - [Library] Added getter and setter for `baseUrl`
@@ -46,6 +48,10 @@ Ganma is a non-pirate site where contents are behind the paywall, you need a sub
 ]
 ```
 
+```bash
+npx comic-dl -p presets.json -u serie_url
+```
+
 - [CLI] New `generate, g, gen` command for generating a new module.
 
 ```bash
@@ -54,9 +60,17 @@ Ganma is a non-pirate site where contents are behind the paywall, you need a sub
 npx . gen -n ganma
 ```
 
+### Docs
+
+- Added docs of
+  - [User] Site introductions
+  - [User] Using presets
+  - [Dev] Creating a new module
+
 ### Misc
 
 - [CLI] CLI source codes are moved to `src/cli`, where `cli.ts` is renamed to `index.ts`
+- Added eslint and prettier
 
 ## 2.0.0
 
@@ -76,11 +90,11 @@ Now this library is designed to be used with multiple manga / comic sites.
 
 ```typescript
 // Before
-import ZeroBywDownloader from "zerobyw-dl";
+import ZeroBywDownloader from 'zerobyw-dl';
 const downloader = new ZeroBywDownloader(destination, configs);
 
 // Now
-import { ZeroBywDownloader } from "comic-dl";
+import { ZeroBywDownloader } from 'comic-dl';
 const downloader = new ZeroBywDownloader(destination, configs);
 ```
 
@@ -91,10 +105,10 @@ const downloader = new ZeroBywDownloader(destination, configs);
 
 ```typescript
 // Before
-const serie = await downloader.getSerieInfo("url", { output: true });
+const serie = await downloader.getSerieInfo('url', { output: true });
 
 // Now
-const serie = await downloader.getSerieInfo("url");
+const serie = await downloader.getSerieInfo('url');
 await writeComicInfo(serie, { output: true });
 ```
 
@@ -192,9 +206,9 @@ npx comic-dl dl -m zerobyw -c cookie.txt -o ~/Download/zerobyw -a zip -r -i -u s
 
 ```typescript
 // change one config
-downloader.setConfig("archive", "cbz");
+downloader.setConfig('archive', 'cbz');
 // merge configs
-downloader.setConfigs({ archive: "cbz" }); // Will merge
+downloader.setConfigs({ archive: 'cbz' }); // Will merge
 ```
 
 - show chapter index in chapter progress

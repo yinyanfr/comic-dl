@@ -4,7 +4,7 @@
 ![license](https://img.shields.io/npm/l/comic-dl.svg)
 ![size](https://img.shields.io/github/repo-size/yinyanfr/comic-dl)
 
-As of the version 2, **`zerobyw-dl` now becomes `comic-dl`.** Now this library is for generic uses.
+As of the version 2, **`zerobyw-dl` has become `comic-dl`.** Now this library is for generic uses.
 
 Looking for `zerobyw-dl`? [Check here](https://github.com/yinyanfr/comic-dl/tree/v1).
 
@@ -18,7 +18,7 @@ This library is not for browsers.
 - Downloading progress watch
 - Generates [ComicInfo.xml](https://anansi-project.github.io/docs/comicinfo/intro)
 
-## :rainbow: Site List
+## :rainbow: [Site List](docs/user/sites.md)
 
 - [Zerobyw](https://zerobyw.github.io/)
 - [Copymanga](https://www.copymanga.site/)
@@ -113,20 +113,22 @@ Examples:
   $ npx . gen -n mySite
 ```
 
+You can now use presets to reduce the number of flags, [check here](docs/user/presets.md) for details.
+
 ## :book: Library
 
 ### Initializing downloader
 
 ```typescript
-import ZeroBywDownloader from "zerobyw-dl";
+import ZeroBywDownloader from 'zerobyw-dl';
 
 // Path for downloaded files
-const destination = "~/Download/zerobyw";
+const destination = '~/Download/zerobyw';
 // Configs
 const configs = {
   // Get your cookie from the network inspector of your browser
   // Optional but highly recommanded, as ZeroByw partially blocks content for non-paid users
-  cookie: "your_cookie",
+  cookie: 'your_cookie',
   // Request timeout in ms (Optional: default to 10 seconds)
   timeout: 10000,
   // Silencing console output (Optional)
@@ -136,7 +138,7 @@ const configs = {
   // Display detailed error message, will override silence (Optional)
   verbose: false,
   // Output zip or cbz archives grouped by chapters (Optional)
-  archive: "zip",
+  archive: 'zip',
   // Additional headers for HTTP Requests (Using axios under the hood) (Optional)
   headers: {},
   // Restrict the length of title's length, in case your file system has such limitation (Optional: default to undefined)
@@ -144,7 +146,7 @@ const configs = {
   // Zip level for archives (Optional: default to 5)
   zipLevel: 5,
   // Format of downloaded image, (Optional: depending on the modules, normally default to webp or jpg)
-  format: "webp",
+  format: 'webp',
 }; // Optional
 
 const downloader = new ZeroBywDownloader(destination, configs);
@@ -154,13 +156,13 @@ const downloader = new ZeroBywDownloader(destination, configs);
 
 ```typescript
 const options = {
-  output: "output_path", // Optional: Set this to write a ComicInfo.xml to the path, use true to output to the inherited destination folder
+  output: 'output_path', // Optional: Set this to write a ComicInfo.xml to the path, use true to output to the inherited destination folder
   // By default, the file is downloaded to destination/serie_title/ComicInfo.xml
-  rename: "serie_title", // Optional: Override the serie title folder name
-  filename: "ComicInfo.xml", // Optional: Overrides the default file name
+  rename: 'serie_title', // Optional: Override the serie title folder name
+  filename: 'ComicInfo.xml', // Optional: Overrides the default file name
 };
 
-const info = await downloader.getSerieInfo("serie_url");
+const info = await downloader.getSerieInfo('serie_url');
 // info
 // {
 //   title: "Serie Title",
@@ -185,7 +187,7 @@ const options = {
   info: true, // Optional: Generates ComicInfo.xml, default to **false**
   chapters: undefined, // Optional: Array of chapter indexes to download, will download the entire serie if not provided
   override: false, // Optional: Overriding downloaded chapters, default to false
-  onProgress: (progress) => {
+  onProgress: progress => {
     console.log(progress);
   }, // Optional: Called when a chapter is downloaded or failed to do so
 }; // Optional
@@ -201,10 +203,10 @@ const options = {
 // }
 
 // Download all chapters from a serie
-await downloader.downloadSerie("serie_url");
+await downloader.downloadSerie('serie_url');
 
 // Download from the 10th to the 20th chapter (11 chapters in total)
-await downloader.downloadSerie("serie_url", options);
+await downloader.downloadSerie('serie_url', options);
 ```
 
 ### :bookmark: Downloading a chapter
@@ -212,16 +214,16 @@ await downloader.downloadSerie("serie_url", options);
 ```typescript
 const options = {
   index: 0, // chapter index
-  title: "Serie Title",
+  title: 'Serie Title',
   info: ComicInfo, // Optional: Generates ComicInfo.xml, please refer to ComicInfo's Documentations
   override: false, // Optional: Overriding downloaded chapters, default to false
-  onProgress: (progress) => {}, // Optional: Called when a chapter is downloaded or failed to do so, the same as in serie options
+  onProgress: progress => {}, // Optional: Called when a chapter is downloaded or failed to do so, the same as in serie options
 }; // Optional
 
 await downloader.downloadChapter(
-  "Chapter Name",
-  "chapter_url_with_base",
-  options
+  'Chapter Name',
+  'chapter_url_with_base',
+  options,
 );
 ```
 
@@ -229,12 +231,12 @@ await downloader.downloadChapter(
 
 ```typescript
 // change one config
-downloader.setConfig("archive", "cbz");
+downloader.setConfig('archive', 'cbz');
 // merge configs
-downloader.setConfigs({ archive: "cbz" }); // Will merge
+downloader.setConfigs({ archive: 'cbz' }); // Will merge
 
 // get and set baseUrl
-downloader.baseUrl = "your_url";
+downloader.baseUrl = 'your_url';
 ```
 
 ## Development Guide
