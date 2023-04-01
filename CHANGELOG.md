@@ -8,7 +8,7 @@
 
 - Added [Ganma](https://ganma.jp/)
 
-Ganma is a non-pirate site where contents are behind the paywall, you need a subscription purchased via Google Play Store and App Store and link it to your Ganma account, then log in on the website, open the Network inspector (F12 for mainstream browsers) and get your cookie from the request header.
+Ganma is a non-pirate site where contents are behind the paywall, you need a subscription purchased via Google Play Store and App Store and link it to your Ganma account, then log in to the website, open the Network inspector (F12 for mainstream browsers) and get your cookie from the request header.
 
 ### Feature
 

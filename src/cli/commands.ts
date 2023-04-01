@@ -5,10 +5,10 @@
  * Copyright (c) 2023 Yan
  */
 
-import fs from "node:fs";
-import path from "node:path";
-import * as plugins from "../modules";
-import { exportDefault, indexDts, indexTs } from "./templates";
+import fs from 'node:fs';
+import path from 'node:path';
+import * as plugins from '../modules';
+import { exportDefault, indexDts, indexTs } from './templates';
 
 function detectModule(url?: string) {
   if (!url) return undefined;
@@ -48,10 +48,10 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
   } = options;
   const Downloader = module?.length ? findModule(module) : detectModule(url);
   if (!Downloader) {
-    throw new Error("Module not found.");
+    throw new Error('Module not found.');
   }
 
-  const downloader = new Downloader(output ?? ".", {
+  const downloader = new Downloader(output ?? '.', {
     cookie: cookie && fs.readFileSync(path.resolve(cookie)).toString(),
     timeout,
     silence,
@@ -76,15 +76,15 @@ export const listCommand: Command = async (name, sub, options = {}) => {
       if (serie) {
         if (!silence) {
           console.log(`Title: ${serie.title}`);
-          console.log("----");
-          serie.chapters?.forEach((e) => {
+          console.log('----');
+          serie.chapters?.forEach(e => {
             console.log(`${e.index}  ${e.name}`);
             console.log(`${e.uri}`);
-            console.log("----");
+            console.log('----');
           });
 
           if (serie?.info) {
-            Object.keys(serie.info).forEach((e) => {
+            Object.keys(serie.info).forEach(e => {
               console.log(`${e}: ${serie.info?.[e]}`);
             });
           }
@@ -94,7 +94,7 @@ export const listCommand: Command = async (name, sub, options = {}) => {
           await downloader.writeComicInfo(serie, { output, rename });
         }
       } else {
-        console.log("Please Provide URL.");
+        console.log('Please Provide URL.');
       }
     }
   } catch (error) {
@@ -102,7 +102,7 @@ export const listCommand: Command = async (name, sub, options = {}) => {
       console.error(error);
     } else {
       console.log(
-        "Failed to get serie info. (Use -v or --verbose flag for detailed error messages.)"
+        'Failed to get serie info. (Use -v or --verbose flag for detailed error messages.)',
       );
     }
   }
@@ -122,7 +122,7 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
     override,
   } = options;
 
-  let current: Partial<DownloadProgress> = {};
+  const current: Partial<DownloadProgress> = {};
 
   try {
     if (url) {
@@ -137,34 +137,34 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
         override,
         chapters:
           chapters !== undefined
-            ? `${chapters}`.split(",").map((e) => parseInt(e))
+            ? `${chapters}`.split(',').map(e => parseInt(e))
             : undefined,
       });
     } else {
-      console.log("Please Provide URL.");
+      console.log('Please Provide URL.');
     }
   } catch (error) {
     if (verbose) {
       console.error(error);
     } else {
       console.log(
-        "Download Failed. (Use -v or --verbose flag for detailed error messages.)"
+        'Download Failed. (Use -v or --verbose flag for detailed error messages.)',
       );
     }
 
     if (current.index) {
       console.log(`Latest download: [${current.index}] ${current.name}.`);
       console.log(
-        `Status: ${current.status}, Pages not downloaded: ${current.failed}.`
+        `Status: ${current.status}, Pages not downloaded: ${current.failed}.`,
       );
       console.log(
         `Retry from the next chapter: Use -f ${
-          current.status === "completed" ? current.index + 1 : current.index
-        } ${to ? `-t ${to}` : ""}`
+          current.status === 'completed' ? current.index + 1 : current.index
+        } ${to ? `-t ${to}` : ''}`,
       );
     } else {
       console.log(
-        "No chapter is downloaded, please check the availabiliy of the module (site) or your Internet connection."
+        'No chapter is downloaded, please check the availabiliy of the module (site) or your Internet connection.',
       );
     }
   }
@@ -180,19 +180,19 @@ export const chapterCommand: Command = async (name, sub, options = {}) => {
       if (output) {
         serie = await downloader.getSerieInfo(url);
       }
-      await downloader.downloadChapter(chapterName ?? "Untitled", url, {
+      await downloader.downloadChapter(chapterName ?? 'Untitled', url, {
         info: serie?.info,
         override,
       });
     } else {
-      console.log("Please Provide URL.");
+      console.log('Please Provide URL.');
     }
   } catch (error) {
     if (verbose) {
       console.error(error);
     } else {
       console.log(
-        `Failed to download ${chapterName}. (Use -v or --verbose flag for detailed error messages.)`
+        `Failed to download ${chapterName}. (Use -v or --verbose flag for detailed error messages.)`,
       );
     }
   }
@@ -201,32 +201,32 @@ export const chapterCommand: Command = async (name, sub, options = {}) => {
 export const genCommand: Command = async (_, sub, options = {}) => {
   const { name } = options;
   if (!name) {
-    throw new Error("Please provide module name with -n flag.");
+    throw new Error('Please provide module name with -n flag.');
   }
   // This will be running from dist/
-  const modulePath = path.join(__dirname, "..", "..", "src", "modules", name);
+  const modulePath = path.join(__dirname, '..', '..', 'src', 'modules', name);
   const exportPath = path.join(
     __dirname,
-    "..",
-    "..",
-    "src",
-    "modules",
-    "index.ts"
+    '..',
+    '..',
+    'src',
+    'modules',
+    'index.ts',
   );
   await fs.promises.mkdir(modulePath);
   await fs.promises.writeFile(
-    path.join(modulePath, "index.d.ts"),
-    indexDts(name)
+    path.join(modulePath, 'index.d.ts'),
+    indexDts(name),
   );
-  await fs.promises.writeFile(path.join(modulePath, "index.ts"), indexTs(name));
+  await fs.promises.writeFile(path.join(modulePath, 'index.ts'), indexTs(name));
 
   const exportDefaultReader = await fs.promises.readFile(exportPath);
   const defaults = exportDefaultReader
     .toString()
-    .split("\n")
-    .filter((e) => e.length);
+    .split('\n')
+    .filter(e => e.length);
   defaults.push(exportDefault(name));
-  await fs.promises.writeFile(exportPath, `${defaults.join("\n")}\n`);
+  await fs.promises.writeFile(exportPath, `${defaults.join('\n')}\n`);
 
   console.log(`Module ${name} is created at ${modulePath}`);
 };
