@@ -116,6 +116,7 @@ args
     'npx comic-dl ch -n Chapter1 -u chapter_url -c cookie.txt',
     'Download a chapter named Chapter1 to current path.',
   )
-  .example('npx . gen -n mySite', 'Generate a new module named mySite.');
+  .example('npx . gen --module mySite', 'Generate a new module named mySite.')
+  .example('npx . gen --presets > presets.json', 'Generate a presets json.');
 
 args.parse(process.argv);

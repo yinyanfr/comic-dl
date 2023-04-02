@@ -35,6 +35,9 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
   if (!Downloader) {
     throw new Error('Module not found.');
   }
+  if (!silence || verbose) {
+    console.log(`Using ${Downloader.siteName}.`);
+  }
 
   const downloader = new Downloader(output, {
     cookie: cookie ? fs.readFileSync(path.resolve(cookie)).toString() : auth,

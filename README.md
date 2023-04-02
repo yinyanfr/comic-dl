@@ -1,14 +1,17 @@
 # comic-dl
 
-[![npm](https://img.shields.io/npm/v/comic-dl.svg)](https://www.npmjs.com/package/comic-dl)
-![license](https://img.shields.io/npm/l/comic-dl.svg)
-![size](https://img.shields.io/github/repo-size/yinyanfr/comic-dl)
+[![npm](https://img.shields.io/npm/v/comic-dl.svg?style=flat-square)](https://www.npmjs.com/package/comic-dl)
+![license](https://img.shields.io/npm/l/comic-dl.svg?style=flat-square)
+![size](https://img.shields.io/github/repo-size/yinyanfr/comic-dl?style=flat-square)
+[![GitHub release](https://img.shields.io/github/release/yinyanfr/comic-dl.svg?style=flat-square)](https://github.com/yinyanfr/comic-dl/releases/latest)
 
 As of the version 2, **`zerobyw-dl` has become `comic-dl`.** Now this library is for generic uses.
 
 Looking for `zerobyw-dl`? [Check here](https://github.com/yinyanfr/comic-dl/tree/v1).
 
 This library is not for browsers.
+
+Please help me translate the documents, thanks.
 
 ## :star2: Features
 
@@ -114,7 +117,10 @@ Examples:
   $ npx comic-dl ch -n Chapter1 -u chapter_url -c cookie.txt
 
   - Generate a new module named mySite.
-  $ npx . gen -n mySite
+  $ npx . gen --module mySite
+
+  - Generate a presets json.
+  $ npx . gen --presets > presets.json
 ```
 
 You can now use presets to reduce the number of flags, [check here](docs/user/presets.md) for details.

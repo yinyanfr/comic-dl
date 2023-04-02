@@ -2,7 +2,7 @@
 
 ## 2.1.0
 
-`2023-04-01`
+`2023-04-02`
 
 ### Site Support
 
@@ -67,6 +67,12 @@ npx . gen --module ganma
 npx comic-dl gen --presets > presets.json
 ```
 
+### Fix
+
+- Fixed multiple bugs when downloading as images
+  - Incorrect chapter names
+  - Wrongly determination of existing chapters
+
 ### Docs
 
 - Added docs of
@@ -78,6 +84,7 @@ npx comic-dl gen --presets > presets.json
 
 - Added `options` to `Chapter` type, which is the returning value of `getSerieInfo` and gets passed to `getImageList`
 - `getImageList` now accepts a 2nd parameter `options` which is passed from the returning value of `getSerieInfo`
+- Added `static preferredCLIPresets` function to `ComicDownloader` that returns the CLIOptions to be written when `gen --presets`
 
 ```typescript
 class MySiteDownloader extends ComicDownloader {

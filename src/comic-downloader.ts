@@ -147,7 +147,7 @@ export default abstract class ComicDownloader {
       } else {
         const writePath = path.join(
           this.destination,
-          options?.title ? 'Untitled' : '.',
+          options?.title ? options.title : '.',
           chapterName,
           filename,
         );
@@ -224,7 +224,6 @@ export default abstract class ComicDownloader {
     const chapterWritePath = path.join(
       this.destination,
       options?.title ? options.title : '.',
-      this.configs?.archive ? '.' : name,
     );
     if (!fs.existsSync(chapterWritePath)) {
       fs.mkdirSync(chapterWritePath, { recursive: true });
@@ -256,11 +255,16 @@ export default abstract class ComicDownloader {
         archive?.pipe(archiveStream);
       }
     } else {
-      if (!options.override && fs.existsSync(chapterWritePath)) {
+      if (
+        !options.override &&
+        fs.existsSync(path.join(chapterWritePath, name))
+      ) {
         this.log(
           `Skipped: ${options?.index} - ${name} has already been downloaded`,
         );
         return skippedProgress;
+      } else {
+        fs.mkdirSync(path.join(chapterWritePath, name));
       }
     }
 
@@ -290,7 +294,7 @@ export default abstract class ComicDownloader {
         archive.append(xmlString, { name: ComicInfoFilename });
       } else {
         await fs.promises.writeFile(
-          path.join(chapterWritePath, ComicInfoFilename),
+          path.join(path.join(chapterWritePath, name), ComicInfoFilename),
           xmlString,
         );
       }
