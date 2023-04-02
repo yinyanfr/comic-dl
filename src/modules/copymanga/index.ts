@@ -70,19 +70,19 @@ export default class CopymangaDownloader extends ComicDownloader {
     const res = await this.axios.get<CopymangaAPI.Serie.Data>(
       `/api/v3/comic2/${mangaId}`,
     );
-    const data = res?.data?.results?.comic;
+    const data = res?.data?.results?.comic ?? {};
     const count = res?.data?.results?.groups?.default?.count ?? 0;
-    const title = data?.name;
+    const title = data.name;
     const info: ComicInfo = {
       Manga: 'YesAndRightToLeft',
       Serie: title,
-      Summary: data?.brief,
-      Location: data?.region?.display,
+      Summary: data.brief,
+      Location: data.region?.display,
       Count: count,
       Web: url,
-      Status: data?.status?.value === 0 ? 'Ongoing' : 'End',
-      Penciller: data?.author?.map(e => e.name)?.join(','),
-      Tags: data?.theme?.map(e => e.name)?.join(','),
+      Status: data.status?.value === 0 ? 'Ongoing' : 'End',
+      Penciller: data.author?.map(e => e.name)?.join(','),
+      Tags: data.theme?.map(e => e.name)?.join(','),
     };
 
     const chapters: Chapter[] = [];

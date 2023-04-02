@@ -60,9 +60,13 @@ export default abstract class ComicDownloader {
   /**
    *
    * @param url
+   * @param options the options from Chapter
    * @returns list of string or null
    */
-  protected abstract getImageList(url: string): Promise<(string | null)[]>;
+  protected abstract getImageList(
+    url: string,
+    options?: Record<string, any>,
+  ): Promise<(string | null)[]>;
 
   /**
    * End for children
@@ -193,6 +197,7 @@ export default abstract class ComicDownloader {
     name: string,
     uri?: string,
     options: ChapterDownloadOptions = {},
+    chapterOptions: Record<string, any> = {},
   ) {
     if (!uri) {
       options?.onProgress?.({
@@ -206,7 +211,7 @@ export default abstract class ComicDownloader {
     if (!this.axios.defaults.baseURL) {
       this.detectBaseUrl(uri);
     }
-    const imgList = await this.getImageList(uri);
+    const imgList = await this.getImageList(uri, chapterOptions);
     if (!imgList?.length) {
       options?.onProgress?.({
         index: options?.index,
@@ -224,6 +229,7 @@ export default abstract class ComicDownloader {
     if (!fs.existsSync(chapterWritePath)) {
       fs.mkdirSync(chapterWritePath, { recursive: true });
     }
+
     const archive = this.configs?.archive
       ? archiver('zip', { zlib: { level: this.configs?.zipLevel ?? 5 } })
       : undefined;
@@ -234,6 +240,7 @@ export default abstract class ComicDownloader {
       status: 'skipped' as const,
       failures: 0,
     };
+
     if (this.configs?.archive) {
       const archiveWritePath = path.join(
         chapterWritePath,
@@ -296,6 +303,7 @@ export default abstract class ComicDownloader {
       name,
       status: 'completed' as const,
       failed: failures,
+      options: chapterOptions,
     };
     options?.onProgress?.(progress);
 
@@ -340,13 +348,18 @@ export default abstract class ComicDownloader {
     for (let i = start; i < end; i++) {
       const chapter = serie.chapters[i];
       if (!options.chapters || options.chapters?.includes(i)) {
-        const progress = await this.downloadChapter(chapter.name, chapter.uri, {
-          index: chapter.index,
-          title: options.rename ?? serie.title,
-          info: options.info ? serie.info : undefined,
-          override: options.override,
-          onProgress: options?.onProgress,
-        });
+        const progress = await this.downloadChapter(
+          chapter.name,
+          chapter.uri,
+          {
+            index: chapter.index,
+            title: options.rename ?? serie.title,
+            info: options.info ? serie.info : undefined,
+            override: options.override,
+            onProgress: options?.onProgress,
+          },
+          chapter.options,
+        );
         summary.push(progress);
       }
     }
@@ -360,12 +373,17 @@ export default abstract class ComicDownloader {
       if (options.retry) {
         this.log('Retrying...');
         for (const chapter of failed) {
-          await this.downloadChapter(chapter.name, chapter.uri, {
-            index: chapter.index,
-            title: options.rename ?? serie.title,
-            info: options.info ? serie.info : undefined,
-            onProgress: options?.onProgress,
-          });
+          await this.downloadChapter(
+            chapter.name,
+            chapter.uri,
+            {
+              index: chapter.index,
+              title: options.rename ?? serie.title,
+              info: options.info ? serie.info : undefined,
+              onProgress: options?.onProgress,
+            },
+            chapter.options,
+          );
         }
       }
     } else {

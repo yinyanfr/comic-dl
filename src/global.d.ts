@@ -20,6 +20,7 @@ interface Chapter {
   index: number;
   name: string;
   uri?: string;
+  options?: Record<string, any>; // this passes to getImageList
 }
 
 /**
@@ -67,6 +68,7 @@ interface DownloadProgress {
   uri?: string;
   status: 'completed' | 'failed' | 'skipped';
   failed?: number;
+  options?: Record<string, any>; // options from Chapter
 }
 
 interface SerieDownloadOptions {

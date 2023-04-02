@@ -1,6 +1,6 @@
 # Changelog
 
-## Draft: 2.1.0
+## 2.1.0
 
 `2023-04-01`
 
@@ -73,6 +73,41 @@ npx comic-dl gen --presets > presets.json
   - [User] Site introductions
   - [User] Using presets
   - [Dev] Creating a new module
+
+### Dev
+
+- Added `options` to `Chapter` type, which is the returning value of `getSerieInfo` and gets passed to `getImageList`
+- `getImageList` now accepts a 2nd parameter `options` which is passed from the returning value of `getSerieInfo`
+
+```typescript
+class MySiteDownloader extends ComicDownloader {
+  // ...
+
+  getSerieInfo(url: string) {
+    // ...
+    return {
+      // ...
+      chapters: [
+        {
+          index: 0,
+          name: 'chapter_name',
+          uri: 'uri',
+          options: {
+            key: 'value', // put anything here
+          },
+        },
+      ],
+    };
+  }
+
+  getImageList(
+    url: string,
+    options?: Record<string, any>, // this options is that options above
+  ) {
+    // ...
+  }
+}
+```
 
 ### Misc
 
