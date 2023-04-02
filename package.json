@@ -1,24 +1,27 @@
 {
   "name": "comic-dl",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Yet another batch downloader for manga/comic sites",
   "main": "dist/index.js",
-  "bin": "dist/cli.js",
+  "bin": "dist/cli/index.js",
   "types": "src/global.d.ts",
   "scripts": {
     "tsc": "tsc",
     "build": "tsc",
     "clean": "rm -rf dist/",
-    "prepublishOnly": "tsc"
+    "prepublishOnly": "tsc",
+    "lint-staged": "lint-staged",
+    "precommit": "lint-staged"
   },
   "keywords": [
     "scraper",
-    "zerobyw",
-    "copymanga",
     "manga",
     "comic",
+    "downloader",
     "manga-downloader",
-    "comic-downloader"
+    "comic-downloader",
+    "zerobyw",
+    "copymanga"
   ],
   "repository": {
     "type": "git",
@@ -37,6 +40,12 @@
     "@types/jsdom": "^21.1.0",
     "@types/mime-types": "^2.1.1",
     "@types/node": "^18.15.0",
+    "@typescript-eslint/eslint-plugin": "^5.57.0",
+    "@typescript-eslint/parser": "^5.57.0",
+    "eslint": "^8.37.0",
+    "eslint-config-prettier": "^8.8.0",
+    "lint-staged": "^13.2.0",
+    "prettier": "^2.8.7",
     "typescript": "^4.9.5"
   },
   "dependencies": {
@@ -48,5 +57,11 @@
     "jsdom": "^21.1.1",
     "mime-types": "^2.1.35",
     "yesno": "^0.4.0"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }

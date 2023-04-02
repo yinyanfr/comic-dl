@@ -4,7 +4,7 @@
  */
 
 export function isString(n: unknown) {
-  return typeof n === "string" || n instanceof String;
+  return typeof n === 'string' || n instanceof String;
 }
 
 export function formatImageName(index: number) {

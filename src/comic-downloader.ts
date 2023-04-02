@@ -3,24 +3,27 @@
  * Copyright (c) 2023 Yan
  */
 
-import axios from "axios";
-import type { AxiosInstance } from "axios";
-import fs from "node:fs";
-import path from "node:path";
-import type { ReadStream } from "node:fs";
-import archiver from "archiver";
-import yesno from "yesno";
-import { formatImageName, isString } from "./lib";
-import mime from "mime-types";
+import axios from 'axios';
+import type { AxiosInstance } from 'axios';
+import fs from 'node:fs';
+import path from 'node:path';
+import type { ReadStream } from 'node:fs';
+import archiver from 'archiver';
+import yesno from 'yesno';
+import { formatImageName, isString } from './lib';
+import mime from 'mime-types';
 
-const ComicInfoFilename = "ComicInfo.xml";
+const ComicInfoFilename = 'ComicInfo.xml';
 
 export default abstract class ComicDownloader {
   static readonly siteName: string;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   static canHandleUrl(url: string): boolean {
     return false;
   }
+
+  static readonly preferredCLIPresets: Partial<CliOptions> = {};
 
   protected axios: AxiosInstance;
 
@@ -32,6 +35,14 @@ export default abstract class ComicDownloader {
         ...(configs.headers || {}),
       },
     });
+  }
+
+  get baseUrl() {
+    return this.axios.defaults.baseURL;
+  }
+
+  set baseUrl(url: string | undefined) {
+    this.axios.defaults.baseURL = url;
   }
 
   /**
@@ -49,9 +60,13 @@ export default abstract class ComicDownloader {
   /**
    *
    * @param url
+   * @param options the options from Chapter
    * @returns list of string or null
    */
-  protected abstract getImageList(url: string): Promise<(string | null)[]>;
+  protected abstract getImageList(
+    url: string,
+    options?: Record<string, any>,
+  ): Promise<(string | null)[]>;
 
   /**
    * End for children
@@ -68,13 +83,14 @@ export default abstract class ComicDownloader {
     // TODO: find a reliable module for possible more complicated structures
     const identifier = `<?xml version="1.0"?>`;
     const open = `<ComicInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">`;
-    const close = "</ComicInfo>";
+    const close = '</ComicInfo>';
     const content = Object.keys(info)
-      .map((key) => `\t<${key}>${info[key]?.replace?.("\n", "")}</${key}>`)
-      .join("\n");
+      .map(key => `\t<${key}>${info[key]?.replace?.('\n', '')}</${key}>`)
+      .join('\n');
     return `${identifier}\n${open}\n${content}\n${close}\n`;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/no-unused-vars
   protected detectBaseUrl(url: string): void {}
 
   setConfig(key: keyof typeof this.configs, value: any) {
@@ -93,14 +109,14 @@ export default abstract class ComicDownloader {
         isString(options.output)
           ? (options.output as string)
           : this.destination,
-        options.rename ?? serie.title
+        options.rename ?? serie.title,
       );
       if (!fs.existsSync(chapterPath)) {
         fs.mkdirSync(chapterPath, { recursive: true });
       }
       const writePath = path.join(
         chapterPath,
-        options.filename ?? ComicInfoFilename
+        options.filename ?? ComicInfoFilename,
       );
       await fs.promises.writeFile(writePath, xmlString);
       this.log(`Written: ${writePath}`);
@@ -110,18 +126,18 @@ export default abstract class ComicDownloader {
   protected async downloadImage(
     chapterName: string,
     imageUri: string,
-    options: ImageDownloadOptions = {}
+    options: ImageDownloadOptions = {},
   ) {
     const res = await this.axios.get<ReadStream>(imageUri, {
-      responseType: "stream",
+      responseType: 'stream',
     });
     if (!res?.data) {
-      throw new Error("Image Request Failed");
+      throw new Error('Image Request Failed');
     }
-    const ext = mime.extension(res.headers["content-type"]);
+    const ext = mime.extension(res.headers['content-type']);
     const filenameMatch = imageUri.match(/[^./]+\.[^.]+$/);
     const filename = options?.imageName
-      ? `${options.imageName}.${ext ?? "jpg"}`
+      ? `${options.imageName}.${ext ?? 'jpg'}`
       : filenameMatch?.[0];
 
     if (filename) {
@@ -131,15 +147,15 @@ export default abstract class ComicDownloader {
       } else {
         const writePath = path.join(
           this.destination,
-          options?.title ? "Untitled" : ".",
+          options?.title ? options.title : '.',
           chapterName,
-          filename
+          filename,
         );
         const writer = fs.createWriteStream(writePath);
         res.data.pipe(writer);
         return new Promise((resolve, reject) => {
-          writer.on("finish", resolve);
-          writer.on("error", (err) => {
+          writer.on('finish', resolve);
+          writer.on('error', err => {
             if (this.configs?.verbose) {
               console.error(err);
             }
@@ -148,14 +164,14 @@ export default abstract class ComicDownloader {
         });
       }
     } else {
-      throw new Error("Cannot Detect Filename.");
+      throw new Error('Cannot Detect Filename.');
     }
   }
 
   protected async downloadSegment(
     name: string,
     segment: (string | null)[],
-    options: SegmentDownloadOptions = {}
+    options: SegmentDownloadOptions = {},
   ) {
     const reqs = segment.map((e, i) =>
       e
@@ -164,10 +180,10 @@ export default abstract class ComicDownloader {
             archive: options.archive,
             imageName: formatImageName((options.offset ?? 0) + i + 1),
           })
-        : Promise.reject()
+        : Promise.reject(),
     );
     const res = await Promise.allSettled(reqs);
-    return res.filter((e) => e.status === "rejected");
+    return res.filter(e => e.status === 'rejected');
   }
 
   /**
@@ -180,56 +196,58 @@ export default abstract class ComicDownloader {
   async downloadChapter(
     name: string,
     uri?: string,
-    options: ChapterDownloadOptions = {}
+    options: ChapterDownloadOptions = {},
+    chapterOptions: Record<string, any> = {},
   ) {
     if (!uri) {
       options?.onProgress?.({
         index: options?.index,
         name,
         uri,
-        status: "failed",
+        status: 'failed',
       });
-      throw new Error("Invalid Chapter Uri");
+      throw new Error('Invalid Chapter Uri');
     }
     if (!this.axios.defaults.baseURL) {
       this.detectBaseUrl(uri);
     }
-    const imgList = await this.getImageList(uri);
+    const imgList = await this.getImageList(uri, chapterOptions);
     if (!imgList?.length) {
       options?.onProgress?.({
         index: options?.index,
         name,
         uri,
-        status: "failed",
+        status: 'failed',
       });
-      throw new Error("Cannot get image list.");
+      throw new Error('Cannot get image list.');
     }
     const chapterWritePath = path.join(
       this.destination,
-      options?.title ? options.title : ".",
-      this.configs?.archive ? "." : name
+      options?.title ? options.title : '.',
     );
     if (!fs.existsSync(chapterWritePath)) {
       fs.mkdirSync(chapterWritePath, { recursive: true });
     }
+
     const archive = this.configs?.archive
-      ? archiver("zip", { zlib: { level: this.configs?.zipLevel ?? 5 } })
+      ? archiver('zip', { zlib: { level: this.configs?.zipLevel ?? 5 } })
       : undefined;
 
     const skippedProgress = {
       index: options?.index,
       name,
-      status: "skipped" as const,
+      status: 'skipped' as const,
       failures: 0,
     };
+
     if (this.configs?.archive) {
       const archiveWritePath = path.join(
         chapterWritePath,
-        `${name}.${this.configs?.archive === "cbz" ? "cbz" : "zip"}`
+        `${name}.${this.configs?.archive === 'cbz' ? 'cbz' : 'zip'}`,
       );
       if (!options.override && fs.existsSync(archiveWritePath)) {
         this.log(
-          `Skipped: ${options?.index} - ${name} has already been downloaded`
+          `Skipped: ${options?.index} - ${name} has already been downloaded`,
         );
         return skippedProgress;
       } else {
@@ -237,11 +255,16 @@ export default abstract class ComicDownloader {
         archive?.pipe(archiveStream);
       }
     } else {
-      if (!options.override && fs.existsSync(chapterWritePath)) {
+      if (
+        !options.override &&
+        fs.existsSync(path.join(chapterWritePath, name))
+      ) {
         this.log(
-          `Skipped: ${options?.index} - ${name} has already been downloaded`
+          `Skipped: ${options?.index} - ${name} has already been downloaded`,
         );
         return skippedProgress;
+      } else {
+        fs.mkdirSync(path.join(chapterWritePath, name));
       }
     }
 
@@ -255,12 +278,12 @@ export default abstract class ComicDownloader {
           offset: i,
           title: options?.title,
           archive,
-        }
+        },
       );
       if (failed?.length) {
         failures += failed.length;
         this.log(
-          `Failed: Chapter ${name} - ${failed.length} images not downloaded`
+          `Failed: Chapter ${name} - ${failed.length} images not downloaded`,
         );
       }
     }
@@ -271,8 +294,8 @@ export default abstract class ComicDownloader {
         archive.append(xmlString, { name: ComicInfoFilename });
       } else {
         await fs.promises.writeFile(
-          path.join(chapterWritePath, ComicInfoFilename),
-          xmlString
+          path.join(path.join(chapterWritePath, name), ComicInfoFilename),
+          xmlString,
         );
       }
     }
@@ -282,8 +305,9 @@ export default abstract class ComicDownloader {
     const progress = {
       index: options?.index,
       name,
-      status: "completed" as const,
+      status: 'completed' as const,
       failed: failures,
+      options: chapterOptions,
     };
     options?.onProgress?.(progress);
 
@@ -302,24 +326,24 @@ export default abstract class ComicDownloader {
     this.log(`Chapters Count: ${serie.chapters?.length}`);
 
     if (options?.confirm || !this.configs.silence) {
-      let queue = "the entire serie";
+      let queue = 'the entire serie';
       if (options.start || options.end) {
-        queue = `from ${options.start ?? 0} to ${options.end || "the end"}`;
+        queue = `from ${options.start ?? 0} to ${options.end || 'the end'}`;
       }
       if (options.chapters?.length) {
-        queue = `chapters ${options.chapters?.join(", ")}`;
+        queue = `chapters ${options.chapters?.join(', ')}`;
       }
       const ok = await yesno({
         question: `Downloading ${serie.title} to ${this.destination}, ${queue}, Proceed? (Y/n)`,
         defaultValue: true,
       });
       if (!ok) {
-        console.log("Abort.");
+        console.log('Abort.');
         return 0;
       }
     }
 
-    this.log("Start Downloading...");
+    this.log('Start Downloading...');
     const summary: DownloadProgress[] = [];
     const start = options.start ?? 0;
     const end =
@@ -328,36 +352,46 @@ export default abstract class ComicDownloader {
     for (let i = start; i < end; i++) {
       const chapter = serie.chapters[i];
       if (!options.chapters || options.chapters?.includes(i)) {
-        const progress = await this.downloadChapter(chapter.name, chapter.uri, {
-          index: chapter.index,
-          title: options.rename ?? serie.title,
-          info: options.info ? serie.info : undefined,
-          override: options.override,
-          onProgress: options?.onProgress,
-        });
+        const progress = await this.downloadChapter(
+          chapter.name,
+          chapter.uri,
+          {
+            index: chapter.index,
+            title: options.rename ?? serie.title,
+            info: options.info ? serie.info : undefined,
+            override: options.override,
+            onProgress: options?.onProgress,
+          },
+          chapter.options,
+        );
         summary.push(progress);
       }
     }
 
-    const failed = summary.filter((e) => e.failed);
+    const failed = summary.filter(e => e.failed);
     if (failed.length) {
       this.log(`Download completed with failures.`);
-      failed.forEach((e) => {
+      failed.forEach(e => {
         this.log(`Index: ${e.index}, pages not downloaded: ${e.failed}.`);
       });
       if (options.retry) {
-        this.log("Retrying...");
+        this.log('Retrying...');
         for (const chapter of failed) {
-          await this.downloadChapter(chapter.name, chapter.uri, {
-            index: chapter.index,
-            title: options.rename ?? serie.title,
-            info: options.info ? serie.info : undefined,
-            onProgress: options?.onProgress,
-          });
+          await this.downloadChapter(
+            chapter.name,
+            chapter.uri,
+            {
+              index: chapter.index,
+              title: options.rename ?? serie.title,
+              info: options.info ? serie.info : undefined,
+              onProgress: options?.onProgress,
+            },
+            chapter.options,
+          );
         }
       }
     } else {
-      this.log("Download Success.");
+      this.log('Download Success.');
     }
   }
 }

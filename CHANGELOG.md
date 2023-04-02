@@ -1,10 +1,131 @@
 # Changelog
 
+## 2.1.0
+
+`2023-04-02`
+
+### Site Support
+
+- Added [Ganma](https://ganma.jp/)
+
+Ganma is a non-pirate site where contents are behind the paywall, you need a subscription purchased via Google Play Store and App Store and link it to your Ganma account, then log in to the website, open the Network inspector (F12 for mainstream browsers) and get your cookie from the request header.
+
+Ganma provides official Japanese manga series.
+
+### Feature
+
+- [Library] Added getter and setter for `baseUrl`
+- New `-A, --auth` that accepts a string that contains token or cookie, having a lower priority than `cookie`.
+- [CLI] New `-p, --presets` flags, loading a JSON file that contains a set of parameters for sites.
+  - Each site can have its own presets, use `"module"` to declare site, if `"module"` is not set, it's used for all sites.
+  - Rules written below overrides those above.
+  - Rule names are the same as CLI flags, full names using camelCase, e.g. `maxTitleLength`, `zipLevel`
+  - You can still use flags, and flags come with higher priorities.
+
+```json
+[
+  {
+    "archive": "cbz",
+    "batch": 5,
+    "retry:" true,
+    "info": true,
+    "output": "~/Downloads/manga",
+    "zipLevel": 5
+  },
+  {
+    "module": "zerobyw",
+    "batch": 10,
+    "cookie": "./cookie.txt",
+    "maxTitleLength": 30
+  },
+  {
+    "module": "copymanga",
+    "format": "webp"
+  },
+  {
+    "module": "ganma",
+    "auth": "your_cookie_string"
+  }
+]
+```
+
+```bash
+npx comic-dl -p presets.json -u serie_url
+```
+
+- [CLI] New `generate, g, gen` command for generating a new module.
+
+```bash
+# Using in the project root
+# Using -m, --module flag for module name, starting with lowercase, camelCase
+npx . gen --module ganma
+```
+
+- [CLI] You can also generate a presets.json using the `generate` command
+
+```bash
+npx comic-dl gen --presets > presets.json
+```
+
+### Fix
+
+- Fixed multiple bugs when downloading as images
+  - Incorrect chapter names
+  - Wrongly determination of existing chapters
+
+### Docs
+
+- Added docs of
+  - [User] Site introductions
+  - [User] Using presets
+  - [Dev] Creating a new module
+
+### Dev
+
+- Added `options` to `Chapter` type, which is the returning value of `getSerieInfo` and gets passed to `getImageList`
+- `getImageList` now accepts a 2nd parameter `options` which is passed from the returning value of `getSerieInfo`
+- Added `static preferredCLIPresets` function to `ComicDownloader` that returns the CLIOptions to be written when `gen --presets`
+
+```typescript
+class MySiteDownloader extends ComicDownloader {
+  // ...
+
+  getSerieInfo(url: string) {
+    // ...
+    return {
+      // ...
+      chapters: [
+        {
+          index: 0,
+          name: 'chapter_name',
+          uri: 'uri',
+          options: {
+            key: 'value', // put anything here
+          },
+        },
+      ],
+    };
+  }
+
+  getImageList(
+    url: string,
+    options?: Record<string, any>, // this options is that options above
+  ) {
+    // ...
+  }
+}
+```
+
+### Misc
+
+- [CLI] CLI source codes are moved to `src/cli`, where `cli.ts` is renamed to `index.ts`
+- Added eslint and prettier
+
 ## 2.0.0
 
-`2023-03-20`
+`2023-03-31`
 
-**`zerobyw-dl` now becomes `comic-dl`.**
+:tada: **`zerobyw-dl` now becomes `comic-dl`.**
 
 Now this library is designed to be used with multiple manga / comic sites.
 
@@ -14,29 +135,29 @@ Now this library is designed to be used with multiple manga / comic sites.
 
 ### Changes
 
-- [library] The code has been refactored and can now add sites as plugins.
-- [CLI] The `-b, --batch` flag is now default to 1 when not set.
-- Downloaded images are now renamed by index (01 ~ ).
-- Downloaders now ignores downloaded chapters by default, set `options.override` to `true` or for CLI use `-O, --override` if you want to override.
+- [Library] The code has been refactored and can now add sites as plugins.
 
 ```typescript
 // Before
-import ZeroBywDownloader from "zerobyw-dl";
+import ZeroBywDownloader from 'zerobyw-dl';
 const downloader = new ZeroBywDownloader(destination, configs);
 
 // Now
-import { ZeroBywDownloader } from "comic-dl";
+import { ZeroBywDownloader } from 'comic-dl';
 const downloader = new ZeroBywDownloader(destination, configs);
 ```
 
+- [CLI] The `-b, --batch` flag is now default to 1 when not set.
+- Downloaded images are now renamed by index (01 ~ ).
+- Downloaders now ignores downloaded chapters by default, set `options.override` to `true` or for CLI use `-O, --override` if you want to override.
 - [Library] Writing ComicInfo.xml to file is removed from `getSerieInfo`, thus a seperate function `writeComicInfo` has taken place, options from `getSerieInfo` is moved to `writeComicinfo`, and the typedef is renamed `WriteInfoOptions`.
 
 ```typescript
 // Before
-const serie = await downloader.getSerieInfo("url", { output: true });
+const serie = await downloader.getSerieInfo('url', { output: true });
 
 // Now
-const serie = await downloader.getSerieInfo("url");
+const serie = await downloader.getSerieInfo('url');
 await writeComicInfo(serie, { output: true });
 ```
 
@@ -49,7 +170,7 @@ npx zerobyw-dl dl -c cookie.txt -o ~/Download/zerobyw -a zip -r -i -u serie_url
 # Now
 npx comic-dl dl -m zerobyw -c cookie.txt -o ~/Download/zerobyw -a zip -r -i -u serie_url -b 10
 # You can skip -m flag unless comic-dl fails to detect the site module
-# Batch download is now default to 1, set it manually for download speed
+# Batch download is now default to 1, set it manually to control downloading speed
 ```
 
 - [CLI] the `-s, --silence` flag now skips the confirm prompt when downloading series.
@@ -134,9 +255,9 @@ npx comic-dl dl -m zerobyw -c cookie.txt -o ~/Download/zerobyw -a zip -r -i -u s
 
 ```typescript
 // change one config
-downloader.setConfig("archive", "cbz");
+downloader.setConfig('archive', 'cbz');
 // merge configs
-downloader.setConfigs({ archive: "cbz" }); // Will merge
+downloader.setConfigs({ archive: 'cbz' }); // Will merge
 ```
 
 - show chapter index in chapter progress
