@@ -26,6 +26,7 @@ Please help me translate the documents, thanks.
 
 - [Zerobyw](https://zerobyw.github.io/)
 - [Copymanga](https://www.copymanga.site/)
+- [Ganma](https://ganma.jp/)
 
 ## :framed_picture: Gallery
 
