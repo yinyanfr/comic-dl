@@ -7,34 +7,18 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import * as plugins from '../modules';
-import { exportDefault, indexDts, indexTs } from './templates';
-
-function detectModule(url?: string) {
-  if (!url) return undefined;
-  const downloaders = Object.values(plugins);
-  for (let j = 0; j < downloaders.length; j++) {
-    const Downloader = downloaders[j];
-    if (Downloader.canHandleUrl(url)) {
-      return Downloader;
-    }
-  }
-}
-
-function findModule(name: string) {
-  const downloaders = Object.values(plugins);
-  for (let j = 0; j < downloaders.length; j++) {
-    const Downloader = downloaders[j];
-    if (Downloader.siteName === name) {
-      return Downloader;
-    }
-  }
-}
+import {
+  detectModule,
+  findModule,
+  genModule,
+  genPresets,
+  mergeOptions,
+} from './lib';
 
 function buildDownloader(options: Partial<CliOptions> = {}) {
   const {
     module,
-    output,
+    output = '.',
     cookie,
     archive,
     timeout,
@@ -45,14 +29,15 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     zipLevel,
     url,
     format,
+    auth,
   } = options;
   const Downloader = module?.length ? findModule(module) : detectModule(url);
   if (!Downloader) {
     throw new Error('Module not found.');
   }
 
-  const downloader = new Downloader(output ?? '.', {
-    cookie: cookie && fs.readFileSync(path.resolve(cookie)).toString(),
+  const downloader = new Downloader(output, {
+    cookie: cookie ? fs.readFileSync(path.resolve(cookie)).toString() : auth,
     timeout,
     silence,
     batchSize: batch ?? 1,
@@ -66,7 +51,8 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
   return downloader;
 }
 
-export const listCommand: Command = async (name, sub, options = {}) => {
+export const listCommand: Command = async (name, sub, _options = {}) => {
+  const options = mergeOptions(_options);
   const { url, verbose, silence, output, name: rename } = options;
 
   try {
@@ -108,7 +94,8 @@ export const listCommand: Command = async (name, sub, options = {}) => {
   }
 };
 
-export const downloadCommand: Command = async (name, sub, options = {}) => {
+export const downloadCommand: Command = async (name, sub, _options = {}) => {
+  const options = mergeOptions(_options);
   const {
     url,
     from,
@@ -170,7 +157,8 @@ export const downloadCommand: Command = async (name, sub, options = {}) => {
   }
 };
 
-export const chapterCommand: Command = async (name, sub, options = {}) => {
+export const chapterCommand: Command = async (name, sub, _options = {}) => {
+  const options = mergeOptions(_options);
   const { url, name: chapterName, verbose, output, override } = options;
 
   try {
@@ -199,34 +187,15 @@ export const chapterCommand: Command = async (name, sub, options = {}) => {
 };
 
 export const genCommand: Command = async (_, sub, options = {}) => {
-  const { name } = options;
-  if (!name) {
-    throw new Error('Please provide module name with -n flag.');
+  const { module, presets } = options;
+
+  if (module) {
+    await genModule(module);
+  } else if (presets) {
+    await genPresets();
+  } else {
+    throw new Error(
+      'The gen command is used to generate a module or a presets file, please use the --module or --presets flag.',
+    );
   }
-  // This will be running from dist/
-  const modulePath = path.join(__dirname, '..', '..', 'src', 'modules', name);
-  const exportPath = path.join(
-    __dirname,
-    '..',
-    '..',
-    'src',
-    'modules',
-    'index.ts',
-  );
-  await fs.promises.mkdir(modulePath);
-  await fs.promises.writeFile(
-    path.join(modulePath, 'index.d.ts'),
-    indexDts(name),
-  );
-  await fs.promises.writeFile(path.join(modulePath, 'index.ts'), indexTs(name));
-
-  const exportDefaultReader = await fs.promises.readFile(exportPath);
-  const defaults = exportDefaultReader
-    .toString()
-    .split('\n')
-    .filter(e => e.length);
-  defaults.push(exportDefault(name));
-  await fs.promises.writeFile(exportPath, `${defaults.join('\n')}\n`);
-
-  console.log(`Module ${name} is created at ${modulePath}`);
 };

@@ -3,10 +3,10 @@
  * Copyright (c) 2023 Yan
  */
 
-import { capitalizeFirstLetter } from "../lib";
+import { cap1 } from './lib';
 
 export function indexDts(name: string) {
-  return `declare namespace ${capitalizeFirstLetter(name)}API {
+  return `declare namespace ${cap1(name)}API {
   
   }
   `;
@@ -17,14 +17,14 @@ export function indexTs(name: string) {
 
   import ComicDownloader from "../../comic-downloader";
   
-  export default class ${capitalizeFirstLetter(
-    name
-  )}Downloader extends ComicDownloader {
+  export default class ${cap1(name)}Downloader extends ComicDownloader {
     static readonly siteName = "${name}";
   
     static canHandleUrl(url: string): boolean {
       return /${name}/.test(url);
     }
+
+    static readonly preferredCLIPresets: Partial<CliOptions> = {};
 
     constructor(protected destination: string, protected configs: Configs = {}) {
       super(destination, configs);
@@ -41,7 +41,5 @@ export function indexTs(name: string) {
 }
 
 export function exportDefault(name: string) {
-  return `export { default as ${capitalizeFirstLetter(
-    name
-  )}Downloader } from "./ganma";`;
+  return `export { default as ${cap1(name)}Downloader } from "./ganma";`;
 }

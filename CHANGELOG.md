@@ -15,11 +15,12 @@ Ganma provides official Japanese manga series.
 ### Feature
 
 - [Library] Added getter and setter for `baseUrl`
-- New `configs.auth` that accepts a string that contains token or cookie, using `-A, --auth` flag for CLI, having a lower priority than `cookie`.
+- New `-A, --auth` that accepts a string that contains token or cookie, having a lower priority than `cookie`.
 - [CLI] New `-p, --presets` flags, loading a JSON file that contains a set of parameters for sites.
   - Each site can have its own presets, use `"module"` to declare site, if `"module"` is not set, it's used for all sites.
-  - rules written below overrides those above.
-  - rule names are the same as CLI flags, full names using camelCase, e.g. `maxTitleLength`, `zipLevel`
+  - Rules written below overrides those above.
+  - Rule names are the same as CLI flags, full names using camelCase, e.g. `maxTitleLength`, `zipLevel`
+  - You can still use flags, and flags come with higher priorities.
 
 ```json
 [
@@ -56,8 +57,14 @@ npx comic-dl -p presets.json -u serie_url
 
 ```bash
 # Using in the project root
-# Using -n, --name flag for module name, starting with lowercase, camelCase
-npx . gen -n ganma
+# Using -m, --module flag for module name, starting with lowercase, camelCase
+npx . gen --module ganma
+```
+
+- [CLI] You can also generate a presets.json using the `generate` command
+
+```bash
+npx comic-dl gen --presets > presets.json
 ```
 
 ### Docs

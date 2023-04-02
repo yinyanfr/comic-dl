@@ -16,6 +16,7 @@ This library is not for browsers.
 - Supports multiple sites (More on the road).
 - Download as ZIP/CBZ, or just a folder of pictures
 - Downloading progress watch
+- Detects downloaded chapters
 - Generates [ComicInfo.xml](https://anansi-project.github.io/docs/comicinfo/intro)
 
 ## :rainbow: [Site List](docs/user/sites.md)
@@ -60,7 +61,7 @@ npx . help
 ## :wrench: Cli
 
 ```
-Usage: comic dl [options] [command]
+Usage: comic-dl [options] [command]
 
 Commands:
   chapter, c, ch    Download images from one chapter.
@@ -102,6 +103,9 @@ Examples:
 
   - Download chapter index 0, 4, 12 from a serie, overriding downloaded files.
   $ npx comic-dl dl -c cookie.txt -o ~/Download/manga -i -O -u serie_url -c 0,4,12
+
+  - Download a serie with presets
+  $ npx comic-dl -p presets.json -u serie_url
 
   - List all chapters of the given serie.
   $ npx comic-dl ls -u serie_url

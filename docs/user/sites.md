@@ -24,9 +24,11 @@ Copymanga is a pirate site where contents are likely maintained by the community
 
 Copymanga provides only Chinese translated chapters. The entire site is free with ads.
 
-The correct way to use copymanga is using their website and mobile apps, both of which are painful to use.
+The intended way to use copymanga is using their website and mobile apps, both of which are painful to use.
 
 **Important: Copymanga is known to have [sent horrifying images to Tachiyomi users](https://github.com/tachiyomiorg/tachiyomi-extensions/issues/12377), please use it at your own risk.**
+
+Copymanga provides images in webp and jpg format, you can set the preferred format by `options.format`, but both of them are cropped to 800px in width.
 
 ## [Ganma](https://ganma.jp/)
 
@@ -35,3 +37,5 @@ The correct way to use copymanga is using their website and mobile apps, both of
 Ganma is a non-pirate site where contents are behind the paywall (680 JPY monthly), you need a subscription purchased via Google Play Store and App Store and link it to your Ganma account.
 
 Ganma provides official Japanese manga series.
+
+This module will be maintained for as long as my Ganma subscription lasts.

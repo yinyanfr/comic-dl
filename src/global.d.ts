@@ -9,7 +9,7 @@ interface Configs {
   silence?: boolean;
   batchSize?: number;
   verbose?: boolean;
-  archive?: "zip" | "cbz" | boolean;
+  archive?: 'zip' | 'cbz' | boolean;
   headers?: Record<string, any>;
   maxTitleLength?: number;
   zipLevel?: number;
@@ -41,8 +41,8 @@ interface ComicInfo {
   Tags?: string;
   Web?: string;
   Note?: string;
-  Manga?: "YesAndRightToLeft";
-  Status?: "Ongoing" | "End" | "Abandoned" | "Hiatus"; // This one isn't in the schema but it should
+  Manga?: 'YesAndRightToLeft';
+  Status?: 'Ongoing' | 'End' | 'Abandoned' | 'Hiatus'; // This one isn't in the schema but it should
   [Key: string]: any; // and many more
 }
 
@@ -65,7 +65,7 @@ interface DownloadProgress {
   index?: number;
   name: string;
   uri?: string;
-  status: "completed" | "failed" | "skipped";
+  status: 'completed' | 'failed' | 'skipped';
   failed?: number;
 }
 
@@ -109,7 +109,7 @@ interface CliOptions {
   cookie: string;
   from: number;
   to: number;
-  archive: "zip" | "cbz" | boolean;
+  archive: 'zip' | 'cbz' | boolean;
   timeout: number;
   silence: boolean;
   batch: number;
@@ -122,10 +122,13 @@ interface CliOptions {
   info: boolean;
   format: string;
   override: boolean;
+  presets: string; // path
+  auth: string;
+  [key: string]: any; // for future modules
 }
 
 type Command = (
   name: string,
   sub: string[],
-  options?: Partial<CliOptions>
+  options?: Partial<CliOptions>,
 ) => void;

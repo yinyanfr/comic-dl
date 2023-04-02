@@ -5,8 +5,9 @@
 You can now use presets with CLI to reduce the numbers of flags
 
 - Each site can have its own presets, use `"module"` to declare site, if `"module"` is not set, it's used for all sites.
-- rules written below overrides those above.
-- rule names are the same as CLI flags, full names using camelCase, e.g. `maxTitleLength`, `zipLevel`
+- Rules written below overrides those above.
+- Rule names are the same as CLI flags, full names using camelCase, e.g. `maxTitleLength`, `zipLevel`
+- You can still use flags, and flags come with higher priorities.
 
 ## Example
 
@@ -39,4 +40,10 @@ You can now use presets with CLI to reduce the numbers of flags
 
 ```bash
 npx comic-dl -p presets.json -u serie_url
+```
+
+You can also generate a presets.json using the `generate` command
+
+```bash
+npx comic-dl gen --presets > presets.json
 ```

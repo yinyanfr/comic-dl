@@ -23,6 +23,8 @@ export default abstract class ComicDownloader {
     return false;
   }
 
+  static readonly preferredCLIPresets: Partial<CliOptions> = {};
+
   protected axios: AxiosInstance;
 
   constructor(protected destination: string, protected configs: Configs = {}) {
