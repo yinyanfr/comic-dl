@@ -80,6 +80,7 @@ interface SerieDownloadOptions {
   confirm?: boolean;
   info?: boolean;
   override?: boolean;
+  group?: string;
   onProgress?: (progress: DownloadProgress) => void;
 }
 
@@ -126,6 +127,7 @@ interface CliOptions {
   override: boolean;
   presets: string; // path
   auth: string;
+  group: string;
   [key: string]: any; // for future modules
 }
 

@@ -61,7 +61,7 @@ export const listCommand: Command = async (name, sub, _options = {}) => {
   try {
     if (url) {
       const downloader = buildDownloader(options);
-      const serie = await downloader.getSerieInfo(url);
+      const serie = await downloader.getSerieInfo(url, options);
       if (serie) {
         if (!silence) {
           console.log(`Title: ${serie.title}`);
@@ -118,6 +118,7 @@ export const downloadCommand: Command = async (name, sub, _options = {}) => {
     if (url) {
       const downloader = buildDownloader(options);
       await downloader.downloadSerie(url, {
+        ...options,
         start: from,
         end: to,
         confirm: !yes,
@@ -169,7 +170,7 @@ export const chapterCommand: Command = async (name, sub, _options = {}) => {
       const downloader = buildDownloader(options);
       let serie: SerieInfo | undefined;
       if (output) {
-        serie = await downloader.getSerieInfo(url);
+        serie = await downloader.getSerieInfo(url, options);
       }
       await downloader.downloadChapter(chapterName ?? 'Untitled', url, {
         info: serie?.info,

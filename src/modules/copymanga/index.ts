@@ -42,9 +42,10 @@ export default class CopymangaDownloader extends ComicDownloader {
   async getSegmentedChapters(
     mangaId: string,
     page: number,
+    group = 'default',
   ): Promise<Chapter[]> {
     const res = await this.axios.get<CopymangaAPI.Chapter.Data>(
-      `/api/v3/comic/${mangaId}/group/default/chapters?limit=500&offset=${
+      `/api/v3/comic/${mangaId}/group/${group}/chapters?limit=500&offset=${
         page * 500
       }&platform=3`,
     );
@@ -62,7 +63,10 @@ export default class CopymangaDownloader extends ComicDownloader {
     return new URL(url).pathname.split('/').pop();
   }
 
-  async getSerieInfo(url: string): Promise<SerieInfo> {
+  async getSerieInfo(
+    url: string,
+    options: Partial<SerieDownloadOptions | CliOptions> = {},
+  ): Promise<SerieInfo> {
     const mangaId = this.getMangaId(url);
     if (!mangaId) {
       throw new Error('Invalid URL.');
@@ -89,7 +93,11 @@ export default class CopymangaDownloader extends ComicDownloader {
     const pagination = 500;
     const pages = Math.ceil((count || 1) / pagination);
     for (let page = 0; page < pages; page += pagination) {
-      const segment = await this.getSegmentedChapters(mangaId, page);
+      const segment = await this.getSegmentedChapters(
+        mangaId,
+        page,
+        options.group,
+      );
       chapters.push(...segment);
     }
 

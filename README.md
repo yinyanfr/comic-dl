@@ -198,6 +198,7 @@ const options = {
   info: true, // Optional: Generates ComicInfo.xml, default to **false**
   chapters: undefined, // Optional: Array of chapter indexes to download, will download the entire serie if not provided
   override: false, // Optional: Overriding downloaded chapters, default to false
+  group: 'default', // Optional: for sites like Copymanga, that offers series in multiple groups, default to default.
   onProgress: progress => {
     console.log(progress);
   }, // Optional: Called when a chapter is downloaded or failed to do so
@@ -228,6 +229,7 @@ const options = {
   title: 'Serie Title',
   info: ComicInfo, // Optional: Generates ComicInfo.xml, please refer to ComicInfo's Documentations
   override: false, // Optional: Overriding downloaded chapters, default to false
+  group: 'default', // Optional: for sites like Copymanga, that offers series in multiple groups, default to default.
   onProgress: progress => {}, // Optional: Called when a chapter is downloaded or failed to do so, the same as in serie options
 }; // Optional
 

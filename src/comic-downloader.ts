@@ -55,7 +55,10 @@ export default abstract class ComicDownloader {
    * @param url Series Url
    * @returns Promise, title and list of chapters with array index, name and url
    */
-  abstract getSerieInfo(url: string): Promise<SerieInfo>;
+  abstract getSerieInfo(
+    url: string,
+    options?: Partial<SerieDownloadOptions | CliOptions>,
+  ): Promise<SerieInfo>;
 
   /**
    *
@@ -321,7 +324,7 @@ export default abstract class ComicDownloader {
    */
   async downloadSerie(url: string, options: SerieDownloadOptions = {}) {
     this.detectBaseUrl(url);
-    const serie = await this.getSerieInfo(url);
+    const serie = await this.getSerieInfo(url, options);
     this.log(`Found ${serie.title}`);
     this.log(`Chapters Count: ${serie.chapters?.length}`);
 

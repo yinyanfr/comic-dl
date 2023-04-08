@@ -12,7 +12,11 @@
 
 - New `configs.indexedChapters` config and `-I, --indexed-chapters` flag, that will add chapter index to the folder / archive file name.
 - [CLI] _Experimental_ New `-h, --history` flag, that will add the serie url to a given text file when using the `download` command, its value is default to a `history.txt` file under the same path of `--output`.
-- New `options.group` option and `-g, --group` flag, for sites like Copymanga, that offers series in multiple groups.
+- New `options.group` option and `-g, --group` flag, for sites like Copymanga, that offers series in multiple groups, default to `default`.
+
+### Dev
+
+- A second paramenter `options?: Partial<SerieDownloadOptions | CliOptions>` is added to `getSerieInfo` that receive the options passed to `downloadSerie`
 
 ### Misc
 
