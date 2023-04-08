@@ -255,7 +255,9 @@ export default abstract class ComicDownloader {
       );
       if (!options.override && fs.existsSync(archiveWritePath)) {
         this.log(
-          `Skipped: ${options?.index} - ${name} has already been downloaded`,
+          `Skipped: ${
+            options?.index ?? ''
+          } - ${name} has already been downloaded`,
         );
         return skippedProgress;
       } else {
@@ -268,7 +270,9 @@ export default abstract class ComicDownloader {
         fs.existsSync(path.join(chapterWritePath, name))
       ) {
         this.log(
-          `Skipped: ${options?.index} - ${name} has already been downloaded`,
+          `Skipped: ${
+            options?.index ?? ''
+          } - ${name} has already been downloaded`,
         );
         return skippedProgress;
       } else {
@@ -309,7 +313,9 @@ export default abstract class ComicDownloader {
     }
 
     archive?.finalize();
-    this.log(`Saved Chapter: [${options?.index}] ${name}`);
+    this.log(
+      `Saved Chapter: ${options?.index ? `[${options.index}]` : ''} ${name}`,
+    );
     const progress = {
       index: options?.index,
       name,
