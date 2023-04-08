@@ -42,6 +42,7 @@ interface CliOptions {
   auth: string;
   group: string;
   indexedChapters: boolean; // indexed-chapters
+  history: boolean | string; // path
   [key: string]: any; // for future modules
 }
 

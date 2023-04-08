@@ -12,7 +12,9 @@ import {
   findModule,
   genModule,
   genPresets,
+  isString,
   mergeOptions,
+  writeHistory,
 } from './lib';
 
 function buildDownloader(options: Partial<CliOptions> = {}) {
@@ -112,6 +114,8 @@ export const downloadCommand: Command = async (name, sub, _options = {}) => {
     chapters,
     info,
     override,
+    history,
+    output = '.',
   } = options;
 
   const current: Partial<DownloadProgress> = {};
@@ -119,6 +123,13 @@ export const downloadCommand: Command = async (name, sub, _options = {}) => {
   try {
     if (url) {
       const downloader = buildDownloader(options);
+      if (history) {
+        const historyPath = isString(history)
+          ? (history as string)
+          : path.resolve(output, 'history.txt');
+        writeHistory(historyPath, url);
+      }
+
       await downloader.downloadSerie(url, {
         ...options,
         start: from,
