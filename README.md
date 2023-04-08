@@ -83,7 +83,10 @@ Options:
   -c, --cookie            Optional (but recommanded): Provide the path to a text file that contains your cookie.
   -F, --format            Optional: the format of downloaded picture, depending on the modules, example: webp / jpg.
   -f, --from              Optional: Starting chapter when downloading a serie, default to 0.
-  -h, --help              Output usage information
+  -g, --group             Optional: For sites that provides series in groups, please refer to the site info docs, default to default.
+  -H, --help              Output usage information
+  -h, --history           Optional: (Experimental) Add the serie url to a given text file when using the `download` command, its value is default to a `history.txt` file under the same path of `--output`.
+  -I, --indexed-chapters  Optional: Add index to the folder / archive file name of chapters.
   -i, --info              Optional: Generate ComicInfo.xml.
   -M, --max-title-length  Optional: restrict the length of title as the folder name.
   -m, --module            Optional: Specify the module (site) name. Will attempt to detect module by url if not set.
@@ -107,6 +110,9 @@ Examples:
 
   - Download chapter index 0, 4, 12 from a serie, overriding downloaded files.
   $ npx comic-dl dl -c cookie.txt -o ~/Download/manga -i -O -u serie_url -c 0,4,12
+
+  - Download from the group tankobon from a site that provide series in different groups.
+  $ npx comic-dl -u serie_url -g tankobon
 
   - Download a serie with presets
   $ npx comic-dl -p presets.json -u serie_url
