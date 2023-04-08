@@ -30,6 +30,7 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     url,
     format,
     auth,
+    indexedChapters,
   } = options;
   const Downloader = module?.length ? findModule(module) : detectModule(url);
   if (!Downloader) {
@@ -49,6 +50,7 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     maxTitleLength,
     zipLevel,
     format,
+    indexedChapters,
   });
 
   return downloader;

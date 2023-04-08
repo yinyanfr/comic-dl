@@ -191,17 +191,22 @@ export default abstract class ComicDownloader {
 
   /**
    * Download and write all images from a chapter
-   * @param name Chapter name
+   * @param _name Chapter name
    * @param uri Chapter uri
    * @param options title, index, onProgress
    * @returns DownloadProgress
    */
   async downloadChapter(
-    name: string,
+    _name: string,
     uri?: string,
     options: ChapterDownloadOptions = {},
     chapterOptions: Record<string, any> = {},
   ) {
+    const name =
+      options.index !== undefined && this.configs.indexedChapters
+        ? `${options.index} ${_name}`
+        : _name;
+
     if (!uri) {
       options?.onProgress?.({
         index: options?.index,

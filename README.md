@@ -158,6 +158,8 @@ const configs = {
   zipLevel: 5,
   // Format of downloaded image, (Optional: depending on the modules, normally default to webp or jpg)
   format: 'webp',
+  // Add index to the folder / archive file name of chapters (Optional)
+  indexedChapters: false,
 }; // Optional
 
 const downloader = new ZeroBywDownloader(destination, configs);
