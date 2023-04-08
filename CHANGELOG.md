@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.2.0
+
+`2023-04-08`
+
+### Site Support
+
+- Fixed Ganma: `downloadChapter` not working as intended
+
+### Feature
+
+- New `configs.indexedChapters` config and `-I, --indexed-chapters` flag, that will add chapter index to the folder / archive file name.
+- [CLI] _Experimental_ New `-h, --history` flag, that will add the serie url to a given text file when using the `download` command, its value is default to a `history.txt` file under the same path of `--output`.
+- New `options.group` option and `-g, --group` flag, for sites like Copymanga, that offers series in multiple groups, default to `default`.
+
+### Dev
+
+- A second paramenter `options?: Partial<SerieDownloadOptions | CliOptions>` is added to `getSerieInfo` that receive the options passed to `downloadSerie`
+
+### Misc
+
+- [CLI] Added spinners using `ora`
+
 ## 2.1.0
 
 `2023-04-02`
@@ -149,7 +171,7 @@ const downloader = new ZeroBywDownloader(destination, configs);
 
 - [CLI] The `-b, --batch` flag is now default to 1 when not set.
 - Downloaded images are now renamed by index (01 ~ ).
-- Downloaders now ignores downloaded chapters by default, set `options.override` to `true` or for CLI use `-O, --override` if you want to override.
+- Downloaders now ignores downloaded chapters by default, set `options.override` option to `true` or for CLI use `-O, --override` if you want to override.
 - [Library] Writing ComicInfo.xml to file is removed from `getSerieInfo`, thus a seperate function `writeComicInfo` has taken place, options from `getSerieInfo` is moved to `writeComicinfo`, and the typedef is renamed `WriteInfoOptions`.
 
 ```typescript

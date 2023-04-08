@@ -12,6 +12,8 @@ import archiver from 'archiver';
 import yesno from 'yesno';
 import { formatImageName, isString } from './lib';
 import mime from 'mime-types';
+import ora from 'ora';
+import type { Ora } from 'ora';
 
 const ComicInfoFilename = 'ComicInfo.xml';
 
@@ -55,7 +57,10 @@ export default abstract class ComicDownloader {
    * @param url Series Url
    * @returns Promise, title and list of chapters with array index, name and url
    */
-  abstract getSerieInfo(url: string): Promise<SerieInfo>;
+  abstract getSerieInfo(
+    url: string,
+    options?: Partial<SerieDownloadOptions | CliOptions>,
+  ): Promise<SerieInfo>;
 
   /**
    *
@@ -73,8 +78,12 @@ export default abstract class ComicDownloader {
    * -------------------------------------------------
    */
 
+  protected canConsole() {
+    return this.configs.verbose || !this.configs.silence;
+  }
+
   protected log(content: string) {
-    if (this.configs.verbose || !this.configs.silence) {
+    if (this.canConsole()) {
       console.log(content);
     }
   }
@@ -188,17 +197,28 @@ export default abstract class ComicDownloader {
 
   /**
    * Download and write all images from a chapter
-   * @param name Chapter name
+   * @param _name Chapter name
    * @param uri Chapter uri
    * @param options title, index, onProgress
    * @returns DownloadProgress
    */
   async downloadChapter(
-    name: string,
+    _name: string,
     uri?: string,
     options: ChapterDownloadOptions = {},
     chapterOptions: Record<string, any> = {},
   ) {
+    const name =
+      options.index !== undefined && this.configs.indexedChapters
+        ? `${options.index} ${_name}`
+        : _name;
+    let spinner: Ora | undefined;
+    if (this.canConsole()) {
+      spinner = ora(
+        `Downloading ${options?.index ? `[${options.index}]` : ''} ${name}`,
+      ).start();
+    }
+
     if (!uri) {
       options?.onProgress?.({
         index: options?.index,
@@ -246,8 +266,10 @@ export default abstract class ComicDownloader {
         `${name}.${this.configs?.archive === 'cbz' ? 'cbz' : 'zip'}`,
       );
       if (!options.override && fs.existsSync(archiveWritePath)) {
-        this.log(
-          `Skipped: ${options?.index} - ${name} has already been downloaded`,
+        spinner?.succeed(
+          `Skipped: ${
+            options?.index ? `[${options.index}]` : ''
+          } ${name} has already been downloaded`,
         );
         return skippedProgress;
       } else {
@@ -259,8 +281,10 @@ export default abstract class ComicDownloader {
         !options.override &&
         fs.existsSync(path.join(chapterWritePath, name))
       ) {
-        this.log(
-          `Skipped: ${options?.index} - ${name} has already been downloaded`,
+        spinner?.succeed(
+          `Skipped: ${
+            options?.index ? `[${options.index}]` : ''
+          } ${name} has already been downloaded`,
         );
         return skippedProgress;
       } else {
@@ -282,8 +306,10 @@ export default abstract class ComicDownloader {
       );
       if (failed?.length) {
         failures += failed.length;
-        this.log(
-          `Failed: Chapter ${name} - ${failed.length} images not downloaded`,
+        spinner?.warn(
+          `Failed: Chapter ${
+            options?.index ? `[${options.index}]` : ''
+          } ${name} - ${failed.length} images not downloaded`,
         );
       }
     }
@@ -301,7 +327,9 @@ export default abstract class ComicDownloader {
     }
 
     archive?.finalize();
-    this.log(`Saved Chapter: [${options?.index}] ${name}`);
+    spinner?.succeed(
+      `Saved Chapter: ${options?.index ? `[${options.index}]` : ''} ${name}`,
+    );
     const progress = {
       index: options?.index,
       name,
@@ -321,7 +349,7 @@ export default abstract class ComicDownloader {
    */
   async downloadSerie(url: string, options: SerieDownloadOptions = {}) {
     this.detectBaseUrl(url);
-    const serie = await this.getSerieInfo(url);
+    const serie = await this.getSerieInfo(url, options);
     this.log(`Found ${serie.title}`);
     this.log(`Chapters Count: ${serie.chapters?.length}`);
 

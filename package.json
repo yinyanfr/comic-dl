@@ -1,6 +1,6 @@
 {
   "name": "comic-dl",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Yet another batch downloader for manga/comic sites",
   "main": "dist/index.js",
   "bin": "dist/cli/index.js",
@@ -56,6 +56,7 @@
     "dayjs": "^1.11.7",
     "jsdom": "^21.1.1",
     "mime-types": "^2.1.35",
+    "ora": "^5.4.1",
     "yesno": "^0.4.0"
   },
   "lint-staged": {

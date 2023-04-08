@@ -96,6 +96,18 @@ args
   .option('override', 'Optional: overrides downloaded chapters.')
   .option('presets', 'Optional: loading a JSON file of site presets.')
   .option('auth', 'Optional: A string that contains token or cookie.')
+  .option(
+    'group',
+    'Optional: For sites that provides series in groups, please refer to the site info docs, default to default.',
+  )
+  .option(
+    'indexed-chapters',
+    'Optional: Add index to the folder / archive file name of chapters.',
+  )
+  .option(
+    'history',
+    'Optional: (Experimental) Add the serie url to a given text file when using the `download` command, its value is default to a `history.txt` file under the same path of `--output`.',
+  )
   .example(
     'npx comic-dl dl -c cookie.txt -f 10 -t 20 -o ~/Download/manga -a zip -r -i -b 10 -u serie_url',
     'Download a serie from its 10th chapter to 20th chapter to the given destination, 10 images at a time, output zip archives with ComicInfo.xml by chapter, retry if a chapter is not properly downloaded.',
@@ -103,6 +115,10 @@ args
   .example(
     'npx comic-dl dl -c cookie.txt -o ~/Download/manga -i -O -u serie_url -c 0,4,12',
     'Download chapter index 0, 4, 12 from a serie, overriding downloaded files.',
+  )
+  .example(
+    'npx comic-dl -u serie_url -g tankobon',
+    'Download from the group tankobon from a site that provide series in different groups.',
   )
   .example(
     'npx comic-dl -p presets.json -u serie_url',

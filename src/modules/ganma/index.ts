@@ -18,8 +18,13 @@ export default class GanmaDownloader extends ComicDownloader {
     cookie: './ganma-cookie.txt',
   };
 
-  getMangaId(url: string) {
-    return new URL(url).pathname.split('/').pop();
+  getMangaId(url: string): string | undefined {
+    // https://ganma.jp/otonanokoi/70427cf0-9abf-11ed-a01f-2283d0206510/2
+    return new URL(url).pathname.split('/')[1];
+  }
+
+  getChapterId(url: string): string | undefined {
+    return new URL(url).pathname.split('/')[2];
   }
 
   protected detectBaseUrl(url: string): string {
@@ -56,6 +61,7 @@ export default class GanmaDownloader extends ComicDownloader {
       name: `${e.title} ${e.subtitle ?? ''}`,
       uri: url,
       options: {
+        chapterId: e?.id,
         pageUrls: e?.page?.files?.map(
           file => `${e?.page?.baseUrl}${file}?${e?.page?.token}`,
         ),
@@ -69,10 +75,25 @@ export default class GanmaDownloader extends ComicDownloader {
     };
   }
 
-  protected getImageList(
+  protected async getImageList(
     url: string,
     options: Record<string, any> = {},
   ): Promise<(string | null)[]> {
-    return Promise.resolve(options.pageUrls);
+    if (options.pageUrls) {
+      return options?.pageUrls ?? null;
+    }
+
+    const serieInfo = await this.getSerieInfo(url);
+    const chapterId = this.getChapterId(url);
+    if (!chapterId) {
+      throw new Error('Invalid URL.');
+    }
+    const chapter = serieInfo.chapters.find(
+      e => e?.options?.chapterId === chapterId,
+    );
+    if (!chapter) {
+      throw new Error('Chapter not found.');
+    }
+    return chapter?.options?.pageUrls ?? null;
   }
 }

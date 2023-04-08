@@ -30,6 +30,12 @@ The intended way to use copymanga is using their website and mobile apps, both o
 
 Copymanga provides images in webp and jpg format, you can set the preferred format by `options.format`, but both of them are cropped to 800px in width.
 
+Copymanga may provide series in groups:
+
+- `default`: 默认
+- `other_group`: 其它系列
+- `tankobon`: 单行本
+
 ## [Ganma](https://ganma.jp/)
 
 `version 2.1.0`

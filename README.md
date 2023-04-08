@@ -83,7 +83,10 @@ Options:
   -c, --cookie            Optional (but recommanded): Provide the path to a text file that contains your cookie.
   -F, --format            Optional: the format of downloaded picture, depending on the modules, example: webp / jpg.
   -f, --from              Optional: Starting chapter when downloading a serie, default to 0.
-  -h, --help              Output usage information
+  -g, --group             Optional: For sites that provides series in groups, please refer to the site info docs, default to default.
+  -H, --help              Output usage information
+  -h, --history           Optional: (Experimental) Add the serie url to a given text file when using the `download` command, its value is default to a `history.txt` file under the same path of `--output`.
+  -I, --indexed-chapters  Optional: Add index to the folder / archive file name of chapters.
   -i, --info              Optional: Generate ComicInfo.xml.
   -M, --max-title-length  Optional: restrict the length of title as the folder name.
   -m, --module            Optional: Specify the module (site) name. Will attempt to detect module by url if not set.
@@ -107,6 +110,9 @@ Examples:
 
   - Download chapter index 0, 4, 12 from a serie, overriding downloaded files.
   $ npx comic-dl dl -c cookie.txt -o ~/Download/manga -i -O -u serie_url -c 0,4,12
+
+  - Download from the group tankobon from a site that provide series in different groups.
+  $ npx comic-dl -u serie_url -g tankobon
 
   - Download a serie with presets
   $ npx comic-dl -p presets.json -u serie_url
@@ -158,6 +164,8 @@ const configs = {
   zipLevel: 5,
   // Format of downloaded image, (Optional: depending on the modules, normally default to webp or jpg)
   format: 'webp',
+  // Add index to the folder / archive file name of chapters (Optional)
+  indexedChapters: false,
 }; // Optional
 
 const downloader = new ZeroBywDownloader(destination, configs);
@@ -198,6 +206,7 @@ const options = {
   info: true, // Optional: Generates ComicInfo.xml, default to **false**
   chapters: undefined, // Optional: Array of chapter indexes to download, will download the entire serie if not provided
   override: false, // Optional: Overriding downloaded chapters, default to false
+  group: 'default', // Optional: for sites like Copymanga, that offers series in multiple groups, default to default.
   onProgress: progress => {
     console.log(progress);
   }, // Optional: Called when a chapter is downloaded or failed to do so
@@ -228,6 +237,7 @@ const options = {
   title: 'Serie Title',
   info: ComicInfo, // Optional: Generates ComicInfo.xml, please refer to ComicInfo's Documentations
   override: false, // Optional: Overriding downloaded chapters, default to false
+  group: 'default', // Optional: for sites like Copymanga, that offers series in multiple groups, default to default.
   onProgress: progress => {}, // Optional: Called when a chapter is downloaded or failed to do so, the same as in serie options
 }; // Optional
 

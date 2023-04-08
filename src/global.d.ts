@@ -14,6 +14,36 @@ interface Configs {
   maxTitleLength?: number;
   zipLevel?: number;
   format?: string;
+  indexedChapters?: boolean;
+}
+
+interface CliOptions {
+  module: string;
+  url: string;
+  name: string;
+  output: string;
+  cookie: string;
+  from: number;
+  to: number;
+  archive: 'zip' | 'cbz' | boolean;
+  timeout: number;
+  silence: boolean;
+  batch: number;
+  verbose: boolean;
+  yes: boolean;
+  maxTitleLength: number; // max-title-length
+  zipLevel: number; // zip-level
+  retry: boolean;
+  chapters: string | number; // 1,2,4,7 as string or a single number
+  info: boolean;
+  format: string;
+  override: boolean;
+  presets: string; // path
+  auth: string;
+  group: string;
+  indexedChapters: boolean; // indexed-chapters
+  history: boolean | string; // path
+  [key: string]: any; // for future modules
 }
 
 interface Chapter {
@@ -80,6 +110,7 @@ interface SerieDownloadOptions {
   confirm?: boolean;
   info?: boolean;
   override?: boolean;
+  group?: string;
   onProgress?: (progress: DownloadProgress) => void;
 }
 
@@ -101,32 +132,6 @@ interface SegmentDownloadOptions {
   offset?: number;
   title?: string;
   archive?: Archiver;
-}
-
-interface CliOptions {
-  module: string;
-  url: string;
-  name: string;
-  output: string;
-  cookie: string;
-  from: number;
-  to: number;
-  archive: 'zip' | 'cbz' | boolean;
-  timeout: number;
-  silence: boolean;
-  batch: number;
-  verbose: boolean;
-  yes: boolean;
-  maxTitleLength: number; // max-title-length
-  zipLevel: number; // zip-level
-  retry: boolean;
-  chapters: string | number; // 1,2,4,7 as string or a single number
-  info: boolean;
-  format: string;
-  override: boolean;
-  presets: string; // path
-  auth: string;
-  [key: string]: any; // for future modules
 }
 
 type Command = (

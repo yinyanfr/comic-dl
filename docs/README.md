@@ -10,3 +10,7 @@ General guide for Using `comic-dl` can be found in [project readme](../README.md
 ## Dev Guide
 
 - [Creating a module](./dev/module.md)
+
+## Migration Guide
+
+- [From v1 to v2](./migration/v2.md)

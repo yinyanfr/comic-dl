@@ -9,6 +9,10 @@ import { indexDts, indexTs, exportDefault } from './templates';
 import defaultPresets from './presets.json';
 import * as plugins from '../modules';
 
+export function isString(n: unknown) {
+  return typeof n === 'string' || n instanceof String;
+}
+
 export function detectModule(url?: string) {
   if (!url) return undefined;
   const downloaders = Object.values(plugins);
@@ -126,4 +130,26 @@ export function mergeOptions(
     ...mergeObj(thisModule),
     ...purgeObj(options),
   };
+}
+
+export function writeHistory(historyPath: string, _url: string) {
+  const url = new URL(_url).href;
+  if (fs.existsSync(historyPath)) {
+    const history = fs
+      .readFileSync(historyPath)
+      .toString()
+      .split('\n')
+      .filter(e => e.length);
+    if (!history.find(e => e === url)) {
+      history.push(url);
+      fs.writeFileSync(historyPath, history.join('\n'));
+    }
+  } else {
+    const dirPath = path.dirname(historyPath);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+    const history = [url];
+    fs.writeFileSync(historyPath, history.join('\n'));
+  }
 }

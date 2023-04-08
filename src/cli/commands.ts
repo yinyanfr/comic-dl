@@ -12,7 +12,9 @@ import {
   findModule,
   genModule,
   genPresets,
+  isString,
   mergeOptions,
+  writeHistory,
 } from './lib';
 
 function buildDownloader(options: Partial<CliOptions> = {}) {
@@ -30,6 +32,7 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     url,
     format,
     auth,
+    indexedChapters,
   } = options;
   const Downloader = module?.length ? findModule(module) : detectModule(url);
   if (!Downloader) {
@@ -49,6 +52,7 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     maxTitleLength,
     zipLevel,
     format,
+    indexedChapters,
   });
 
   return downloader;
@@ -61,7 +65,7 @@ export const listCommand: Command = async (name, sub, _options = {}) => {
   try {
     if (url) {
       const downloader = buildDownloader(options);
-      const serie = await downloader.getSerieInfo(url);
+      const serie = await downloader.getSerieInfo(url, options);
       if (serie) {
         if (!silence) {
           console.log(`Title: ${serie.title}`);
@@ -110,6 +114,8 @@ export const downloadCommand: Command = async (name, sub, _options = {}) => {
     chapters,
     info,
     override,
+    history,
+    output = '.',
   } = options;
 
   const current: Partial<DownloadProgress> = {};
@@ -117,7 +123,15 @@ export const downloadCommand: Command = async (name, sub, _options = {}) => {
   try {
     if (url) {
       const downloader = buildDownloader(options);
+      if (history) {
+        const historyPath = isString(history)
+          ? (history as string)
+          : path.resolve(output, 'history.txt');
+        writeHistory(historyPath, url);
+      }
+
       await downloader.downloadSerie(url, {
+        ...options,
         start: from,
         end: to,
         confirm: !yes,
@@ -169,7 +183,7 @@ export const chapterCommand: Command = async (name, sub, _options = {}) => {
       const downloader = buildDownloader(options);
       let serie: SerieInfo | undefined;
       if (output) {
-        serie = await downloader.getSerieInfo(url);
+        serie = await downloader.getSerieInfo(url, options);
       }
       await downloader.downloadChapter(chapterName ?? 'Untitled', url, {
         info: serie?.info,
