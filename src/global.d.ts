@@ -44,6 +44,7 @@ interface CliOptions {
   indexedChapters: boolean; // indexed-chapters
   history: boolean | string; // path
   shorthandUrl: boolean | string;
+  list: string;
   [key: string]: any; // for future modules
 }
 

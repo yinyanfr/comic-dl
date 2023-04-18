@@ -26,11 +26,16 @@ import ComicDownloader from '../../core';
   - When using the `-h, --history` flag, the url registered will still be the completed url.
   - A `static urlCompletion` method is added to modules for developers.
   - The `-u, --url` flag has a higher priorty than this flag.
-- [CLI] New `-l, --list` flag is added, that can download a list of urls.
+- [CLI] _Experimental_ New `-l, --list` flag is added, that can download a list of urls.
   - This flag only applies to the `dl, download` command.
   - Please note that due to the stability of each module, you may end up with multiple failures.
   - You can use the `-h, --history` flag added in the `version 2.2.0` to register your download history, so that you can use this flag as a "sync" functionality.
   - You can use the `-S, --shorthand-url` flag without value if the list your list is composed of shorthand urls.
+
+### Fix
+
+- [core] Fixed a bug that causes index 0 to display improperly.
+- [core] To prevent unnecessary network requests, the check for chapter existence has been moved ahead of the network requests.
 
 ### Dev
 

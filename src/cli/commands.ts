@@ -104,7 +104,7 @@ export const listCommand: Command = async (name, sub, _options = {}) => {
   }
 };
 
-export const downloadCommand: Command = async (name, sub, _options = {}) => {
+export const _downloadCommand: Command = async (name, sub, _options = {}) => {
   const options = mergeOptions(_options);
   const {
     url,
@@ -177,6 +177,26 @@ export const downloadCommand: Command = async (name, sub, _options = {}) => {
       console.log(
         'No chapter is downloaded, please check the availabiliy of the module (site) or your Internet connection.',
       );
+    }
+  }
+};
+
+export const downloadCommand: Command = async (name, sub, _options = {}) => {
+  const { list, shorthandUrl } = _options;
+  if (!list) {
+    await _downloadCommand(name, sub, _options);
+  } else {
+    const urlListReader = await fs.promises.readFile(path.resolve(list));
+    const urlList = urlListReader.toString().split('\n');
+    for (let u = 0; u < urlList.length; u++) {
+      const url = urlList[u];
+      const options = { ..._options };
+      if (shorthandUrl) {
+        options.shorthandUrl = url;
+      } else {
+        options.url = url;
+      }
+      await _downloadCommand(name, sub, options);
     }
   }
 };

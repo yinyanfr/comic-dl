@@ -237,16 +237,7 @@ export default abstract class ComicDownloader {
     if (!this.axios.defaults.baseURL) {
       this.detectBaseUrl(uri);
     }
-    const imgList = await this.getImageList(uri, chapterOptions);
-    if (!imgList?.length) {
-      options?.onProgress?.({
-        index: options?.index,
-        name,
-        uri,
-        status: 'failed',
-      });
-      throw new Error('Cannot get image list.');
-    }
+
     const chapterWritePath = path.join(
       this.destination,
       options?.title ? options.title : '.',
@@ -274,7 +265,7 @@ export default abstract class ComicDownloader {
       if (!options.override && fs.existsSync(archiveWritePath)) {
         spinner?.succeed(
           `Skipped: ${
-            options?.index ? `[${options.index}]` : ''
+            options?.index !== undefined ? `[${options.index}]` : ''
           } ${name} has already been downloaded`,
         );
         return skippedProgress;
@@ -289,7 +280,7 @@ export default abstract class ComicDownloader {
       ) {
         spinner?.succeed(
           `Skipped: ${
-            options?.index ? `[${options.index}]` : ''
+            options?.index !== undefined ? `[${options.index}]` : ''
           } ${name} has already been downloaded`,
         );
         return skippedProgress;
@@ -300,6 +291,16 @@ export default abstract class ComicDownloader {
 
     let failures = 0;
     const step = this.configs?.batchSize ?? 10;
+    const imgList = await this.getImageList(uri, chapterOptions);
+    if (!imgList?.length) {
+      options?.onProgress?.({
+        index: options?.index,
+        name,
+        uri,
+        status: 'failed',
+      });
+      throw new Error('Cannot get image list.');
+    }
     for (let i = 0; i < imgList.length; i += step) {
       const failed = await this.downloadSegment(
         name,
