@@ -6,25 +6,28 @@
 
 ### Deprecation
 
-- Import ComicDownloader from 'comic-downloader.ts' is deprecated, and will be removed in the next major version.
+- [Dev] Import ComicDownloader from 'comic-downloader.ts' is deprecated, and will be removed in the next major version.
+  - This is only for module developers, the usage of the library and the CLI is unaffected.
 
 ```typescript
 // Your module
 
-// before
+// <= 2.2.0 and < 3.0.0
 import ComicDownloader from '../../comic-downloader';
 
-// now
+// >= 2.3.0
 import ComicDownloader from '../../core';
 ```
 
 ### Feature
 
 - [CLI] New `-S, --shorthand-url` flag is added, please refer to the documentation of each module.
+  - The `-m, --module` flag is required when using this flag.
   - When using the `-h, --history` flag, the url registered will still be the completed url.
   - A `static urlCompletion` method is added to modules for developers.
   - The `-u, --url` flag has a higher priorty than this flag.
 - [CLI] New `-l, --list` flag is added, that can download a list of urls.
+  - This flag only applies to the `dl, download` command.
   - Please note that due to the stability of each module, you may end up with multiple failures.
   - You can use the `-h, --history` flag added in the `version 2.2.0` to register your download history, so that you can use this flag as a "sync" functionality.
   - You can use the `-S, --shorthand-url` flag without value if the list your list is composed of shorthand urls.

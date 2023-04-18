@@ -43,6 +43,7 @@ interface CliOptions {
   group: string;
   indexedChapters: boolean; // indexed-chapters
   history: boolean | string; // path
+  shorthandUrl: boolean | string;
   [key: string]: any; // for future modules
 }
 

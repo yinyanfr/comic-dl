@@ -55,39 +55,42 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     indexedChapters,
   });
 
-  return downloader;
+  return { downloader, Downloader };
 }
 
 export const listCommand: Command = async (name, sub, _options = {}) => {
   const options = mergeOptions(_options);
-  const { url, verbose, silence, output, name: rename } = options;
+  const { url, shorthandUrl, verbose, silence, output, name: rename } = options;
 
   try {
-    if (url) {
-      const downloader = buildDownloader(options);
-      const serie = await downloader.getSerieInfo(url, options);
-      if (serie) {
-        if (!silence) {
-          console.log(`Title: ${serie.title}`);
+    if (!url && !shorthandUrl) {
+      console.warn('Please Provide URL.');
+    }
+
+    const { downloader, Downloader } = buildDownloader(options);
+    const completeUrl = shorthandUrl
+      ? Downloader.urlCompletion(shorthandUrl as string)
+      : (url as string);
+    const serie = await downloader.getSerieInfo(completeUrl, options);
+    if (serie) {
+      if (!silence) {
+        console.log(`Title: ${serie.title}`);
+        console.log('----');
+        serie.chapters?.forEach(e => {
+          console.log(`${e.index}  ${e.name}`);
+          console.log(`${e.uri}`);
           console.log('----');
-          serie.chapters?.forEach(e => {
-            console.log(`${e.index}  ${e.name}`);
-            console.log(`${e.uri}`);
-            console.log('----');
+        });
+
+        if (serie?.info) {
+          Object.keys(serie.info).forEach(e => {
+            console.log(`${e}: ${serie.info?.[e]}`);
           });
-
-          if (serie?.info) {
-            Object.keys(serie.info).forEach(e => {
-              console.log(`${e}: ${serie.info?.[e]}`);
-            });
-          }
         }
+      }
 
-        if (output) {
-          await downloader.writeComicInfo(serie, { output, rename });
-        }
-      } else {
-        console.log('Please Provide URL.');
+      if (output) {
+        await downloader.writeComicInfo(serie, { output, rename });
       }
     }
   } catch (error) {
@@ -105,6 +108,7 @@ export const downloadCommand: Command = async (name, sub, _options = {}) => {
   const options = mergeOptions(_options);
   const {
     url,
+    shorthandUrl,
     from,
     to,
     yes,
@@ -121,32 +125,35 @@ export const downloadCommand: Command = async (name, sub, _options = {}) => {
   const current: Partial<DownloadProgress> = {};
 
   try {
-    if (url) {
-      const downloader = buildDownloader(options);
-      if (history) {
-        const historyPath = isString(history)
-          ? (history as string)
-          : path.resolve(output, 'history.txt');
-        writeHistory(historyPath, url);
-      }
-
-      await downloader.downloadSerie(url, {
-        ...options,
-        start: from,
-        end: to,
-        confirm: !yes,
-        rename,
-        retry,
-        info,
-        override,
-        chapters:
-          chapters !== undefined
-            ? `${chapters}`.split(',').map(e => parseInt(e))
-            : undefined,
-      });
-    } else {
-      console.log('Please Provide URL.');
+    if (!url && !shorthandUrl) {
+      console.warn('Please Provide URL.');
     }
+
+    const { downloader, Downloader } = buildDownloader(options);
+    const completeUrl = shorthandUrl
+      ? Downloader.urlCompletion(shorthandUrl as string)
+      : (url as string);
+    if (history) {
+      const historyPath = isString(history)
+        ? (history as string)
+        : path.resolve(output, 'history.txt');
+      writeHistory(historyPath, completeUrl);
+    }
+
+    await downloader.downloadSerie(completeUrl, {
+      ...options,
+      start: from,
+      end: to,
+      confirm: !yes,
+      rename,
+      retry,
+      info,
+      override,
+      chapters:
+        chapters !== undefined
+          ? `${chapters}`.split(',').map(e => parseInt(e))
+          : undefined,
+    });
   } catch (error) {
     if (verbose) {
       console.error(error);
@@ -176,22 +183,32 @@ export const downloadCommand: Command = async (name, sub, _options = {}) => {
 
 export const chapterCommand: Command = async (name, sub, _options = {}) => {
   const options = mergeOptions(_options);
-  const { url, name: chapterName, verbose, output, override } = options;
+  const {
+    url,
+    shorthandUrl,
+    name: chapterName,
+    verbose,
+    output,
+    override,
+  } = options;
 
   try {
-    if (url) {
-      const downloader = buildDownloader(options);
-      let serie: SerieInfo | undefined;
-      if (output) {
-        serie = await downloader.getSerieInfo(url, options);
-      }
-      await downloader.downloadChapter(chapterName ?? 'Untitled', url, {
-        info: serie?.info,
-        override,
-      });
-    } else {
-      console.log('Please Provide URL.');
+    if (!url && !shorthandUrl) {
+      console.warn('Please Provide URL.');
     }
+
+    const { downloader, Downloader } = buildDownloader(options);
+    const completeUrl = shorthandUrl
+      ? Downloader.urlCompletion(shorthandUrl as string)
+      : (url as string);
+    let serie: SerieInfo | undefined;
+    if (output) {
+      serie = await downloader.getSerieInfo(completeUrl, options);
+    }
+    await downloader.downloadChapter(chapterName ?? 'Untitled', url, {
+      info: serie?.info,
+      override,
+    });
   } catch (error) {
     if (verbose) {
       console.error(error);

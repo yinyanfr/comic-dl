@@ -29,6 +29,10 @@ export default class CopymangaDownloader extends ComicDownloader {
     format: 'webp',
   };
 
+  static urlCompletion(shorthandUrl: string): string {
+    return `https://www.copymanga.site/comic/${shorthandUrl}`;
+  }
+
   constructor(protected destination: string, protected configs: Configs = {}) {
     super(destination, configs);
     this.axios.defaults.baseURL = API_URL;

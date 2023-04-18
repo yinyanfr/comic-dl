@@ -18,6 +18,10 @@ export default class GanmaDownloader extends ComicDownloader {
     cookie: './ganma-cookie.txt',
   };
 
+  static urlCompletion(shorthandUrl: string): string {
+    return `https://ganma.jp/${shorthandUrl}`;
+  }
+
   getMangaId(url: string): string | undefined {
     // https://ganma.jp/otonanokoi/70427cf0-9abf-11ed-a01f-2283d0206510/2
     return new URL(url).pathname.split('/')[1];

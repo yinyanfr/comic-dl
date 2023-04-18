@@ -16,6 +16,8 @@ Still zerobyw provides its contents with care, images are normally not compresse
 
 As of today, you need to login to get access to most of contents, and some of the contents are behind the paywall (5 RMB per month).
 
+Zerobyw accepts shorthand urls in the format of numbers, e.g. `--shorthand-url 12345`.
+
 ## [Copymanga](https://www.copymanga.site/)
 
 `version 2.0.0`
@@ -36,6 +38,8 @@ Copymanga may provide series in groups:
 - `other_group`: 其它系列
 - `tankobon`: 单行本
 
+Copymanga accepts shorthand urls in the format of mangaIds, e.g. `--shorthand-url doityourself`.
+
 ## [Ganma](https://ganma.jp/)
 
 `version 2.1.0`
@@ -45,3 +49,5 @@ Ganma is a non-pirate site where contents are behind the paywall (680 JPY monthl
 Ganma provides official Japanese manga series.
 
 This module will be maintained for as long as my Ganma subscription lasts.
+
+Ganma accepts shorthand urls in the format of mangaIds, e.g. `--shorthand-url otonanokoi`.

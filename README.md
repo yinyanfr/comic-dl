@@ -15,8 +15,10 @@ Please help me translate the documents, thanks.
 
 ## :star2: Features
 
+- Very low memory usage
 - CLI tools
-- Supports multiple sites (More on the road).
+- Supports multiple sites (More on the road)
+- Supports shorthand URLs
 - Download as ZIP/CBZ, or just a folder of pictures
 - Downloading progress watch
 - Detects downloaded chapters

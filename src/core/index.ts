@@ -27,6 +27,10 @@ export default abstract class ComicDownloader {
 
   static readonly preferredCLIPresets: Partial<CliOptions> = {};
 
+  static urlCompletion(shorthandUrl: string): string {
+    return shorthandUrl;
+  }
+
   protected axios: AxiosInstance;
 
   constructor(protected destination: string, protected configs: Configs = {}) {
