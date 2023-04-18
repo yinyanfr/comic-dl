@@ -64,6 +64,10 @@ This method is optional, but without which your module can't handle a url in CLI
 
 Please note that this only serves as a template and is not taken as the default configs or options of this module.
 
+### urlCompletion
+
+`static urlCompletion` is used to complete a shorthand Url.
+
 ### constructor
 
 `constructor` is the initialization function, where you can configurate your module with configs.

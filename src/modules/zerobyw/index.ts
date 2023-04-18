@@ -1,5 +1,5 @@
 import { JSDOM } from 'jsdom';
-import ComicDownloader from '../../comic-downloader';
+import ComicDownloader from '../../core';
 
 const Selectors = {
   chapters: '.uk-grid-collapse .muludiv a',
@@ -20,6 +20,10 @@ export default class ZeroBywDownloader extends ComicDownloader {
   static readonly preferredCLIPresets: Partial<CliOptions> = {
     cookie: './zerobyw-cookie.txt',
   };
+
+  static urlCompletion(shorthandUrl: string): string {
+    return `http://www.zerobyw4090.com/plugin.php?id=jameson_manhua&c=index&a=bofang&kuid=${shorthandUrl}`;
+  }
 
   protected detectBaseUrl(url: string): void {
     const match = url.match(/^https?:\/\/[^.]+\.[^/]+/);

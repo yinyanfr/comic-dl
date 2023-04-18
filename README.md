@@ -15,11 +15,14 @@ Please help me translate the documents, thanks.
 
 ## :star2: Features
 
+- Very low memory usage
 - CLI tools
-- Supports multiple sites (More on the road).
+- Supports multiple sites (More on the road)
+- Supports shorthand URLs
 - Download as ZIP/CBZ, or just a folder of pictures
 - Downloading progress watch
 - Detects downloaded chapters
+- Sync / Update downloaded chapters
 - Generates [ComicInfo.xml](https://anansi-project.github.io/docs/comicinfo/intro)
 
 ## :rainbow: [Site List](docs/user/sites.md)
@@ -88,6 +91,7 @@ Options:
   -h, --history           Optional: (Experimental) Add the serie url to a given text file when using the `download` command, its value is default to a `history.txt` file under the same path of `--output`.
   -I, --indexed-chapters  Optional: Add index to the folder / archive file name of chapters.
   -i, --info              Optional: Generate ComicInfo.xml.
+  -l, --list              Optional: (Experimental) The path to a text file that contains a list of URLs.
   -M, --max-title-length  Optional: restrict the length of title as the folder name.
   -m, --module            Optional: Specify the module (site) name. Will attempt to detect module by url if not set.
   -n, --name              Optional: Proride the serie title and override the folder name.
@@ -95,10 +99,11 @@ Options:
   -O, --override          Optional: overrides downloaded chapters.
   -p, --presets           Optional: loading a JSON file of site presets.
   -r, --retry             Optional: Automatically re-download chapters with failed images.
+  -S, --shorthand-url     Optional: The shorthand url, please refer to the module docs.
   -s, --slience           Optional: Silence the console output, including the confirm prompt.
   -T, --timeout           Optional: Override the default 10s request timeout.
   -t, --to                Optional: Ending chapter when downloading a serie, defaults to chapter.length - 1.
-  -u, --url               The url to the serie or the chapter.
+  -u, --url               Optional: The url to the serie or the chapter.
   -v, --verbose           Optional: Display detailed error message, overrides silence.
   -V, --version           Output the version number
   -y, --yes               Optional: Skipping confirmation prompt when downloading series.
@@ -119,6 +124,9 @@ Examples:
 
   - List all chapters of the given serie.
   $ npx comic-dl ls -u serie_url
+
+  - Using shorthand URLs.
+  $ npx comic-dl -m zerobyw -S 12345
 
   - Download a chapter named Chapter1 to current path.
   $ npx comic-dl ch -n Chapter1 -u chapter_url -c cookie.txt

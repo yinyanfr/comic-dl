@@ -5,7 +5,7 @@
  * Copyright (c) 2023 Yan
  */
 
-import ComicDownloader from '../../comic-downloader';
+import ComicDownloader from '../../core';
 
 export default class GanmaDownloader extends ComicDownloader {
   static readonly siteName = 'ganma';
@@ -17,6 +17,10 @@ export default class GanmaDownloader extends ComicDownloader {
   static readonly preferredCLIPresets: Partial<CliOptions> = {
     cookie: './ganma-cookie.txt',
   };
+
+  static urlCompletion(shorthandUrl: string): string {
+    return `https://ganma.jp/${shorthandUrl}`;
+  }
 
   getMangaId(url: string): string | undefined {
     // https://ganma.jp/otonanokoi/70427cf0-9abf-11ed-a01f-2283d0206510/2

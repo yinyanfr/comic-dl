@@ -15,7 +15,7 @@ export function indexDts(name: string) {
 export function indexTs(name: string) {
   return `/// <reference path="./index.d.ts" />
 
-  import ComicDownloader from "../../comic-downloader";
+  import ComicDownloader from "../../core";
   
   export default class ${cap1(name)}Downloader extends ComicDownloader {
     static readonly siteName = "${name}";
@@ -25,6 +25,10 @@ export function indexTs(name: string) {
     }
 
     static readonly preferredCLIPresets: Partial<CliOptions> = {};
+
+    static urlCompletion(shorthandUrl: string): string {
+      return shorthandUrl;
+    }
 
     constructor(protected destination: string, protected configs: Configs = {}) {
       super(destination, configs);

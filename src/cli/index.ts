@@ -36,7 +36,7 @@ args
     'module',
     'Optional: Specify the module (site) name. Will attempt to detect module by url if not set.',
   )
-  .option('url', 'The url to the serie or the chapter.')
+  .option('url', 'Optional: The url to the serie or the chapter.')
   .option(
     'name',
     'Optional: Proride the serie title and override the folder name.',
@@ -108,6 +108,14 @@ args
     'history',
     'Optional: (Experimental) Add the serie url to a given text file when using the `download` command, its value is default to a `history.txt` file under the same path of `--output`.',
   )
+  .option(
+    'shorthand-url',
+    'Optional: The shorthand url, please refer to the module docs.',
+  )
+  .option(
+    'list',
+    'Optional: (Experimental) The path to a text file that contains a list of URLs.',
+  )
   .example(
     'npx comic-dl dl -c cookie.txt -f 10 -t 20 -o ~/Download/manga -a zip -r -i -b 10 -u serie_url',
     'Download a serie from its 10th chapter to 20th chapter to the given destination, 10 images at a time, output zip archives with ComicInfo.xml by chapter, retry if a chapter is not properly downloaded.',
@@ -128,6 +136,7 @@ args
     'npx comic-dl ls -u serie_url',
     'List all chapters of the given serie.',
   )
+  .example('npx comic-dl -m zerobyw -S 12345', 'Using shorthand URLs.')
   .example(
     'npx comic-dl ch -n Chapter1 -u chapter_url -c cookie.txt',
     'Download a chapter named Chapter1 to current path.',

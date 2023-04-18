@@ -6,7 +6,7 @@
  */
 
 import dayjs from 'dayjs';
-import ComicDownloader from '../../comic-downloader';
+import ComicDownloader from '../../core';
 
 const API_HEADERS = {
   'User-Agent':
@@ -28,6 +28,10 @@ export default class CopymangaDownloader extends ComicDownloader {
   static readonly preferredCLIPresets: Partial<CliOptions> = {
     format: 'webp',
   };
+
+  static urlCompletion(shorthandUrl: string): string {
+    return `https://www.copymanga.site/comic/${shorthandUrl}`;
+  }
 
   constructor(protected destination: string, protected configs: Configs = {}) {
     super(destination, configs);

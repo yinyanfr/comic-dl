@@ -1,5 +1,47 @@
 # Changelog
 
+## Draft: 2.3.0
+
+`2023-04-18`
+
+### Deprecation
+
+- [Dev] Import ComicDownloader from 'comic-downloader.ts' is deprecated, and will be removed in the next major version.
+  - This is only for module developers, the usage of the library and the CLI is unaffected.
+
+```typescript
+// Your module
+
+// <= 2.2.0 and < 3.0.0
+import ComicDownloader from '../../comic-downloader';
+
+// >= 2.3.0
+import ComicDownloader from '../../core';
+```
+
+### Feature
+
+- [CLI] New `-S, --shorthand-url` flag is added, please refer to the documentation of each module.
+  - The `-m, --module` flag is required when using this flag.
+  - When using the `-h, --history` flag, the url registered will still be the completed url.
+  - A `static urlCompletion` method is added to modules for developers.
+  - The `-u, --url` flag has a higher priorty than this flag.
+- [CLI] _Experimental_ New `-l, --list` flag is added, that can download a list of urls.
+  - This flag only applies to the `dl, download` command.
+  - Please note that due to the stability of each module, you may end up with multiple failures.
+  - You can use the `-h, --history` flag added in the `version 2.2.0` to register your download history, so that you can use this flag as a "sync" functionality.
+  - You can use the `-S, --shorthand-url` flag without value if the list your list is composed of shorthand urls.
+
+### Fix
+
+- [core] Fixed a bug that causes index 0 to display improperly.
+- [core] To prevent unnecessary network requests, the check for chapter existence has been moved ahead of the network requests.
+
+### Dev
+
+- The `comic-downloader.ts` is moved to `core/index.ts`, causing the deprecation, but `comic-downloader.ts` will still exist for a while until the next major version.
+- A `static urlCompletion` method is added to modules in order to parse the shorthand urls.
+
 ## 2.2.0
 
 `2023-04-08`
