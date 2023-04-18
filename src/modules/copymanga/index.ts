@@ -6,7 +6,7 @@
  */
 
 import dayjs from 'dayjs';
-import ComicDownloader from '../../comic-downloader';
+import ComicDownloader from '../../core';
 
 const API_HEADERS = {
   'User-Agent':

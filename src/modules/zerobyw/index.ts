@@ -1,5 +1,5 @@
 import { JSDOM } from 'jsdom';
-import ComicDownloader from '../../comic-downloader';
+import ComicDownloader from '../../core';
 
 const Selectors = {
   chapters: '.uk-grid-collapse .muludiv a',

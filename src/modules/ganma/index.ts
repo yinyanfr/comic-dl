@@ -5,7 +5,7 @@
  * Copyright (c) 2023 Yan
  */
 
-import ComicDownloader from '../../comic-downloader';
+import ComicDownloader from '../../core';
 
 export default class GanmaDownloader extends ComicDownloader {
   static readonly siteName = 'ganma';
