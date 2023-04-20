@@ -14,6 +14,7 @@ import { formatImageName, isString } from '../lib';
 import mime from 'mime-types';
 import ora from 'ora';
 import type { Ora } from 'ora';
+import xmlescape from 'xml-escape';
 
 const ComicInfoFilename = 'ComicInfo.xml';
 
@@ -94,11 +95,14 @@ export default abstract class ComicDownloader {
 
   protected generateComicInfoXMLString(info: ComicInfo) {
     // TODO: find a reliable module for possible more complicated structures
-    const identifier = `<?xml version="1.0"?>`;
+    const identifier = `<?xml version="1.0" encoding="UTF-8"?>`;
     const open = `<ComicInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">`;
     const close = '</ComicInfo>';
     const content = Object.keys(info)
-      .map(key => `\t<${key}>${info[key]?.replace?.('\n', '')}</${key}>`)
+      .map(
+        key =>
+          `\t<${key}>${xmlescape(info[key]?.replace?.('\n', ''))}</${key}>`,
+      )
       .join('\n');
     return `${identifier}\n${open}\n${content}\n${close}\n`;
   }
