@@ -1,6 +1,14 @@
 # Changelog
 
-## Draft: 2.3.0
+## 2.4.0
+
+`2023-05-01`
+
+### Fix
+
+- Fixed the bug where special characters are not escaped in ComicInfo.xml.
+
+## 2.3.0
 
 `2023-04-18`
 
