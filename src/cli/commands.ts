@@ -14,6 +14,7 @@ import {
   genPresets,
   isString,
   mergeOptions,
+  parseTilda,
   writeHistory,
 } from './lib';
 
@@ -42,8 +43,18 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     console.log(`Using ${Downloader.siteName}.`);
   }
 
+  const localCookiePath = parseTilda(
+    `~/.comic-dl/cookies/${Downloader.siteName}.txt`,
+  );
+  let cookiePath = cookie;
+  if (!cookie && fs.existsSync(localCookiePath)) {
+    cookiePath = localCookiePath;
+  }
+
   const downloader = new Downloader(output, {
-    cookie: cookie ? fs.readFileSync(path.resolve(cookie)).toString() : auth,
+    cookie: cookiePath
+      ? fs.readFileSync(path.resolve(cookiePath)).toString()
+      : auth,
     timeout,
     silence,
     batchSize: batch ?? 1,

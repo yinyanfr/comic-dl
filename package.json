@@ -1,6 +1,6 @@
 {
   "name": "comic-dl",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Yet another batch downloader for manga/comic sites",
   "main": "dist/index.js",
   "bin": "dist/cli/index.js",
