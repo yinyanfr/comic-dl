@@ -13,6 +13,28 @@ This library is not for browsers.
 
 Please help me translate the documents, thanks.
 
+<!-- toc -->
+
+- [:star2: Features](#star2-features)
+- [:rainbow: [Site List](docs/user/sites.md)](#rainbow-site-listdocsusersitesmd)
+- [:framed_picture: Gallery](#framed_picture-gallery)
+  - [List of chapters](#list-of-chapters)
+  - [Downloading](#downloading)
+- [:green_book: Quick Start](#green_book-quick-start)
+  - [Stable](#stable)
+  - [Nightly](#nightly)
+- [:wrench: Cli](#wrench-cli)
+- [:book: Library](#book-library)
+  - [Initializing downloader](#initializing-downloader)
+  - [:scroll: Getting serie info](#scroll-getting-serie-info)
+  - [:books: Downloading from a serie](#books-downloading-from-a-serie)
+  - [:bookmark: Downloading a chapter](#bookmark-downloading-a-chapter)
+  - [:pencil2: Modify configs](#pencil2-modify-configs)
+- [Development Guide](#development-guide)
+- [:information_source: Information](#information_source-information)
+
+<!-- tocstop -->
+
 ## :star2: Features
 
 - Very low memory usage

@@ -28,7 +28,7 @@
 ### Fix
 
 - [core] Fixed the bug where special characters are not escaped in ComicInfo.xml. ([#11](https://github.com/yinyanfr/comic-dl/issues/11))
-- [CLI] Fixed the bug that the CLI is not correctly reading paths with a `~` in presets. ([#14](https://github.com/yinyanfr/comic-dl/issues/14))
+- [CLI] Fixed the bug that the CLI is not correctly reading paths with a `~` in presets. ([#15](https://github.com/yinyanfr/comic-dl/issues/15))
 
 ## 2.3.0
 
