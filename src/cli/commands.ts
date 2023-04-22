@@ -21,8 +21,8 @@ import {
 function buildDownloader(options: Partial<CliOptions> = {}) {
   const {
     module,
-    output = '.',
-    cookie,
+    output: _output = '.',
+    cookie: _cookie,
     archive,
     timeout,
     silence,
@@ -35,6 +35,9 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
     auth,
     indexedChapters,
   } = options;
+  const output = parseTilda(_output);
+  const cookie = _cookie && parseTilda(_cookie);
+
   const Downloader = module?.length ? findModule(module) : detectModule(url);
   if (!Downloader) {
     throw new Error('Module not found.');
@@ -101,7 +104,10 @@ export const listCommand: Command = async (name, sub, _options = {}) => {
       }
 
       if (output) {
-        await downloader.writeComicInfo(serie, { output, rename });
+        await downloader.writeComicInfo(serie, {
+          output: parseTilda(output),
+          rename,
+        });
       }
     }
   } catch (error) {
@@ -130,8 +136,9 @@ export const _downloadCommand: Command = async (name, sub, _options = {}) => {
     info,
     override,
     history,
-    output = '.',
+    output: _output = '.',
   } = options;
+  const output = parseTilda(_output);
 
   const current: Partial<DownloadProgress> = {};
 
@@ -219,9 +226,10 @@ export const chapterCommand: Command = async (name, sub, _options = {}) => {
     shorthandUrl,
     name: chapterName,
     verbose,
-    output,
+    output: _output = '.',
     override,
   } = options;
+  const output = parseTilda(_output);
 
   try {
     if (!url && !shorthandUrl) {
