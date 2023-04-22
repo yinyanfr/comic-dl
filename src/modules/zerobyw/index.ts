@@ -22,7 +22,7 @@ export default class ZeroBywDownloader extends ComicDownloader {
   };
 
   static urlCompletion(shorthandUrl: string): string {
-    return `http://www.zerobyw4090.com/plugin.php?id=jameson_manhua&c=index&a=bofang&kuid=${shorthandUrl}`;
+    return `http://www.zerobyw3.com/plugin.php?id=jameson_manhua&c=index&a=bofang&kuid=${shorthandUrl}`;
   }
 
   protected detectBaseUrl(url: string): void {
