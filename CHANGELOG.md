@@ -6,11 +6,11 @@
 
 ### Module
 
-- Changed the base url for Zerobyw. (#12)
+- Changed the base url for Zerobyw. ([#12](https://github.com/yinyanfr/comic-dl/issues/12))
 
 ### Feature
 
-- [CLI] comic-dl now reads presets and cookies from `~/.comic-dl`. (#13)
+- [CLI] comic-dl now reads presets and cookies from `~/.comic-dl`. ([#13](https://github.com/yinyanfr/comic-dl/issues/13))
 
   - You need to create this folder by yourself under your personal folder.
   - comic-dl reads presets from `~/.comic-dl/presets.json`.
@@ -27,7 +27,8 @@
 
 ### Fix
 
-- Fixed the bug where special characters are not escaped in ComicInfo.xml. (#11)
+- [core] Fixed the bug where special characters are not escaped in ComicInfo.xml. ([#11](https://github.com/yinyanfr/comic-dl/issues/11))
+- [CLI] Fixed the bug that the CLI is not correctly reading paths with a `~` in presets. ([#14](https://github.com/yinyanfr/comic-dl/issues/14))
 
 ## 2.3.0
 
