@@ -17,10 +17,6 @@ export default class ZeroBywDownloader extends ComicDownloader {
     return /zerobyw/.test(url);
   }
 
-  static readonly preferredCLIPresets: Partial<CliOptions> = {
-    cookie: './zerobyw-cookie.txt',
-  };
-
   static urlCompletion(shorthandUrl: string): string {
     return `http://www.zerobyw3.com/plugin.php?id=jameson_manhua&c=index&a=bofang&kuid=${shorthandUrl}`;
   }

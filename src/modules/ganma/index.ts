@@ -14,10 +14,6 @@ export default class GanmaDownloader extends ComicDownloader {
     return /ganma\.jp/.test(url);
   }
 
-  static readonly preferredCLIPresets: Partial<CliOptions> = {
-    cookie: './ganma-cookie.txt',
-  };
-
   static urlCompletion(shorthandUrl: string): string {
     return `https://ganma.jp/${shorthandUrl}`;
   }

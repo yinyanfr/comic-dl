@@ -5,12 +5,17 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { indexDts, indexTs, exportDefault } from './templates';
 import defaultPresets from './presets.json';
 import * as plugins from '../modules';
 
 export function isString(n: unknown) {
   return typeof n === 'string' || n instanceof String;
+}
+
+export function parseTilda(pathStr: string) {
+  return pathStr.replace(/^~(?=$|\/|\\)/, os.homedir());
 }
 
 export function detectModule(url?: string) {
@@ -116,11 +121,14 @@ function mergeObj(objects: Record<string, any>[]) {
 export function mergeOptions(
   options: Partial<CliOptions> = {},
 ): Partial<CliOptions> {
-  if (!options.presets) {
+  const localPresetsPath = parseTilda('~/.comic-dl/presets.json');
+  const presetsPath = options.presets ?? localPresetsPath;
+  if (!options.presets && !fs.existsSync(localPresetsPath)) {
     return options;
   }
+
   const moduleName = options.module ?? detectModule(options.url)?.siteName;
-  const presetsReader = fs.readFileSync(options.presets);
+  const presetsReader = fs.readFileSync(presetsPath);
   const presets: Partial<CliOptions>[] = JSON.parse(presetsReader.toString());
   const generals = presets.filter(e => !e.module);
   const thisModule = presets.filter(e => e.module === moduleName);
