@@ -33,7 +33,7 @@ interface CliOptions {
   yes: boolean;
   maxTitleLength: number; // max-title-length
   zipLevel: number; // zip-level
-  retry: boolean;
+  retry: boolean | number;
   chapters: string | number; // 1,2,4,7 as string or a single number
   info: boolean;
   format: string;
@@ -107,7 +107,7 @@ interface SerieDownloadOptions {
   start?: number;
   end?: number;
   rename?: string;
-  retry?: boolean;
+  retry?: boolean | number;
   chapters?: number[];
   confirm?: boolean;
   info?: boolean;

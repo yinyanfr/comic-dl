@@ -257,8 +257,9 @@ export default abstract class ComicDownloader {
     const skippedProgress = {
       index: options?.index,
       name,
+      uri,
       status: 'skipped' as const,
-      failures: 0,
+      failed: 0,
     };
 
     if (this.configs?.archive) {
@@ -346,6 +347,7 @@ export default abstract class ComicDownloader {
     const progress = {
       index: options?.index,
       name,
+      uri,
       status: 'completed' as const,
       failed: failures,
       options: chapterOptions,
@@ -416,19 +418,30 @@ export default abstract class ComicDownloader {
         this.log(`Index: ${e.index}, pages not downloaded: ${e.failed}.`);
       });
       if (options.retry) {
-        this.log('Retrying...');
         for (const chapter of failed) {
-          await this.downloadChapter(
-            chapter.name,
-            chapter.uri,
-            {
-              index: chapter.index,
-              title: options.rename ?? serie.title,
-              info: options.info ? serie.info : undefined,
-              onProgress: options?.onProgress,
-            },
-            chapter.options,
-          );
+          const times = options.retry === true ? 1 : options.retry;
+          let count = 0;
+          const retryer = () => {
+            this.log(`Retrying... (${count + 1}/${times})`);
+            return this.downloadChapter(
+              chapter.name,
+              chapter.uri,
+              {
+                index: chapter.index,
+                title: options.rename ?? serie.title,
+                info: options.info ? serie.info : undefined,
+                override: true,
+                onProgress: options?.onProgress,
+              },
+              chapter.options,
+            );
+          };
+          while ((await retryer()).failed && count < times) {
+            count++;
+            if (count >= times) {
+              this.log('Maximum number of retries reached, abandoned.');
+            }
+          }
         }
       }
     } else {
