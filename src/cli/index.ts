@@ -82,7 +82,7 @@ args
   .option('zip-level', 'Optional: zip level for archive, default to 5.')
   .option(
     'retry',
-    'Optional: Automatically re-download chapters with failed images.',
+    'Optional: Automatically re-download chapters with failed images (default to 1).',
   )
   .option(
     'chapters',
