@@ -22,7 +22,7 @@ args
     'download',
     'Download chapters from a manga serie.',
     downloadCommand,
-    ['d', 'dl'],
+    ['d', 'dl', 'serie'],
   )
   .command('chapter', 'Download images from one chapter.', chapterCommand, [
     'c',
@@ -65,7 +65,8 @@ args
   )
   .option(
     'batch',
-    'Optional: Set the number or images to be downloaded simultaneously, default to 1.',
+    'Optional: Set the number or images to be downloaded simultaneously.',
+    1,
   )
   .option(
     'verbose',
@@ -83,6 +84,7 @@ args
   .option(
     'retry',
     'Optional: Automatically re-download chapters with failed images.',
+    1,
   )
   .option(
     'chapters',
@@ -144,4 +146,9 @@ args
   .example('npx . gen --module mySite', 'Generate a new module named mySite.')
   .example('npx . gen --presets > presets.json', 'Generate a presets json.');
 
-args.parse(process.argv);
+const flags = args.parse(process.argv);
+const subs = args.sub;
+
+if (Object.keys(flags).length && subs.length) {
+  downloadCommand('download', subs, flags);
+}

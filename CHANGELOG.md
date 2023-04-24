@@ -6,11 +6,23 @@
 
 ### Module
 
-- Changed the base url for Zerobyw. ([#12](https://github.com/yinyanfr/comic-dl/issues/12))
+- Changed the base url for Zerobyw. ([#12](https://github.com/yinyanfr/comic-dl/pull/12))
 
 ### Feature
 
-- [CLI] comic-dl now reads presets and cookies from `~/.comic-dl`. ([#13](https://github.com/yinyanfr/comic-dl/issues/13))
+- [CLI] Simplify input ([#21](https://github.com/yinyanfr/comic-dl/pull/21))
+
+  ```bash
+  # From 2.4.0, this is now valid
+  npx comic-dl https://www.copymanga.site/comic/hulishaonvmuye
+  ```
+
+  - Now if you don't input command, the CLI will execute the `download` command by default.
+  - You can now directly add url without the `-u, --url` flag
+  - You still need to wrap your urls in quotation marks if it contains special characters
+  - The `download` command now has a new alias `serie`.
+
+- [CLI] comic-dl now reads presets and cookies from `~/.comic-dl`. ([#13](https://github.com/yinyanfr/comic-dl/pull/13))
 
   - You need to create this folder by yourself under your personal folder.
   - comic-dl reads presets from `~/.comic-dl/presets.json`.
@@ -25,10 +37,13 @@
     └─ presets.json
     ```
 
+- [core] `options.retry` now can accept a number as its value, which indicates the number of retrys (default to 1 when `true`). ([#18](https://github.com/yinyanfr/comic-dl/pull/19))
+
 ### Fix
 
-- [core] Fixed the bug where special characters are not escaped in ComicInfo.xml. ([#11](https://github.com/yinyanfr/comic-dl/issues/11))
-- [CLI] Fixed the bug that the CLI is not correctly reading paths with a `~` in presets. ([#14](https://github.com/yinyanfr/comic-dl/issues/14))
+- [core] Fixed the bug where special characters are not escaped in ComicInfo.xml. ([#11](https://github.com/yinyanfr/comic-dl/pull/11))
+- [core] Fixed the bug where `options.retry` is losing `chapter.uri`. ([#18](https://github.com/yinyanfr/comic-dl/pull/19))
+- [CLI] Fixed the bug that the CLI is not correctly reading paths with a `~` in presets. ([#14](https://github.com/yinyanfr/comic-dl/pull/15))
 
 ## 2.3.0
 
