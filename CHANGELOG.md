@@ -10,6 +10,18 @@
 
 ### Feature
 
+- [CLI] Simplify input ([#21](https://github.com/yinyanfr/comic-dl/pull/21))
+
+  ```bash
+  # From 2.4.0, this is now valid
+  npx comic-dl https://www.copymanga.site/comic/hulishaonvmuye
+  ```
+
+  - Now if you don't input command, the CLI will execute the `download` command by default.
+  - You can now directly add url without the `-u, --url` flag
+  - You still need to wrap your urls in quotation marks if it contains special characters
+  - The `download` command now has a new alias `serie`.
+
 - [CLI] comic-dl now reads presets and cookies from `~/.comic-dl`. ([#13](https://github.com/yinyanfr/comic-dl/pull/13))
 
   - You need to create this folder by yourself under your personal folder.

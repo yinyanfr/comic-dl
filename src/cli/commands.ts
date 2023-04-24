@@ -73,6 +73,9 @@ function buildDownloader(options: Partial<CliOptions> = {}) {
 }
 
 export const listCommand: Command = async (name, sub, _options = {}) => {
+  if (sub?.[0]?.length) {
+    _options.url = sub[0];
+  }
   const options = mergeOptions(_options);
   const { url, shorthandUrl, verbose, silence, output, name: rename } = options;
 
@@ -122,6 +125,9 @@ export const listCommand: Command = async (name, sub, _options = {}) => {
 };
 
 export const _downloadCommand: Command = async (name, sub, _options = {}) => {
+  if (sub?.[0]?.length) {
+    _options.url = sub[0];
+  }
   const options = mergeOptions(_options);
   const {
     url,
@@ -220,6 +226,9 @@ export const downloadCommand: Command = async (name, sub, _options = {}) => {
 };
 
 export const chapterCommand: Command = async (name, sub, _options = {}) => {
+  if (sub?.[0]?.length) {
+    _options.url = sub[0];
+  }
   const options = mergeOptions(_options);
   const {
     url,
