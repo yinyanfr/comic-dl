@@ -118,6 +118,10 @@ args
     'list',
     'Optional: (Experimental) The path to a text file that contains a list of URLs.',
   )
+  .option(
+    'kavita',
+    'Optional: (Experimental) rename downloaded file to a single number.',
+  )
   .example(
     'npx comic-dl dl -c cookie.txt -f 10 -t 20 -o ~/Download/manga -a zip -r -i -b 10 -u serie_url',
     'Download a serie from its 10th chapter to 20th chapter to the given destination, 10 images at a time, output zip archives with ComicInfo.xml by chapter, retry if a chapter is not properly downloaded.',
