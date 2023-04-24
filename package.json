@@ -6,8 +6,8 @@
   "bin": "dist/cli/index.js",
   "types": "src/global.d.ts",
   "scripts": {
-    "tsc": "tsc",
-    "build": "tsc",
+    "lint": "eslint --ext .ts,.tsx ./src",
+    "build": "npm run lint && tsc",
     "clean": "rm -rf dist/",
     "prepublishOnly": "tsc",
     "lint-staged": "lint-staged",
