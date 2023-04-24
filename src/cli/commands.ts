@@ -143,6 +143,7 @@ export const _downloadCommand: Command = async (name, sub, _options = {}) => {
     override,
     history,
     output: _output = '.',
+    kavita,
   } = options;
   const output = parseTilda(_output);
 
@@ -173,6 +174,7 @@ export const _downloadCommand: Command = async (name, sub, _options = {}) => {
       retry,
       info,
       override,
+      kavita,
       chapters:
         chapters !== undefined
           ? `${chapters}`.split(',').map(e => parseInt(e))

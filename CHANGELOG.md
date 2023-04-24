@@ -37,7 +37,11 @@
     └─ presets.json
     ```
 
-- [core] `options.retry` now can accept a number as its value, which indicates the number of retrys (default to 1 when `true`). ([#18](https://github.com/yinyanfr/comic-dl/pull/19))
+- [core] `options.retry` now can accept a number as its value, which indicates the number of retrys (default to 1 when `true`). ([#19](https://github.com/yinyanfr/comic-dl/pull/19))
+- _Experimental_ Added the `option.kavita` option and the `-k, --kavita` flag for the compatibility of [kavita](https://github.com/Kareadita/Kavita). ([#22](https://github.com/yinyanfr/comic-dl/pull/22))
+  - When organizing manga series, Kavita ignores the folder structure and treat chapters with a name like `17-21` as a standalone serie.
+  - So this option / flag will rename such chapter by one single number (i.e. `17-21` to `17`).
+  - This option / flag is experimental, it may add to or change its behaviors to future discovered Kavita compatibility issues.
 
 ### Fix
 

@@ -10,7 +10,7 @@ import path from 'node:path';
 import type { ReadStream } from 'node:fs';
 import archiver from 'archiver';
 import yesno from 'yesno';
-import { formatImageName, isString } from '../lib';
+import { formatImageName, isString, kavitaRename } from '../lib';
 import mime from 'mime-types';
 import ora from 'ora';
 import type { Ora } from 'ora';
@@ -396,7 +396,7 @@ export default abstract class ComicDownloader {
       const chapter = serie.chapters[i];
       if (!options.chapters || options.chapters?.includes(i)) {
         const progress = await this.downloadChapter(
-          chapter.name,
+          options.kavita ? kavitaRename(chapter.name) : chapter.name,
           chapter.uri,
           {
             index: chapter.index,
@@ -424,7 +424,7 @@ export default abstract class ComicDownloader {
           const retryer = () => {
             this.log(`Retrying... (${count + 1}/${times})`);
             return this.downloadChapter(
-              chapter.name,
+              options.kavita ? kavitaRename(chapter.name) : chapter.name,
               chapter.uri,
               {
                 index: chapter.index,

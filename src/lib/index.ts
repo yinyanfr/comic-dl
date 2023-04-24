@@ -10,3 +10,11 @@ export function isString(n: unknown) {
 export function formatImageName(index: number) {
   return index < 10 ? `0${index}` : `${index}`;
 }
+
+export function kavitaRename(chapterName: string) {
+  const match = chapterName.match(/([0-9]+)[-~][0-9]+/);
+  if (match) {
+    return match[1];
+  }
+  return chapterName;
+}

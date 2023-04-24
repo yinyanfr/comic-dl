@@ -45,6 +45,7 @@ interface CliOptions {
   history: boolean | string; // path
   shorthandUrl: boolean | string;
   list: string;
+  kavita: boolean;
   [key: string]: any; // for future modules
 }
 
@@ -113,6 +114,7 @@ interface SerieDownloadOptions {
   info?: boolean;
   override?: boolean;
   group?: string;
+  kavita?: boolean;
   onProgress?: (progress: DownloadProgress) => void;
 }
 
