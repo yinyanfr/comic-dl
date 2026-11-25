@@ -1,70 +1,37 @@
 {
   "name": "comic-dl",
-  "version": "2.4.0",
-  "description": "Yet another batch downloader for manga/comic sites",
-  "main": "dist/index.js",
-  "bin": "dist/cli/index.js",
-  "types": "src/global.d.ts",
-  "scripts": {
-    "lint": "eslint --ext .ts,.tsx ./src",
-    "build": "npm run lint && tsc",
-    "clean": "rm -rf dist/",
-    "prepublishOnly": "tsc",
-    "lint-staged": "lint-staged",
-    "precommit": "lint-staged"
-  },
-  "keywords": [
-    "scraper",
-    "manga",
-    "comic",
-    "downloader",
-    "manga-downloader",
-    "comic-downloader",
-    "zerobyw",
-    "copymanga"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/yinyanfr/comic-dl.git"
-  },
-  "bugs": {
-    "url": "https://github.com/yinyanfr/comic-dl/issues"
-  },
-  "homepage": "https://github.com/yinyanfr/comic-dl#readme",
-  "author": "Yan",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
   "license": "MIT",
-  "devDependencies": {
-    "@types/archiver": "^5.3.2",
-    "@types/args": "^5.0.0",
-    "@types/crypto-js": "^4.1.1",
-    "@types/jsdom": "^21.1.0",
-    "@types/mime-types": "^2.1.1",
-    "@types/node": "^18.15.0",
-    "@types/xml-escape": "^1.1.1",
-    "@typescript-eslint/eslint-plugin": "^5.57.0",
-    "@typescript-eslint/parser": "^5.57.0",
-    "eslint": "^8.37.0",
-    "eslint-config-prettier": "^8.8.0",
-    "lint-staged": "^13.2.0",
-    "prettier": "^2.8.7",
-    "typescript": "^4.9.5"
+  "engines": {
+    "node": ">=24"
   },
-  "dependencies": {
-    "archiver": "^5.3.1",
-    "args": "^5.0.3",
-    "axios": "^1.3.4",
-    "crypto-js": "^4.1.1",
-    "dayjs": "^1.11.7",
-    "jsdom": "^21.1.1",
-    "mime-types": "^2.1.35",
-    "ora": "^5.4.1",
-    "xml-escape": "^1.1.0",
-    "yesno": "^0.4.0"
+  "scripts": {
+    "build": "tsc",
+    "check": "npm run format:check && npm run lint && npm run typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings 0",
+    "prepare": "husky",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.4",
+    "eslint": "^10.15.0",
+    "eslint-config-prettier": "^10.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.2",
+    "prettier": "^3.10.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.74.0"
   },
   "lint-staged": {
-    "*.ts": [
-      "prettier --write",
-      "eslint --fix"
-    ]
+    "*.{js,mjs,ts}": [
+      "eslint --fix --max-warnings 0",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml}": "prettier --write"
   }
 }
