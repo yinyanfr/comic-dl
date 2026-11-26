@@ -32,6 +32,8 @@ comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --config ./profiles/copymanga
 
 The CLI does not look for a config file automatically; pass `--config` each time. A relative output path in JSON is resolved from the **directory containing the config file**, so this writes to `./profiles/manga/`. With no output directory set in the CLI or config, `download` writes to the current working directory.
 
+An output path like `"~/manga"` instead starts at your home directory.
+
 ## Override settings for one command
 
 ```sh

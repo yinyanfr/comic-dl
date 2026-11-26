@@ -15,6 +15,8 @@ comic-dl d "https://www.copy20.com/comic/xiangkanbaitiantongxuederuanruobiaoqing
 
 CLI 会根据链接自动选择已安装的源，把整部作品下载到当前目录，每章保存为一个 CBZ。`d` 是 `download` 的简写。
 
+CLI 不会再创建作品目录。给阅读器下载多部作品时，建议用 `-o ~/manga/作品名` 分开保存；CBZ 文件名以章节 ID 和校验标识为基础。
+
 ## 用短 ID 下载部分章节
 
 ```sh

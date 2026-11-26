@@ -43,3 +43,9 @@ npm run preview --prefix docs
 ```
 
 Preview at `/comic-dl/` or `/comic-dl/en/` to match the [GitHub Pages](https://yinyanfr.github.io/comic-dl/en/) base path. Documentation PRs run the site build, and pushes to `main` deploy it. Set the repository's **Settings → Pages → Source** to **GitHub Actions**.
+
+## Publish to npm
+
+Bump the version with `npm version <version> --no-git-tag-version` and commit both `package.json` and `package-lock.json`. On a push to `main`, the [release workflow](https://github.com/yinyanfr/comic-dl/actions/workflows/publish-npm.yml) compares the version before and after the push. It checks, tests, and packages a release only when the version changes. On npm, prereleases use `next` and stable releases use `latest`. Once the npm version is published or verified to exist, the workflow creates a GitHub Release with generated notes and tags the push commit with the version number. It marks prereleases as such and skips releases that already exist.
+
+Once the workflow is on `main`, configure a [GitHub Actions trusted publisher](https://docs.npmjs.com/trusted-publishers/) in the `comic-dl` npm package settings. Use owner `yinyanfr`, repository `comic-dl`, and workflow filename `publish-npm.yml`. Leave the environment blank and allow direct publishing (`npm publish`). No npm token is needed. Set this up before the next release; a new trusted publisher must complete its first successful publish within two days.

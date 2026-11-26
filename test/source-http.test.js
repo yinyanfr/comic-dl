@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { createServer } from 'node:http';
 import { test } from 'node:test';
+import { setTimeout } from 'node:timers';
 import { createSourceHttp } from '../dist/sources/http.js';
 import { TransientSourceError } from '../dist/sources/source.js';
 
@@ -95,4 +96,33 @@ test('the source HTTP session classifies rate limits and rejects unsafe redirect
     read(`${origin}/redirect`, t.signal),
     /requires an HTTP\(S\) URL/,
   );
+});
+
+test('connection and response interruptions are retryable without logging the request URL', async (t) => {
+  const origin = await serve(t, (request, reply) => {
+    if (request.url.startsWith('/body')) {
+      reply.writeHead(200, { 'Content-Length': '10' });
+      reply.write('one');
+      setTimeout(() => reply.destroy(), 40);
+    } else {
+      request.socket.destroy();
+    }
+  });
+  const read = createSourceHttp({
+    credentialOrigins: [],
+    credentialHeaders: {},
+  });
+  for (const path of ['/connect', '/body']) {
+    await assert.rejects(
+      read(`${origin}${path}?key=secret`, t.signal),
+      (error) => {
+        assert.ok(error instanceof TransientSourceError);
+        assert.equal(
+          error.message,
+          `Network error ${path === '/body' ? 'reading response from' : 'requesting'} ${origin}`,
+        );
+        return true;
+      },
+    );
+  }
 });

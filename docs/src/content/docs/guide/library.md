@@ -30,6 +30,8 @@ const results = await downloader.download(url, {
 
 `download()` 返回每章的结果：`downloaded` 和 `skipped` 包含归档路径，`restricted` 和 `failed` 包含错误信息。脚本应检查这些状态；单章失败不等于整个 Promise 被拒绝。选源、列章或参数校验失败，或传入的 `signal` 被取消时，调用会拒绝。`directory` 默认是当前目录，`retries` 默认额外重试 2 次。每章结束时也可以从 `onResult` 得到同样的结果。
 
+如果 `onResult` 抛错或返回拒绝的 Promise，下载会停止领取新章节，等待正在处理的章节结束后再拒绝。已完成的归档会保留。
+
 默认导出适合简单脚本。若多个任务需要独立的源注册表，使用 `createDownloader()`：
 
 ```ts

@@ -15,6 +15,6 @@ description: CLI JSON configuration fields, validation, precedence, and path res
 | `retries`    | Safe integer greater than or equal to `0`  | Additional retry attempts for `chapter` and `download`      |
 
 1. Explicit CLI options take precedence, followed by configuration and then built-in defaults. With no output path, `download` uses the current working directory. An explicit CLI extension list replaces the entire configured list. Extensions installed with `add` still load.
-2. `output` and local extension paths starting with `./` or `../` are resolved relative to the configuration file. Absolute paths remain absolute, and package names follow module resolution rules.
+2. `~` and `~/` in `output` refer to your home directory. Other relative output paths and local extension paths starting with `./` or `../` are resolved relative to the configuration file. Absolute paths remain absolute, and package names follow module resolution rules.
 3. Options apply only to relevant commands; for example, `list` does not use `output`. All field types and constraints are validated when loading the file.
 4. Credentials are outside the configuration format. An unreadable file, invalid JSON, invalid field, or unsupported version exits with `2`.

@@ -65,11 +65,13 @@ comic-dl download "$zerobyw_url" --config ./profiles/zerobyw.json -c 101
 
 Use an actual series URL and a chapter ID from the new listing. Keep credentials out of JSON; if your session has expired, renew it as described in the [Zerobyw README](https://github.com/yinyanfr/comic-dl-extensions/blob/main/extensions/zerobyw/README.en.md). This writes to `./profiles/new-downloads/` because config output paths are relative to the file. A CLI `-o` is relative to the current working directory and takes precedence.
 
+You can keep an old output path that starts with `~/`. For example, `"~/Downloads/manga"` in JSON still resolves from your home directory.
+
 The old `batch` controlled image concurrency; `jobs` controls chapter concurrency and is not a direct equivalent. The old `retry` retried chapters with failed images; `retries` counts additional attempts for transient errors. Set it to `0` to disable retries. See [use a configuration file](../../guide/config-tutorial/) for more.
 
 ## Keep prior downloads and check removed options
 
-You can keep image folders, ZIPs, and CBZs in your current reader. The new CLI always creates one CBZ per chapter and names it using the chapter's identity. Reruns verify identity, the page-order marker, and archive integrity. A legacy CBZ is not considered complete just because its name matches. Use a separate output directory for the new CLI.
+You can keep image folders, ZIPs, and CBZs in your current reader. The new CLI always creates one CBZ per chapter and names it using the chapter's identity. Reruns verify identity, the page-order marker, and archive integrity. A legacy CBZ is not considered complete just because its name matches. Use a new output directory and separate directories for different series. Readers that import by filename, such as Calibre, show the archive name; add titles and series information in the reader.
 
 - `--archive`, `--zip-level`, `--format`, `--info`, and `list -o` are no longer output options. There are no equivalents for renaming, indexed chapter filenames, or the old `--kavita` naming flag. The new Kavita extension is a library source.
 - There is no `--override` option. Rerunning skips archives that pass the integrity checks.

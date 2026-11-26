@@ -45,6 +45,8 @@ comic-dl remove @comic-dl/zerobyw
 
 On Unix the default directory is `$XDG_DATA_HOME/comic-dl/extensions`, or `~/.local/share/comic-dl/extensions` if unset. On Windows it is `%LOCALAPPDATA%\comic-dl\extensions`. Set `COMIC_DL_EXTENSION_DIR` to override it.
 
+Run one extension management command at a time. If it reports a lock, wait for the other command to finish and retry. The next management command clears write locks left by exited processes. Manage an extension directory from one machine; do not share it across hosts.
+
 ### Select a source
 
 Extensions installed with `add` load automatically. `--extension` or configuration can also load local files or packages installed in the same npm project as the CLI, without installing or registering them in the CLI's extension store. Explicitly loading an already registered package of the same name loads it only once. If different packages claim the same source ID, the CLI reports an error.
@@ -65,5 +67,5 @@ See [local development testing](../../development/local-testing/) for the `--fix
 | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `0`       | The command completed. A series download also succeeds if at least one chapter was downloaded or already complete and the remaining chapters were only restricted. |
 | `1`       | The command failed, a chapter failed to download, or all selected chapters were restricted.                                                                        |
-| `2`       | Invalid CLI usage, configuration, automatic source selection, or chapter selection.                                                                                |
+| `2`       | Invalid CLI usage, configuration, source selection, or chapter selection.                                                                                          |
 | `130`     | Interrupted by the user. Completed archives are kept.                                                                                                              |

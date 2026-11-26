@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { isLocalExtensionPath, isSourceId } from './sources/index.js';
 
@@ -12,6 +13,12 @@ export interface CliConfig {
 
 export function nonempty(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+export function outputPath(output: string, base = process.cwd()) {
+  if (output === '~') return homedir();
+  if (/^~[/\\]/.test(output)) return resolve(homedir(), `./${output.slice(2)}`);
+  return resolve(base, output);
 }
 
 export async function readConfig(
@@ -81,7 +88,7 @@ export async function readConfig(
         : extension,
     ),
     source,
-    output: output === undefined ? undefined : resolve(directory, output),
+    output: output === undefined ? undefined : outputPath(output, directory),
     jobs: jobs === undefined ? undefined : configInteger('jobs', jobs, 1),
     retries:
       retries === undefined ? undefined : configInteger('retries', retries, 0),

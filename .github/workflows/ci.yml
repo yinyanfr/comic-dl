@@ -22,3 +22,16 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: node dist/index.js
+
+  windows-cli:
+    runs-on: windows-latest
+    env:
+      HUSKY: '0'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm test -- test/chapter.test.js test/extensions.test.js test/source-http.test.js

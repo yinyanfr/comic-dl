@@ -169,12 +169,13 @@ async function npm(project: string, args: string[], signal: AbortSignal) {
           '/d',
           '/s',
           '/c',
-          `npm ${options.map((option) => `"${option}"`).join(' ')}`,
+          `"npm ${options.map((option) => `"${option}"`).join(' ')}"`,
         ],
         {
           cwd: project,
           stdio: 'inherit',
           signal,
+          windowsVerbatimArguments: true,
         },
       )
     : spawn('npm', options, { cwd: project, stdio: 'inherit', signal });
@@ -188,6 +189,18 @@ async function npm(project: string, args: string[], signal: AbortSignal) {
   });
 }
 
+function writerIsAlive(pid: number) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ESRCH') {
+      return false;
+    }
+    throw error;
+  }
+}
+
 export async function manageExtensions(
   action: ExtensionAction,
   input: string | undefined,
@@ -196,19 +209,29 @@ export async function manageExtensions(
   const name = extensionPackage(action, input);
   const store = storeDirectory();
   await mkdir(store, { recursive: true });
-  const lock = join(store, 'write-lock');
-  try {
-    await mkdir(lock);
-  } catch (cause) {
-    if (cause instanceof Error && 'code' in cause && cause.code === 'EEXIST') {
-      throw new Error(`Extension store is locked: ${lock}`, { cause });
-    }
-    throw cause;
-  }
+  const writers = join(store, 'writers');
+  await mkdir(writers, { recursive: true });
   const generation = randomUUID();
+  const owner = `${process.pid}-${generation}`;
+  const lock = join(writers, owner);
+  await mkdir(lock);
   const project = join(store, generation);
   let committed = false;
   try {
+    // Publish before scanning: a later writer must see us while we hold the lock.
+    // Dead owners never reuse their unique directory, even if a PID is recycled.
+    for (const entry of await readdir(writers)) {
+      if (entry === owner) continue;
+      const [, pid] = /^([1-9]\d*)-[a-f0-9-]{36}$/.exec(entry) ?? [];
+      if (!pid) continue;
+      if (writerIsAlive(Number(pid))) {
+        throw new Error(
+          `Extension store is locked by another command (PID ${pid})`,
+        );
+      }
+      await rm(join(writers, entry), { recursive: true, force: true });
+    }
+    signal.throwIfAborted();
     const previous = await currentProject(store);
     const installed = previous ? await packageNames(previous) : [];
     if (name && action !== 'add' && !installed.includes(name)) {

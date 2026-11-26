@@ -35,6 +35,8 @@ comic-dl download "$series_url" -o ./downloads --jobs 1 --retries 2
 
 `--jobs` is the number of chapters processed concurrently (default `2`). `--retries` is the number of additional attempts after transient errors (default `2`); set it to `0` to disable retries.
 
+During downloads, resolving the series or chapter and processing each chapter each get their own retry budget. Standalone `list` and `search` allow two additional attempts for transient errors.
+
 If some chapters fail or are restricted, the remaining chapters are still processed. Press `Ctrl+C` to stop; completed archives are kept. After addressing the problem, rerun with the same source and output directory. CBZ files that pass the integrity checks are skipped.
 
 ## Use the CLI in scripts

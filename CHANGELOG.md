@@ -5,6 +5,9 @@
 - Reorganized the documentation around installation, basic and advanced CLI usage, configuration, and library integration.
 - Moved fixture examples to the project development guide and expanded the migration guide with command and chapter-selection comparisons against 2.4.0.
 - Added an English README and a complete English documentation site. Existing Simplified Chinese URLs remain available.
+- Retry transient interruptions during source lookups, chapter resolution, and image reads, with diagnostics that omit request paths and query strings.
+- Recover abandoned extension-store write locks, expand home-relative output paths, and return exit code `2` for unknown source IDs.
+- Stop scheduling new chapters when a library result callback fails and wait for active work before rejecting.
 
 ## 3.0.0-alpha — 2026-11-26
 

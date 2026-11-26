@@ -1,0 +1,138 @@
+name: Publish comic-dl
+
+on:
+  push:
+    branches: [main]
+    paths: [package.json]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release
+  queue: max
+
+jobs:
+  package:
+    if: github.repository == 'yinyanfr/comic-dl' && !github.event.created && !github.event.deleted
+    runs-on: ubuntu-latest
+    env:
+      HUSKY: '0'
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Detect version change
+        id: release
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          node --input-type=module <<'JS'
+          import { execFileSync } from 'node:child_process';
+          import { appendFileSync, readFileSync } from 'node:fs';
+
+          const previous = JSON.parse(execFileSync(
+            'git', ['show', `${process.env.BEFORE}:package.json`], { encoding: 'utf8' },
+          ));
+          const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+          if (version === previous.version) {
+            console.log(`Version remains ${version}.`);
+          } else {
+            const tag = version.split('+')[0].includes('-') ? 'next' : 'latest';
+            appendFileSync(process.env.GITHUB_OUTPUT, `version=${version}\ntag=${tag}\n`);
+          }
+          JS
+      - if: steps.release.outputs.version != ''
+        run: |
+          npm ci
+          npm run check
+          npm test
+          mkdir -p "$RUNNER_TEMP/npm-release"
+          npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/npm-release"
+      - if: steps.release.outputs.version != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/npm-release/*.tgz
+          if-no-files-found: error
+
+  publish:
+    needs: package
+    if: needs.package.outputs.version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: npm-package
+      - name: Publish comic-dl
+        env:
+          VERSION: ${{ needs.package.outputs.version }}
+          DIST_TAG: ${{ needs.package.outputs.tag }}
+        run: |
+          published=$(node --input-type=module <<'JS'
+          const url = `https://registry.npmjs.org/comic-dl/${encodeURIComponent(process.env.VERSION)}`;
+          const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+          if (!response.ok && response.status !== 404) {
+            throw new Error(`npm registry returned HTTP ${response.status}`);
+          }
+          console.log(response.ok);
+          JS
+          )
+          if [[ "$published" == true ]]; then
+            echo "comic-dl@$VERSION is already published."
+          else
+            # Leave latest implicit so npm refuses an older stable version.
+            args=(publish ./comic-dl-*.tgz --ignore-scripts --access public)
+            if [[ "$DIST_TAG" != latest ]]; then args+=(--tag "$DIST_TAG"); fi
+            npm "${args[@]}"
+          fi
+
+  github-release:
+    needs: [package, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.package.outputs.version }}
+          DIST_TAG: ${{ needs.package.outputs.tag }}
+        run: |
+          ref="refs/tags/$VERSION"
+          refs=$(git ls-remote "https://github.com/$GH_REPO.git" "$ref" "$ref^{}")
+          tag_commit=$(awk '$2 ~ /\^\{\}$/ { peeled = $1; next } { tag = $1 }
+            END { print peeled ? peeled : tag }' <<< "$refs")
+          if [[ -n "$tag_commit" && "$tag_commit" != "$GITHUB_SHA" ]]; then
+            echo "Tag $VERSION points to $tag_commit instead of $GITHUB_SHA." >&2
+            exit 1
+          fi
+
+          if draft=$(gh release view "$VERSION" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [[ "$draft" == true ]]; then
+              echo "A draft release for $VERSION already exists." >&2
+              exit 1
+            fi
+            echo "GitHub release $VERSION already exists."
+            exit 0
+          fi
+
+          args=(release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --generate-notes)
+          if [[ "$DIST_TAG" == next ]]; then args+=(--prerelease --latest=false); fi
+          gh "${args[@]}"

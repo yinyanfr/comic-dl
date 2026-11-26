@@ -65,11 +65,13 @@ comic-dl download "$zerobyw_url" --config ./profiles/zerobyw.json -c 101
 
 这里的 `$zerobyw_url` 应是实际作品 URL，`101` 应换为新版列出的章节 ID。凭据不写进 JSON；会话失效时按 [Zerobyw 扩展说明](https://github.com/yinyanfr/comic-dl-extensions/tree/main/extensions/zerobyw)更新。示例输出至 `./profiles/new-downloads/`，因为 `output` 相对于 JSON 所在目录。命令行上的 `-o` 则以当前工作目录为基准，且优先于配置。
 
+如果旧预设的输出目录以 `~/` 开头，可以沿用；JSON 中的 `"~/Downloads/manga"` 仍相对于用户主目录。
+
 旧 `batch` 控制图片并发，新 `jobs` 控制章节并发，不能直接照抄。旧 `retry` 用来补下载有失败图片的章节；新 `retries` 是暂态错误的额外尝试次数，设为 `0` 可关闭。完整说明见[使用配置文件](../../guide/config-tutorial/)。
 
 ## 保留旧下载并检查没有直接替代的功能
 
-旧图片目录、ZIP 和 CBZ 可以继续留给原阅读器使用。新版固定输出每章一个 CBZ，归档名基于章节身份；重跑时会核对身份、页序标记和归档完整性，旧版 CBZ 不会因文件同名而被视为已完成。请让新版写到独立目录，避免混用。
+旧图片目录、ZIP 和 CBZ 可以继续留给原阅读器使用。新版固定输出每章一个 CBZ，归档名基于章节身份；重跑时会核对身份、页序标记和归档完整性，旧版 CBZ 不会因文件同名而被视为已完成。请让新版写到独立目录，避免混用。下载多部作品时建议每部使用单独的输出目录。像 Calibre 这样按文件名导入的阅读器会显示归档名，需要在阅读器里补充作品名和系列信息。
 
 - `--archive`、`--zip-level`、`--format`、`--info` 和 `list -o` 不再是新版的输出选项。旧版重命名、章节索引文件名和 `--kavita` 命名选项也没有对应开关；新版的 Kavita 扩展是书库来源。
 - `--override` 没有对应选项。重跑会跳过通过完整性检查的归档。

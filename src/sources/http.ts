@@ -20,6 +20,32 @@ export class SourceHttpError extends Error {
   }
 }
 
+const transientNetworkCodes = new Set([
+  'EAI_AGAIN',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'EPIPE',
+  'ETIMEDOUT',
+  'UND_ERR_BODY_TIMEOUT',
+  'UND_ERR_CONNECT_TIMEOUT',
+  'UND_ERR_HEADERS_TIMEOUT',
+  'UND_ERR_SOCKET',
+]);
+
+function transientNetworkError(error: unknown): boolean {
+  if (error instanceof AggregateError) {
+    return error.errors.some(transientNetworkError);
+  }
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    typeof error.code === 'string' &&
+    transientNetworkCodes.has(error.code)
+  );
+}
+
 function validateUrl(url: URL) {
   if (
     (url.protocol !== 'http:' && url.protocol !== 'https:') ||
@@ -66,6 +92,7 @@ export function createSourceHttp({
     const timeout = AbortSignal.timeout(30_000);
     const requestSignal = AbortSignal.any([signal, timeout]);
     let url = new URL(input);
+    let phase = 'requesting';
     try {
       for (let redirects = 0; ; redirects++) {
         validateUrl(url);
@@ -75,6 +102,7 @@ export function createSourceHttp({
           );
         }
         authenticated &&= origins.has(url.origin);
+        phase = 'requesting';
         const response = await fetch(url, {
           redirect: 'manual',
           credentials: 'omit',
@@ -101,6 +129,7 @@ export function createSourceHttp({
           }
           throw new SourceHttpError(response.status);
         }
+        phase = 'reading response from';
         return {
           bytes: new Uint8Array(await response.arrayBuffer()),
           url,
@@ -110,7 +139,15 @@ export function createSourceHttp({
     } catch (cause) {
       signal.throwIfAborted();
       if (timeout.aborted) {
-        throw new TransientSourceError('Source request timed out', { cause });
+        throw new TransientSourceError(`Timed out ${phase} ${url.origin}`, {
+          cause,
+        });
+      }
+      if (cause instanceof TypeError && cause.cause) {
+        const ErrorType = transientNetworkError(cause.cause)
+          ? TransientSourceError
+          : Error;
+        throw new ErrorType(`Network error ${phase} ${url.origin}`, { cause });
       }
       throw cause;
     }

@@ -16,6 +16,8 @@ comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --source copymanga -o ~/manga
 
 You can also use a short series ID. `-o` sets the output directory, and `-c 2-4` selects the second through fourth chapters in reading order, inclusive. If the range exceeds the chapter list, the command fails before downloading anything.
 
+CBZ files go straight into the output directory. If you download multiple series for a reader, use a separate directory for each series, such as `-o ~/manga/series-name`.
+
 ## Install
 
 Use Node.js 24. The new version is in alpha. The core package does not bundle online sources; add them to the CLI separately:

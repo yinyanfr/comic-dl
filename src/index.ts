@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
-import { nonempty, readConfig } from './config.js';
-import { downloadSeries } from './download.js';
+import { nonempty, outputPath, readConfig } from './config.js';
+import { defaultRetries, downloadSeries, retrySourceRead } from './download.js';
 import {
   extensionPackage,
   manageExtensions,
@@ -288,7 +288,7 @@ async function parseCommand(args: string[], signal: AbortSignal) {
     extensions: values.extension ?? config.extensions ?? [],
     ...parseInput(values, positionals, config.source),
     selections,
-    directory,
+    directory: outputPath(directory),
     jobs:
       command === 'chapter'
         ? 1
@@ -297,7 +297,7 @@ async function parseCommand(args: string[], signal: AbortSignal) {
           : (config.jobs ?? 2),
     retries:
       values.retries === undefined
-        ? (config.retries ?? 2)
+        ? (config.retries ?? defaultRetries)
         : integer('retries', values.retries, 0),
   } as const;
 }
@@ -405,18 +405,21 @@ async function runSourceCommand(
     }
   }
   if (!sourceId || !sources.ids().includes(sourceId)) {
-    throw new Error(
+    logError(
       `Unknown source: ${sourceId}. Install it with comic-dl add <package> or load it with --extension.`,
     );
+    return 2;
   }
   const source = sources.create(sourceId);
   if (args.command === 'search') {
     if (!source.search) {
       throw new Error(`Source ${source.id} does not support search`);
     }
-    const { results, hasNext } = await source.search(
-      args.query,
-      args.page,
+    const search = source.search.bind(source);
+    const { results, hasNext } = await readSource(
+      source.id,
+      'search the catalog',
+      () => search(args.query, args.page, signal),
       signal,
     );
     for (const { title, url } of results) {
@@ -428,18 +431,29 @@ async function runSourceCommand(
     return 0;
   }
   if (args.command === 'list') {
-    const series = await source.getSeries(args.input, signal);
+    const series = await readSource(
+      source.id,
+      'list chapters',
+      () => source.getSeries(args.input, signal),
+      signal,
+    );
     for (const { id, title } of series.chapters) {
       console.log(`${id}\t${title}`);
     }
     return 0;
   }
-  const series = await (args.command === 'chapter' && !args.selections.length
-    ? source.getChapter(args.input, signal).then(({ workId, chapter }) => ({
-        id: workId,
-        chapters: [chapter],
-      }))
-    : source.getSeries(args.input, signal));
+  const direct = args.command === 'chapter' && !args.selections.length;
+  const series = await readSource(
+    source.id,
+    direct ? 'resolve the chapter' : 'list chapters',
+    async () => {
+      if (!direct) return source.getSeries(args.input, signal);
+      const { workId, chapter } = await source.getChapter(args.input, signal);
+      return { id: workId, chapters: [chapter] };
+    },
+    signal,
+    args.retries,
+  );
   let selected = series;
   if (args.selections.length) {
     try {
@@ -465,7 +479,7 @@ async function runSourceCommand(
       if ('error' in result) {
         const label = result.status === 'restricted' ? 'Restricted' : 'Failed';
         console.error(
-          `${label}: chapter ${result.chapterId} (attempts: ${result.attempts}): ${result.error}`,
+          `${label}: chapter ${result.chapterId} (attempts: ${result.attempts}, source: ${source.id}): ${result.error}`,
         );
       } else {
         const status = result.status === 'skipped' ? 'Skipped' : 'Downloaded';
@@ -490,6 +504,22 @@ async function runSourceCommand(
     (counts.restricted && !counts.downloaded && !counts.skipped)
     ? 1
     : 0;
+}
+
+async function readSource<T>(
+  source: string,
+  operation: string,
+  read: () => Promise<T>,
+  signal: AbortSignal,
+  retries?: number,
+): Promise<T> {
+  try {
+    return await retrySourceRead(read, signal, retries);
+  } catch (cause) {
+    signal.throwIfAborted();
+    const reason = cause instanceof Error ? cause.message : String(cause);
+    throw new Error(`${source}: could not ${operation}: ${reason}`, { cause });
+  }
 }
 
 function logError(error: unknown) {

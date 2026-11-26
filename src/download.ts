@@ -11,6 +11,8 @@ export type ChapterResult = { chapterId: string; attempts: number } & (
   | { status: 'failed' | 'restricted'; error: string }
 );
 
+export const defaultRetries = 2;
+
 interface DownloadOptions {
   directory: string;
   jobs: number;
@@ -37,9 +39,38 @@ async function* readPages(
       const reason = cause instanceof Error ? cause.message : String(cause);
       const PageError =
         cause instanceof TransientSourceError ? TransientSourceError : Error;
-      throw new PageError(`Page ${index + 1} (${page.id}): ${reason}`, {
+      throw new PageError(`Page ${index + 1}: ${reason}`, {
         cause,
       });
+    }
+  }
+}
+
+async function waitForRetry(
+  error: unknown,
+  attempts: number,
+  retries: number,
+  signal: AbortSignal,
+) {
+  signal.throwIfAborted();
+  if (!(error instanceof TransientSourceError) || attempts > retries) {
+    return false;
+  }
+  await setTimeout(100 * 2 ** Math.min(attempts - 1, 4), undefined, { signal });
+  return true;
+}
+
+export async function retrySourceRead<T>(
+  read: () => Promise<T>,
+  signal: AbortSignal,
+  retries = defaultRetries,
+): Promise<T> {
+  for (let attempts = 1; ; attempts++) {
+    signal.throwIfAborted();
+    try {
+      return await read();
+    } catch (error) {
+      if (!(await waitForRetry(error, attempts, retries, signal))) throw error;
     }
   }
 }
@@ -69,8 +100,7 @@ async function downloadChapter(
       );
       return { ...result, chapterId, attempts };
     } catch (error) {
-      signal.throwIfAborted();
-      if (!(error instanceof TransientSourceError) || attempts > retries) {
+      if (!(await waitForRetry(error, attempts, retries, signal))) {
         return {
           chapterId,
           attempts,
@@ -79,9 +109,6 @@ async function downloadChapter(
           error: error instanceof Error ? error.message : String(error),
         };
       }
-      await setTimeout(100 * 2 ** Math.min(attempts - 1, 4), undefined, {
-        signal,
-      });
     }
   }
 }
@@ -93,8 +120,9 @@ export async function downloadSeries(
 ) {
   const { jobs, signal, onResult } = options;
   const chapters = series.chapters.values();
+  let callbackFailure: { error: unknown } | undefined;
   async function worker() {
-    while (!signal.aborted) {
+    while (!signal.aborted && !callbackFailure) {
       const next = chapters.next();
       if (next.done) {
         return;
@@ -113,11 +141,18 @@ export async function downloadSeries(
         }
         throw error;
       }
-      onResult(result);
+      if (!callbackFailure) {
+        try {
+          await Promise.resolve(onResult(result));
+        } catch (error) {
+          callbackFailure ??= { error };
+        }
+      }
     }
   }
 
   await Promise.all(
     Array.from({ length: Math.min(jobs, series.chapters.length) }, worker),
   );
+  if (callbackFailure) throw callbackFailure.error;
 }

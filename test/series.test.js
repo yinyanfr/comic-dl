@@ -55,7 +55,7 @@ test('lists chapters; series continues past a failure and can resume', async (t)
   assert.match((await run('c', ...options, '-c', '3')).stdout, /^Downloaded: /);
   await assert.rejects(run('download', ...options, '--jobs', '1'), {
     code: 1,
-    stderr: /Failed: chapter 1 \(attempts: 1\).*missing\.gif/,
+    stderr: /Failed: chapter 1 \(attempts: 1, source: fixture\).*missing\.gif/,
     stdout:
       /^Skipped: .+\nDownloaded: .+\nSummary: 1 downloaded, 1 skipped, 1 failed, 0 cancelled\n$/,
   });

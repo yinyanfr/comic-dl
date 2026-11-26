@@ -16,6 +16,8 @@ comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --source copymanga -o ~/manga
 
 也可以直接用作品短 ID。`-o` 指定下载目录，`-c 2-4` 按阅读顺序下载第 2 到第 4 个章节（含两端）。范围超出章节列表时，命令会报错，且不会开始下载。
 
+CBZ 直接写入输出目录。下载多部作品给阅读器使用时，请为每部作品指定独立目录，例如 `-o ~/manga/作品名`。
+
 ## 安装
 
 使用 Node.js 24。新版目前是 alpha。核心不附带在线漫画源，CLI 通过 `add` 安装扩展：

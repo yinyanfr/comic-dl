@@ -3,6 +3,10 @@
   "version": "3.0.0-alpha",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yinyanfr/comic-dl.git"
+  },
   "bin": {
     "comic-dl": "dist/index.js"
   },

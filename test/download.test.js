@@ -130,7 +130,7 @@ test('retries only transient errors within budget and restarts the chapter from 
       ['permanent', 'failed', 1],
     ],
   );
-  assert.match(results[1].error, /Page 1 \(0\): rate limited/);
+  assert.match(results[1].error, /Page 1: rate limited/);
   assert.match(
     (await readdir(directory)).join('\n'),
     /^chapter-recovers-[a-f0-9]+\.cbz$/,

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { once } from 'node:events';
 import {
   copyFile,
   mkdir,
@@ -10,13 +12,15 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { env, execPath } from 'node:process';
+import { env, execPath, pid } from 'node:process';
 import { test } from 'node:test';
+import { setImmediate } from 'node:timers/promises';
 import { fileURLToPath, URL } from 'node:url';
 import { promisify } from 'node:util';
 import downloader, { createDownloader } from 'comic-dl';
+import { readConfig } from '../dist/config.js';
 import helloExtension from '../examples/hello-extension.mjs';
 
 const exec = promisify(execFile);
@@ -49,7 +53,7 @@ test('the CLI loads multiple explicit extensions and downloads through an indepe
   );
   assert.equal((await run('src')).stdout, 'fixture\n');
   await assert.rejects(run('list', '--source', 'hello', 'demo'), {
-    code: 1,
+    code: 2,
     stderr: /Unknown source: hello/,
   });
   assert.equal(
@@ -170,10 +174,52 @@ test('loads config-relative paths and gives explicit options precedence', async 
   await assert.rejects(
     run('list', 'demo', ...config, '--extension', hello, '--source', 'other'),
     {
-      code: 1,
+      code: 2,
       stderr: /Unknown source: other/,
     },
   );
+});
+
+test('expands home-relative output in migrated JSON configs', async (t) => {
+  const directory = await makeDirectory(t);
+  const config = join(directory, 'config.json');
+  await writeFile(config, JSON.stringify({ version: 1, output: '~/manga' }));
+  assert.equal(
+    (await readConfig(config, t.signal)).output,
+    join(homedir(), 'manga'),
+  );
+});
+
+test('chapter retries a transient error while resolving a direct link', async (t) => {
+  const directory = await makeDirectory(t);
+  const file = join(directory, 'retry.mjs');
+  await writeFile(
+    file,
+    `import hello from ${JSON.stringify(new URL('../examples/hello-extension.mjs', import.meta.url).href)};
+    export default { ...hello, create(api) {
+      const source = hello.create(api);
+      let attempts = 0;
+      return { ...source, async getChapter(...args) {
+        if (++attempts === 1) throw new api.TransientSourceError('Test disconnect');
+        return source.getChapter(...args);
+      }};
+    }};`,
+  );
+  const args = [
+    'chapter',
+    'welcome',
+    '--extension',
+    file,
+    '--source',
+    'hello',
+    '-o',
+    directory,
+  ];
+  await assert.rejects(run(...args, '--retries', '0'), {
+    code: 1,
+    stderr: /hello: could not resolve the chapter: Test disconnect/,
+  });
+  assert.match((await run(...args, '--retries', '1')).stdout, /^Downloaded:/);
 });
 
 test('validates config without echoing its contents and exposes command-specific help', async (t) => {
@@ -224,6 +270,67 @@ test('the library registers sources without reading CLI state and returns downlo
   assert.equal((await readdir(directory)).length, 1);
 });
 
+test(
+  'a throwing result callback stops new work and waits for active chapters',
+  { timeout: 5_000 },
+  async () => {
+    const started = [];
+    const active = Promise.withResolvers();
+    const callback = Promise.withResolvers();
+    const failure = new Error('Callback failed');
+    const instance = createDownloader().use({
+      ...helloExtension,
+      create(api) {
+        const source = helloExtension.create(api);
+        return {
+          ...source,
+          async getSeries() {
+            return {
+              id: 'demo',
+              chapters: ['first', 'active', 'pending'].map((id) => ({
+                id,
+                title: id,
+                async getPages() {
+                  started.push(id);
+                  if (id === 'active') await active.promise;
+                  return [];
+                },
+              })),
+            };
+          },
+        };
+      },
+    });
+    const reported = [];
+    let settled = false;
+    const result = assert
+      .rejects(
+        instance.download('demo', {
+          source: 'hello',
+          onResult(chapter) {
+            reported.push(chapter.chapterId);
+            callback.resolve();
+            throw failure;
+          },
+        }),
+        failure,
+      )
+      .finally(() => {
+        settled = true;
+      });
+    await callback.promise;
+    await setImmediate();
+    try {
+      assert.equal(settled, false);
+    } finally {
+      active.resolve();
+    }
+    await result;
+    assert.deepEqual(started, ['first', 'active']);
+    assert.deepEqual(reported, ['first']);
+  },
+);
+
 test('npm-managed extensions are discovered and updates stay in range', async (t) => {
   const directory = await makeDirectory(t);
   const name = '@example/comic-dl-test-source';
@@ -264,11 +371,10 @@ test('npm-managed extensions are discovered and updates stay in range', async (t
         .replace('apiVersion: 1', `apiVersion: ${apiVersion}`)
         .replace("title: 'Welcome'", `title: '${version}'`),
     );
-    const { stdout } = await exec(
-      'npm',
-      ['pack', '--ignore-scripts', '--json'],
-      { cwd: project },
-    );
+    const args = ['pack', '--ignore-scripts', '--json'];
+    const { stdout } = env.npm_execpath
+      ? await exec(execPath, [env.npm_execpath, ...args], { cwd: project })
+      : await exec('npm', args, { cwd: project });
     const [{ filename, integrity }] = JSON.parse(stdout);
     const path = `/tarballs/${filename}`;
     archives.set(path, await readFile(join(project, filename)));
@@ -308,7 +414,21 @@ test('npm-managed extensions are discovered and updates stay in range', async (t
   await managed('update', name);
   assert.equal((await list()).stdout, 'welcome\t1.1.0\n');
   await publish('1.2.0');
+  const writers = join(directory, 'store', 'writers');
+  const orphan = spawn(execPath, ['-e', '']);
+  await once(orphan, 'exit');
+  const abandonedLock = join(writers, `${orphan.pid}-${randomUUID()}`);
+  const activeLock = join(writers, `${pid}-${randomUUID()}`);
+  await mkdir(abandonedLock);
+  await mkdir(activeLock);
+  await assert.rejects(managed('update'), {
+    code: 1,
+    stderr: /Extension store is locked by another command/,
+  });
+  assert.equal((await list()).stdout, 'welcome\t1.1.0\n');
+  await rm(activeLock, { recursive: true });
   await managed('update');
+  assert.deepEqual(await readdir(writers), []);
   assert.equal((await list()).stdout, 'welcome\t1.2.0\n');
   const invalid = '@example/invalid';
   await publish('1.0.0', 2, invalid);

@@ -86,7 +86,7 @@ test('missing page fails cleanly; rerun writes an ordered CBZ and then skips it'
   await assert.rejects(download(), {
     code: 1,
     stdout: '',
-    stderr: /Page 2 \(a\.gif\).*ENOENT/,
+    stderr: /Page 2:.*ENOENT.*a\.gif/,
   });
   assert.deepEqual(await readdir(output), []);
 

@@ -1,4 +1,4 @@
-import { downloadSeries } from './download.js';
+import { defaultRetries, downloadSeries, retrySourceRead } from './download.js';
 import type { ChapterResult } from './download.js';
 import { SourceRegistry } from './sources/index.js';
 import type { SourceExtension } from './extension.js';
@@ -33,16 +33,15 @@ export function createDownloader() {
       { source, signal = new AbortController().signal }: SourceOptions = {},
     ) {
       signal.throwIfAborted();
-      return sources
-        .create(source ?? sources.match(input, 'series'))
-        .getSeries(input, signal);
+      const adapter = sources.create(source ?? sources.match(input, 'series'));
+      return retrySourceRead(() => adapter.getSeries(input, signal), signal);
     },
     async download(input: string, options: DownloadOptions = {}) {
       const {
         source,
         directory = '.',
         jobs = 2,
-        retries = 2,
+        retries = defaultRetries,
         signal = new AbortController().signal,
         onResult,
       } = options;
@@ -54,7 +53,11 @@ export function createDownloader() {
       }
       signal.throwIfAborted();
       const adapter = sources.create(source ?? sources.match(input, 'series'));
-      const series = await adapter.getSeries(input, signal);
+      const series = await retrySourceRead(
+        () => adapter.getSeries(input, signal),
+        signal,
+        retries,
+      );
       const results: ChapterResult[] = [];
       await downloadSeries(adapter.id, series, {
         directory,
@@ -63,7 +66,7 @@ export function createDownloader() {
         signal,
         onResult(result) {
           results.push(result);
-          onResult?.(result);
+          return onResult?.(result);
         },
       });
       signal.throwIfAborted();

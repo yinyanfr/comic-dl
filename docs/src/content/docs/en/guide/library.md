@@ -30,6 +30,8 @@ Replace the example URL with a real series and follow the [Zerobyw README](https
 
 `download()` returns a result for each chapter. `downloaded` and `skipped` include an archive path; `restricted` and `failed` include an error. Check these statuses: a failed chapter does not by itself reject the whole promise. Invalid options, source selection or chapter listing errors, and cancellation of the supplied `signal` reject the call. `directory` defaults to the current directory and `retries` defaults to two additional attempts. `onResult` receives the same result as each chapter finishes.
 
+If `onResult` throws or returns a rejected promise, the downloader stops starting new chapters and waits for in-flight work to finish before rejecting. Completed archives are kept.
+
 The default export is convenient for a script. If different tasks need independent source registries, use `createDownloader()`:
 
 ```ts

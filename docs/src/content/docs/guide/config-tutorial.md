@@ -32,6 +32,8 @@ comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --config ./profiles/copymanga
 
 CLI 不会自动查找配置，每条命令都要传入 `--config`。配置里的相对输出路径以 **JSON 文件所在目录** 为基准，所以这里会写到 `./profiles/manga/`。如果没有配置文件或命令行提供输出目录，`download` 默认写到当前工作目录。
 
+如果 `output` 写成 `"~/manga"`，则保存到用户主目录下的 `manga/`。
+
 ## 临时覆盖设置
 
 ```sh
