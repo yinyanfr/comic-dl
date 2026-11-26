@@ -1,14 +1,14 @@
 ---
-title: 从 2.x 升级到 3.x alpha
+title: 从 2.x 升级到 3.x
 description: 对照 2.4.0 迁移命令、脚本、预设和凭据，并保留已下载的漫画。
 ---
 
-3.x 是 TypeScript 重写版，下面以 `2.4.0` 为对照。迁移前先保留旧下载目录和脚本，用新目录验证一部作品。新版仍是 alpha；依赖旧行为的脚本可以继续固定使用 `comic-dl@2.4.0`。
+3.x 是 TypeScript 重写版，下面以 `2.4.0` 为对照。迁移前先保留旧下载目录和脚本，用新目录验证一部作品。依赖旧行为的脚本可以继续固定使用 `comic-dl@2.4.0`。
 
 ## 安装新版和对应的漫画源
 
 ```sh
-npm install -g comic-dl@3.0.0-alpha
+npm install -g comic-dl@3.0.0
 comic-dl --version
 comic-dl add @comic-dl/copymanga
 comic-dl sources
@@ -16,7 +16,7 @@ comic-dl sources
 
 新版需要 Node.js 24。2.x 自带的 CopyManga 和 Zerobyw 在 3.x 中分别由 `@comic-dl/copymanga` 和 `@comic-dl/zerobyw` 提供，安装一次后会自动加载。旧 Ganma 模块目前没有随新版提供；其他可用源、网址和登录要求见[扩展仓库](https://github.com/yinyanfr/comic-dl-extensions)。
 
-如果旧脚本通过 `npx comic-dl` 启动，请明确固定所需版本。对照中的新版命令假设 `comic-dl --version` 已显示 `3.0.0-alpha`。
+如果旧脚本通过 `npx comic-dl` 启动，请明确固定所需版本。对照中的新版命令假设 `comic-dl --version` 已显示 `3.0.0`。
 
 ## 改写命令和章节选择
 

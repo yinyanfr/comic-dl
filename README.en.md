@@ -20,10 +20,10 @@ CBZ files go straight into the output directory. If you download multiple series
 
 ## Install
 
-Use Node.js 24. The new version is in alpha. The core package does not bundle online sources; add them to the CLI separately:
+Use Node.js 24. The core package does not bundle online sources; add them to the CLI separately:
 
 ```sh
-npm install -g comic-dl@3.0.0-alpha
+npm install -g comic-dl
 comic-dl add @comic-dl/copymanga
 comic-dl sources
 ```
@@ -33,7 +33,7 @@ Run `comic-dl update @comic-dl/copymanga` to update one extension, `comic-dl upd
 ## Use as a library
 
 ```sh
-npm install comic-dl@3.0.0-alpha @comic-dl/zerobyw
+npm install comic-dl @comic-dl/zerobyw
 ```
 
 ```typescript
@@ -57,5 +57,5 @@ See the [Zerobyw extension README](https://github.com/yinyanfr/comic-dl-extensio
 - [Install comic-dl and add sources](https://yinyanfr.github.io/comic-dl/en/guide/quickstart/) and [basic usage](https://yinyanfr.github.io/comic-dl/en/guide/basic/)
 - [Advanced usage](https://yinyanfr.github.io/comic-dl/en/guide/advanced/), [configuration files](https://yinyanfr.github.io/comic-dl/en/guide/config-tutorial/), and [CLI reference](https://yinyanfr.github.io/comic-dl/en/reference/cli/)
 - [Use as a library](https://yinyanfr.github.io/comic-dl/en/guide/library/)
-- [Upgrade from 2.x to 3.x alpha](https://yinyanfr.github.io/comic-dl/en/migration/v2-to-v3/)
+- [Upgrade from 2.x to 3.x](https://yinyanfr.github.io/comic-dl/en/migration/v2-to-v3/)
 - [Contribute to the project](https://yinyanfr.github.io/comic-dl/en/development/contributing/), [test locally](https://yinyanfr.github.io/comic-dl/en/development/local-testing/), or [build a source extension](https://yinyanfr.github.io/comic-dl/en/extensions/develop/)

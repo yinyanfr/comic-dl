@@ -5,11 +5,11 @@ description: Install the comic-dl CLI, then add, update, or remove source extens
 
 ## Install comic-dl
 
-Install Node.js 24 (which includes npm), then install the alpha CLI. Version 3.x is a prerelease; installing `comic-dl` without a version still gets the older stable release.
+Install Node.js 24 (which includes npm), then install the CLI.
 
 ```sh
 node --version
-npm install -g comic-dl@3.0.0-alpha
+npm install -g comic-dl
 comic-dl --version
 ```
 

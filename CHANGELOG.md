@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 3.0.0 — 2026-11-26
 
 - Reorganized the documentation around installation, basic and advanced CLI usage, configuration, and library integration.
 - Moved fixture examples to the project development guide and expanded the migration guide with command and chapter-selection comparisons against 2.4.0.
@@ -8,10 +8,11 @@
 - Retry transient interruptions during source lookups, chapter resolution, and image reads, with diagnostics that omit request paths and query strings.
 - Recover abandoned extension-store write locks, expand home-relative output paths, and return exit code `2` for unknown source IDs.
 - Stop scheduling new chapters when a library result callback fails and wait for active work before rejecting.
+- Add Windows CLI checks and automate npm publishing and GitHub releases.
 
 ## 3.0.0-alpha — 2026-11-26
 
-This prerelease is available on npm under the `next` tag. The stable `latest` tag still points to 2.4.0.
+First public preview of the 3.x rewrite, published under the `next` tag.
 
 ### Added
 

@@ -6,7 +6,7 @@ description: Register sources, list chapters, and download CBZ archives in a Nod
 In a Node.js 24 ESM project (for example, with an `.mjs` file or `"type": "module"` in `package.json`), install the core and the extension as project dependencies:
 
 ```sh
-npm install comic-dl@3.0.0-alpha @comic-dl/zerobyw
+npm install comic-dl @comic-dl/zerobyw
 ```
 
 ```ts

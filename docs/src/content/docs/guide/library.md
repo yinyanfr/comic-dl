@@ -6,7 +6,7 @@ description: 在 Node.js 项目中注册漫画源、列出章节并将漫画下�
 在 Node.js 24 的 ESM 项目中（例如使用 `.mjs`，或在 `package.json` 中设置 `"type": "module"`），安装核心和选用的扩展作为项目依赖：
 
 ```sh
-npm install comic-dl@3.0.0-alpha @comic-dl/zerobyw
+npm install comic-dl @comic-dl/zerobyw
 ```
 
 ```ts

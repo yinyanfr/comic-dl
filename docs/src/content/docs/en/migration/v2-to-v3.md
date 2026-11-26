@@ -1,5 +1,5 @@
 ---
-title: Upgrade from 2.x to 3.x alpha
+title: Upgrade from 2.x to 3.x
 description: Migrate commands, scripts, presets, and credentials from 2.4.0 and keep prior downloads.
 ---
 
@@ -8,7 +8,7 @@ Version 3.x is a TypeScript rewrite. This guide uses `2.4.0` as the baseline. Ke
 ## Install the new CLI and its sources
 
 ```sh
-npm install -g comic-dl@3.0.0-alpha
+npm install -g comic-dl@3.0.0
 comic-dl --version
 comic-dl add @comic-dl/copymanga
 comic-dl sources
@@ -16,7 +16,7 @@ comic-dl sources
 
 The new CLI requires Node.js 24. CopyManga and Zerobyw were bundled in 2.x; in 3.x they are provided by `@comic-dl/copymanga` and `@comic-dl/zerobyw`. Install each once and the CLI loads it automatically. The old Ganma module is not bundled in 3.x. See the [extensions repository](https://github.com/yinyanfr/comic-dl-extensions/blob/main/README.en.md) for available sources, current URLs, and login requirements.
 
-Pin the version explicitly if your scripts use `npx comic-dl`. The new commands below assume `comic-dl --version` reports `3.0.0-alpha`.
+Pin the version explicitly if your scripts use `npx comic-dl`. The new commands below assume `comic-dl --version` reports `3.0.0`.
 
 ## Update commands and chapter selection
 

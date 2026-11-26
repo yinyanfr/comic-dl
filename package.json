@@ -1,6 +1,6 @@
 {
   "name": "comic-dl",
-  "version": "3.0.0-alpha",
+  "version": "3.0.0",
   "type": "module",
   "license": "MIT",
   "repository": {

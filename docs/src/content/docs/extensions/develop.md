@@ -60,7 +60,7 @@ export default {
 发布前在扩展项目运行 `npm pack`，再到一个临时 npm 项目测试生成的包：
 
 ```sh
-npm install comic-dl@3.0.0-alpha /path/to/example-comic-dl-source-0.1.0.tgz
+npm install comic-dl /path/to/example-comic-dl-source-0.1.0.tgz
 npm exec -- comic-dl sources --extension @example/comic-dl-source
 ```
 

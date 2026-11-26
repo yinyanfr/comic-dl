@@ -60,7 +60,7 @@ Use a separate npm project for your extension. For TypeScript, set `module` and 
 Before publishing, run `npm pack` in the extension project and test the archive in a temporary npm project:
 
 ```sh
-npm install comic-dl@3.0.0-alpha /path/to/example-comic-dl-source-0.1.0.tgz
+npm install comic-dl /path/to/example-comic-dl-source-0.1.0.tgz
 npm exec -- comic-dl sources --extension @example/comic-dl-source
 ```
 

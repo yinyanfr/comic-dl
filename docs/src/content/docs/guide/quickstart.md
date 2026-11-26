@@ -5,11 +5,11 @@ description: 安装 comic-dl CLI，并添加、更新或移除独立的漫画源
 
 ## 安装 comic-dl
 
-先安装 Node.js 24（自带 npm），再安装新版 CLI。目前 3.x 是 alpha，直接安装不带版本号的 `comic-dl` 仍会得到旧版。
+先安装 Node.js 24（自带 npm），再安装 CLI。
 
 ```sh
 node --version
-npm install -g comic-dl@3.0.0-alpha
+npm install -g comic-dl
 comic-dl --version
 ```
 
