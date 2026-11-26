@@ -14,7 +14,7 @@ npm test
 node dist/index.js --help
 ```
 
-`npm run check` 检查格式、类型和 lint；`npm test` 构建核心并运行离线回归。CopyManga 和 Zerobyw 的源码和测试位于 [comic-dl-extensions](https://github.com/yinyanfr/comic-dl-extensions)。站点测试使用回环 HTTP 和最小 HTML 样本，不需要真实 Cookie。Husky 只检查暂存文件，提交前仍应运行完整检查。
+`npm run check` 检查格式、类型和 lint；`npm test` 构建核心并运行离线回归。手动验证列章和 CBZ 输出可参考[本地开发测试](../local-testing/)。各站点扩展的源码和测试位于 [comic-dl-extensions](https://github.com/yinyanfr/comic-dl-extensions)，使用本地模拟服务和样本，无需真实站点凭据。Husky 只检查暂存文件，提交前仍应运行完整检查。
 
 ## 代码边界
 
@@ -31,7 +31,7 @@ node dist/index.js --help
 
 ## 维护文档网站
 
-文档正文位于 `docs/src/content/docs/`，使用简体中文 Markdown。修改接口时，同时检查对应的参考页和规范。CLI 和文档站分别安装依赖：
+简体中文文档位于 `docs/src/content/docs/`，英文文档在 `docs/src/content/docs/en/`。同一页面在两个语言目录中使用相同的相对文件名，方便读者切换语言。修改接口时，同时更新两个版本，并检查对应的参考页和规范。CLI 和文档站分别安装依赖：
 
 ```sh
 npm ci --prefix docs
@@ -40,4 +40,4 @@ npm run build --prefix docs
 npm run preview --prefix docs
 ```
 
-本地预览从 `/comic-dl/` 进入，和 [GitHub Pages](https://yinyanfr.github.io/comic-dl/) 的子路径一致。涉及文档的 PR 会验证构建，每次推送到 `main` 都会部署。仓库的 **Settings → Pages → Source** 须设为 **GitHub Actions**。
+本地预览从 `/comic-dl/` 或 `/comic-dl/en/` 进入，和 [GitHub Pages](https://yinyanfr.github.io/comic-dl/) 的子路径一致。涉及文档的 PR 会验证构建，每次推送到 `main` 都会部署。仓库的 **Settings → Pages → Source** 须设为 **GitHub Actions**。

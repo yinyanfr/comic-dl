@@ -1,5 +1,7 @@
 # comic-dl
 
+[English](README.en.md) · [更新日志（英文）](CHANGELOG.md)
+
 comic-dl 是一个可通过扩展添加漫画源的命令行工具和 TypeScript 库，每章保存为一个 CBZ。
 
 ```sh
@@ -50,9 +52,8 @@ console.log(results);
 
 ## 文档
 
-- [快速入门](https://yinyanfr.github.io/comic-dl/guide/quickstart/)：安装、搜索、列章与下载
-- [CLI 命令](https://yinyanfr.github.io/comic-dl/reference/cli/)：命令简写、章节选择和配置
-- [在项目中使用](https://yinyanfr.github.io/comic-dl/guide/library/)：注册扩展、列章、下载和获取章节结果
-- [CopyManga 指南](https://yinyanfr.github.io/comic-dl/guide/copymanga/)与 [Zerobyw 用法](https://yinyanfr.github.io/comic-dl/guide/quickstart/#使用-zerobyw)
-- [离线下载示例](https://yinyanfr.github.io/comic-dl/guide/fixture/)与[旧版迁移指南](https://yinyanfr.github.io/comic-dl/guide/migration/)
-- [项目开发](https://yinyanfr.github.io/comic-dl/development/contributing/)与[漫画源扩展开发](https://yinyanfr.github.io/comic-dl/extensions/develop/)
+- [安装本体与添加漫画源](https://yinyanfr.github.io/comic-dl/guide/quickstart/)与[简单的使用](https://yinyanfr.github.io/comic-dl/guide/basic/)：从安装到搜索、列章和下载
+- [复杂的使用](https://yinyanfr.github.io/comic-dl/guide/advanced/)、[使用配置文件](https://yinyanfr.github.io/comic-dl/guide/config-tutorial/)与 [CLI 参考](https://yinyanfr.github.io/comic-dl/reference/cli/)
+- [作为库使用](https://yinyanfr.github.io/comic-dl/guide/library/)：注册扩展、列章、下载和获取章节结果
+- [从 2.x 升级到 3.x alpha](https://yinyanfr.github.io/comic-dl/migration/v2-to-v3/)：迁移命令、预设和凭据，保留已下载的漫画
+- [项目开发](https://yinyanfr.github.io/comic-dl/development/contributing/)、[本地开发测试](https://yinyanfr.github.io/comic-dl/development/local-testing/)与[漫画源扩展开发](https://yinyanfr.github.io/comic-dl/extensions/develop/)

@@ -1,95 +1,44 @@
 ---
-title: 快速入门
-description: 安装 comic-dl，直接下载作品，或配置 Zerobyw 后搜索并下载。
+title: 安装本体与添加漫画源
+description: 安装 comic-dl CLI，并添加、更新或移除独立的漫画源扩展。
 ---
-
-comic-dl 将漫画每章保存为一个 CBZ。命令示例适用于 Bash / Zsh。
 
 ## 安装 comic-dl
 
-安装 Node.js 24（自带 npm），再安装新版 CLI 的 alpha 版本。核心不附带在线漫画源。
-
-```sh
-npm install -g comic-dl@3.0.0-alpha
-comic-dl --help
-```
-
-如果要从源码构建，可以改用：
+先安装 Node.js 24（自带 npm），再安装新版 CLI。目前 3.x 是 alpha，直接安装不带版本号的 `comic-dl` 仍会得到旧版。
 
 ```sh
 node --version
-git clone https://github.com/yinyanfr/comic-dl.git
-cd comic-dl
-npm ci
-npm run build
-npm link
-comic-dl --help
+npm install -g comic-dl@3.0.0-alpha
+comic-dl --version
 ```
 
-`npm link` 让你可以在任意下载目录运行 `comic-dl`。也可以跳过这一步，在仓库里用 `node dist/index.js` 调用。
+核心不含在线漫画源。要下载某个网站或自托管书库的漫画，先添加相应的扩展。
 
-## 从链接下载
+## 添加漫画源
 
-先安装 CopyManga 扩展，然后进入希望保存漫画的目录，贴上作品链接即可下载：
+在 [comic-dl-extensions](https://github.com/yinyanfr/comic-dl-extensions) 查找项目维护的扩展，也可以使用第三方独立发布的兼容扩展。按扩展 README 找到 npm 包名，例如：
 
 ```sh
 comic-dl add @comic-dl/copymanga
-comic-dl d "https://www.copy20.com/comic/xiangkanbaitiantongxuederuanruobiaoqing"
+comic-dl sources
 ```
 
-要用短 ID、指定目录和选择章节范围，可以写成：
+`add` 安装扩展，后续 CLI 命令会自动加载。`sources` 中的 `copymanga` 是源 ID，用于 `--source`；`add`、`update`、`remove` 用的是 npm 包名 `@comic-dl/copymanga`。列表里的 `fixture` 是[本地开发测试源](../../development/local-testing/)。
+
+<span id="使用-zerobyw"></span>
+<span id="登录并配置-cookie"></span>
+
+## 按来源配置登录
+
+有些源需另行配置登录。安装前可先查阅各自的 README：例如 [Zerobyw](https://github.com/yinyanfr/comic-dl-extensions/tree/main/extensions/zerobyw) 用 Cookie 列章和下载，[Komga](https://github.com/yinyanfr/comic-dl-extensions/tree/main/extensions/komga) 和 [Kavita](https://github.com/yinyanfr/comic-dl-extensions/tree/main/extensions/kavita) 需要服务器地址和密钥。CopyManga 无需登录，可以直接开始[简单的使用](../basic/)。
+
+## 更新或移除漫画源
 
 ```sh
-comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --source copymanga -o ~/manga -c 2-4
+comic-dl update @comic-dl/copymanga
+comic-dl update
+comic-dl remove @comic-dl/copymanga
 ```
 
-`2-4` 代表当前章节列表按阅读顺序的第 2 到第 4 项。按稳定 ID 选择的方法见 [CLI 命令参考](../../reference/cli/#选择章节)。
-
-## 使用 Zerobyw
-
-运行 `comic-dl add @comic-dl/zerobyw` 安装扩展，再用 `comic-dl sources` 确认列表中包含 `zerobyw`。为避免重复指定源和目录，可新建 `zerobyw.json`：
-
-```json
-{
-  "version": 1,
-  "source": "zerobyw",
-  "output": "./downloads"
-}
-```
-
-以后用 `--config ./zerobyw.json` 加载上述设置。`output` 相对于配置文件所在目录。想从头试一遍配置、路径和临时覆盖，可以跟着[配置文件教程](../config-tutorial/)操作。
-
-### 登录并配置 Cookie
-
-搜索公开目录不需要登录。列出章节和下载需要有效的 Zerobyw 会话：
-
-1. 在浏览器登录 [Zerobyw](https://www.zerobyw33.com/)，打开一个作品详情页。
-2. 打开开发者工具的「网络」（Network）面板并刷新页面。选中发往 `www.zerobyw33.com` 的作品详情页请求，在「请求标头」（Request Headers）中复制 `Cookie` 的值。
-3. 把 Cookie 值保存到仓库外的本地文件，例如 `~/zerobyw-cookie.txt`。不要把它放进 `zerobyw.json` 或提交到 Git。在之后要运行下载命令的同一个终端中执行：
-
-```sh
-export COMIC_DL_ZEROBYW_COOKIE="$(cat "$HOME/zerobyw-cookie.txt")"
-```
-
-如果提示会话缺失或已过期，重新登录、更新 Cookie 文件，然后再次执行 `export`。其他源的认证方式以各自的扩展文档为准。
-
-### 搜索并下载
-
-按标题搜索，复制结果第一列的作品 URL。省略关键词可浏览目录；如提示有下一页，加上 `--page 2` 查看。
-
-```sh
-comic-dl search '漫画标题' --config ./zerobyw.json
-```
-
-把下面的示例地址替换为真实作品 URL。先列章节，再用输出第一列的实际章节 ID 下载；`101` 和 `105` 仅为示例：
-
-```sh
-series_url='https://www.zerobyw33.com/pc/details/?kuid=作品ID'
-comic-dl list "$series_url" --config ./zerobyw.json
-comic-dl download "$series_url" --config ./zerobyw.json \
-  --chapter 101 --chapter 105
-```
-
-省略 `--chapter` 可下载整个系列。若已有单章阅读页 URL，可直接用 `comic-dl chapter '<章节 URL>' --config ./zerobyw.json`。
-
-下载结果在 `./downloads/`。系列下载会把无权限的章节记为 `restricted`，继续处理可读章节；重跑时，已有的完整 CBZ 会记为 `skipped`。
+带包名的 `update` 更新单个扩展，省略包名更新全部已安装的扩展。更新遵守原先保存的 npm 版本范围；要换到范围之外的版本，可以再次运行 `comic-dl add '包名@版本'`。`remove` 只卸载扩展，已下载的 CBZ 会保留。

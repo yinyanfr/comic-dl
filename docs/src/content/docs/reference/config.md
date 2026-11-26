@@ -3,12 +3,12 @@ title: 配置与环境变量
 description: 保存常用 CLI 选项，并为漫画源配置认证。
 ---
 
-第一次写配置时，可以跟着[配置文件教程](../../guide/config-tutorial/)逐步验证。先用 `comic-dl add @comic-dl/zerobyw` 安装扩展，再把下面的内容保存为 `zerobyw.json`。
+第一次写配置时，可以跟着[使用配置文件](../../guide/config-tutorial/)逐步验证。比如用 `comic-dl add @comic-dl/copymanga` 安装扩展后，可以将下面的设置保存为 `copymanga.json`。
 
 ```json
 {
   "version": 1,
-  "source": "zerobyw",
+  "source": "copymanga",
   "output": "./downloads",
   "jobs": 2,
   "retries": 2
@@ -21,8 +21,4 @@ description: 保存常用 CLI 选项，并为漫画源配置认证。
 
 ## 环境变量
 
-| 变量                      | 使用方              | 用途                                               |
-| ------------------------- | ------------------- | -------------------------------------------------- |
-| `COMIC_DL_ZEROBYW_COOKIE` | `@comic-dl/zerobyw` | Zerobyw 的 `Cookie` 请求头值；搜索公开目录时不需要 |
-
-各漫画源自行定义认证方式。凭据不进入 CLI 配置；获取和更新 Zerobyw Cookie 的步骤见[快速入门](../../guide/quickstart/#登录并配置-cookie)。
+`COMIC_DL_EXTENSION_DIR` 可覆盖 CLI 的[扩展安装目录](../cli/#安装和管理漫画源)。各漫画源自行定义认证环境变量，例如 Zerobyw 使用 `COMIC_DL_ZEROBYW_COOKIE`。凭据不进入 CLI 配置；具体变量、获取和更新步骤见[各扩展 README](https://github.com/yinyanfr/comic-dl-extensions)。

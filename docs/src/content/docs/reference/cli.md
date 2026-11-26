@@ -23,7 +23,7 @@ description: 查阅命令、可用选项、标准输出和退出码。
 | `--config <file>`           | `sources` 及漫画操作命令      | 加载显式 JSON 配置，见[配置参考](../config/)            |
 | `--extension <name>`        | `sources` 及漫画操作命令      | 加载可解析的 npm 包或本地 ESM 文件，可重复              |
 | `--source <id>`             | 漫画操作命令                  | 选择已注册的源；可取自配置                              |
-| `--fixture <directory>`     | `list`、`chapter`、`download` | 使用离线测试源；与位置输入或显式 `--source` 互斥        |
+| `--fixture <directory>`     | `list`、`chapter`、`download` | 使用本地测试样本；与位置输入或显式 `--source` 互斥      |
 | `-o, --output <directory>`  | `chapter`、`download`         | 可取自配置；`download` 默认当前目录，`chapter` 要求指定 |
 | `-c, --chapter <selection>` | `download`                    | 章节 ID 或包含两端的范围（如 `2-4`），可重复            |
 | `-c, --chapter <id>`        | `chapter --fixture`           | 只接受一个稳定章节 ID                                   |
@@ -48,6 +48,8 @@ comic-dl remove @comic-dl/zerobyw
 ### 选择漫画源
 
 用 `add` 安装的扩展会自动加载。`--extension` 或配置可以额外加载本地文件或与 CLI 装在同一个 npm 项目中的包，不会安装或登记扩展。显式指定已登记的同名包时只加载一次；不同包声明相同源 ID 时会报错。
+
+`--fixture` 的样本格式和验证步骤见[本地开发测试](../../development/local-testing/)。
 
 `--source` 优先于配置中的 `source`。两者都未指定时，`list`、`chapter` 和 `download` 会让已加载的扩展识别完整 URL；匹配不到或有多个来源匹配时，会提示检查扩展或显式选源。作品短 ID 和搜索关键词需要指定源或使用配置中的默认源。
 

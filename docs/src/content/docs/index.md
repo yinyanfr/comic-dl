@@ -3,9 +3,9 @@ title: comic-dl 文档
 description: 安装漫画下载器、开发漫画源扩展，或参与项目开发。
 template: splash
 hero:
-  tagline: 用 CLI 搜索和下载漫画，把每一章保存为独立 CBZ。
+  tagline: 添加漫画源，用 CLI 或 TypeScript 库下载漫画，每章保存为独立 CBZ。
   actions:
-    - text: 开始使用
+    - text: 安装并添加漫画源
       link: ./guide/quickstart/
       icon: right-arrow
       variant: primary
@@ -15,7 +15,8 @@ hero:
       link: ./development/contributing/
 ---
 
-- [参考手册](./reference/cli/)：查阅命令、选项、配置和退出码。
-- [Zerobyw 动手教程](./extensions/zerobyw-walkthrough/)：逐步写出一个能离线运行的漫画源扩展。
-- [源扩展 API v1](./specs/source-extension-v1/)：查阅适配器接口、稳定标识和错误约定。
-- [从旧版迁移](./guide/migration/)：把旧脚本、预设和下载目录迁到新版。
+- [简单的使用](./guide/basic/)：输入作品链接下载，或先搜索并列出章节。
+- [复杂的使用](./guide/advanced/)与[使用配置文件](./guide/config-tutorial/)：精确选章、调整并发并复用设置。
+- [作为库使用](./guide/library/)：在 Node.js 项目中注册扩展并下载。
+- [从 2.x 升级到 3.x alpha](./migration/v2-to-v3/)：更新旧脚本和预设，保留已下载的漫画。
+- [CLI 参考手册](./reference/cli/)：查阅命令、选项和退出码。
