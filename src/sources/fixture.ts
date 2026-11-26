@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
-import type { ChapterSource, ImageExtension, Page } from './source.js';
+import { imageExtensions } from './source.js';
+import type { Chapter, ChapterSource, Page } from './source.js';
 
 function readPage(directory: string, filename: unknown): Page {
   if (
@@ -11,16 +12,7 @@ function readPage(directory: string, filename: unknown): Page {
   }
 
   const extension = extname(filename).slice(1).toLowerCase();
-  const supportedExtensions: readonly ImageExtension[] = [
-    'jpg',
-    'jpeg',
-    'png',
-    'gif',
-    'webp',
-  ];
-  const imageExtension = supportedExtensions.find(
-    (value) => value === extension,
-  );
+  const imageExtension = imageExtensions.find((value) => value === extension);
   if (!imageExtension) {
     throw new Error(`Unsupported fixture page type: ${filename}`);
   }
@@ -28,35 +20,104 @@ function readPage(directory: string, filename: unknown): Page {
   return {
     id: filename,
     extension: imageExtension,
-    read: () => readFile(join(directory, filename)),
+    read: (signal) => readFile(join(directory, filename), { signal }),
+  };
+}
+
+function record(value: unknown, context: string): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`${context} must be an object`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function text(value: unknown, context: string): string {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error(`${context} must be a non-empty string`);
+  }
+  return value;
+}
+
+async function readManifest(
+  directory: string,
+  name: string,
+  signal: AbortSignal,
+) {
+  const json: unknown = JSON.parse(
+    await readFile(join(directory, name), { encoding: 'utf8', signal }),
+  );
+  return record(json, name);
+}
+
+function chapter(
+  directory: string,
+  id: string,
+  title: string,
+  pages: unknown,
+): Chapter {
+  return {
+    id,
+    title,
+    getPages(signal) {
+      signal.throwIfAborted();
+      if (!Array.isArray(pages)) {
+        throw new Error('Fixture chapter pages must be an array');
+      }
+      return Promise.resolve(
+        pages.map((filename) => readPage(directory, filename)),
+      );
+    },
+  };
+}
+
+async function getChapter(directory: string, signal: AbortSignal) {
+  const manifest = await readManifest(directory, 'chapter.json', signal);
+  const id = text(manifest.chapterId, 'chapter.json chapterId');
+  return {
+    workId: text(manifest.workId, 'chapter.json workId'),
+    chapter: chapter(directory, id, id, manifest.pages),
   };
 }
 
 export const fixtureSource: ChapterSource = {
   id: 'fixture',
-  async getChapter(directory) {
-    const manifest: unknown = JSON.parse(
-      await readFile(join(directory, 'chapter.json'), 'utf8'),
-    );
-    if (
-      !manifest ||
-      typeof manifest !== 'object' ||
-      !('workId' in manifest) ||
-      typeof manifest.workId !== 'string' ||
-      !manifest.workId.trim() ||
-      !('chapterId' in manifest) ||
-      typeof manifest.chapterId !== 'string' ||
-      !manifest.chapterId.trim() ||
-      !('pages' in manifest) ||
-      !Array.isArray(manifest.pages)
-    ) {
-      throw new Error('chapter.json must contain workId, chapterId and pages');
+  getChapter,
+  async getSeries(directory, signal) {
+    let manifest;
+    try {
+      manifest = await readManifest(directory, 'series.json', signal);
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        error.code === 'ENOENT'
+      ) {
+        const { workId, chapter } = await getChapter(directory, signal);
+        return { id: workId, chapters: [chapter] };
+      }
+      throw error;
     }
 
-    return {
-      workId: manifest.workId,
-      id: manifest.chapterId,
-      pages: manifest.pages.map((filename) => readPage(directory, filename)),
-    };
+    const id = text(manifest.workId, 'series.json workId');
+    if (!Array.isArray(manifest.chapters)) {
+      throw new Error('series.json chapters must be an array');
+    }
+    const ids = new Set<string>();
+    const chapters = manifest.chapters.map((value: unknown, index: number) => {
+      const context = `series.json chapter ${index + 1}`;
+      const { id, title, pages } = record(value, context);
+      const chapterId = text(id, `${context} id`);
+      if (ids.has(chapterId)) {
+        throw new Error(`Duplicate chapter ID: ${chapterId}`);
+      }
+      ids.add(chapterId);
+      return chapter(
+        directory,
+        chapterId,
+        text(title, `${context} title`),
+        pages,
+      );
+    });
+    return { id, chapters };
   },
 };
