@@ -25,7 +25,7 @@ export default defineConfig({
       sidebar: [
         {
           label: '使用指南',
-          items: ['guide/quickstart', 'guide/migration'],
+          items: ['guide/quickstart', 'guide/copymanga', 'guide/migration'],
         },
         {
           label: '扩展开发',

@@ -91,6 +91,10 @@ comic-dl download "$series_url" --config ./zerobyw.json --chapter 101 --chapter 
 
 命令行选项优先于配置，配置优先于默认值。配置也可包含整数 `jobs` 和 `retries`；没有默认源时，用 `--source` 显式指定。配置文件里的相对路径以文件所在目录为基准，本地扩展路径用 `./` 或 `../` 开头。Cookie 仍从环境变量读取。
 
+## CopyManga（拷贝漫画）
+
+独立扩展 `@comic-dl/copymanga` 支持 `https://www.copy20.com/` 的公开搜索和目录浏览，默认通过「熱辣漫畫 線路 2」匿名列章和下载。参见 [CopyManga 使用指南](docs/src/content/docs/guide/copymanga.md)。
+
 ## 开发
 
 使用 Node.js 24 和 npm：

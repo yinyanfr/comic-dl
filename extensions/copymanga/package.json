@@ -1,0 +1,30 @@
+{
+  "name": "@comic-dl/copymanga",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepack": "npm run build",
+    "test": "npm run build:core --prefix ../.. && npm run build && node --test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "json5": "^2.2.3"
+  },
+  "devDependencies": {
+    "@zip.js/zip.js": "^2.25.0"
+  }
+}

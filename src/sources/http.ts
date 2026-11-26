@@ -2,6 +2,7 @@ import { URL } from 'node:url';
 import { TransientSourceError } from './source.js';
 
 interface SourceHttpOptions {
+  readonly requestHeaders?: Readonly<Record<string, string>>;
   readonly credentialHeaders: Readonly<Record<string, string>>;
   readonly credentialOrigins: readonly string[];
   readonly allowedOrigins?: readonly string[];
@@ -36,6 +37,7 @@ function validateUrl(url: URL) {
  * the adapter explicitly opts in and the destination origin is allowed.
  */
 export function createSourceHttp({
+  requestHeaders,
   credentialHeaders,
   credentialOrigins,
   allowedOrigins,
@@ -50,7 +52,11 @@ export function createSourceHttp({
       return url.origin;
     }),
   );
-  const headers = new Headers(credentialHeaders);
+  const anonymousHeaders = requestHeaders && new Headers(requestHeaders);
+  const authenticatedHeaders = new Headers(anonymousHeaders);
+  for (const [name, value] of new Headers(credentialHeaders)) {
+    authenticatedHeaders.set(name, value);
+  }
 
   return async function read(
     input: string | URL,
@@ -72,7 +78,7 @@ export function createSourceHttp({
         const response = await fetch(url, {
           redirect: 'manual',
           credentials: 'omit',
-          headers: authenticated ? headers : undefined,
+          headers: authenticated ? authenticatedHeaders : anonymousHeaders,
           signal: requestSignal,
         });
         if ([301, 302, 303, 307, 308].includes(response.status)) {

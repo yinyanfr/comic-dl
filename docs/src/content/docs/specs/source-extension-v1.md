@@ -24,7 +24,7 @@ description: 适配器导出、稳定标识、读取顺序、认证和错误约�
 
 ## HTTP 和错误
 
-读取操作应尊重传入的 `AbortSignal`。`api.createSourceHttp({ credentialHeaders, credentialOrigins, allowedOrigins })` 生成 `(url, signal, authenticated = false)`，返回 `{ bytes, url, contentType }`。`allowedOrigins` 可选；认证头只在显式开启认证且目标 Origin 被允许时附加，跨 Origin 跳转后不会重新附加。
+读取操作应尊重传入的 `AbortSignal`。`api.createSourceHttp({ requestHeaders, credentialHeaders, credentialOrigins, allowedOrigins })` 生成 `(url, signal, authenticated = false)`，返回 `{ bytes, url, contentType }`。`requestHeaders` 和 `allowedOrigins` 可选；`requestHeaders` 用于每次请求都发送的非凭据头。认证头只在显式开启认证且目标 Origin 被允许时附加，跨 Origin 跳转后不会重新附加。
 
 - 用注入的 `api.TransientSourceError` 标记可重试错误。HTTP 助手将超时和部分暂态 HTTP 状态映射到这个类型。
 - 只在站点明确表示单章无权访问时，从 `getPages()` 抛出注入的 `api.RestrictedChapterError`。登录失效、未知 HTTP 错误和解析错误不是章节受限。
