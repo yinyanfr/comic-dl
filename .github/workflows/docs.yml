@@ -8,10 +8,6 @@ on:
       - '.node-version'
   push:
     branches: [main]
-    paths:
-      - 'docs/**'
-      - '.github/workflows/docs.yml'
-      - '.node-version'
 
 permissions:
   contents: read

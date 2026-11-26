@@ -40,4 +40,4 @@ npm run build --prefix docs
 npm run preview --prefix docs
 ```
 
-本地预览从 `/comic-dl/` 进入，和 [GitHub Pages](https://yinyanfr.github.io/comic-dl/) 的子路径一致。PR 会验证文档构建，`main` 上的文档变更会部署。仓库的 **Settings → Pages → Source** 须设为 **GitHub Actions**。
+本地预览从 `/comic-dl/` 进入，和 [GitHub Pages](https://yinyanfr.github.io/comic-dl/) 的子路径一致。涉及文档的 PR 会验证构建，每次推送到 `main` 都会部署。仓库的 **Settings → Pages → Source** 须设为 **GitHub Actions**。
