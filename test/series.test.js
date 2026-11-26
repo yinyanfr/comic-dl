@@ -81,6 +81,40 @@ test('lists sources and chapters; series continues past a failure and can resume
   await assert.rejects(run('lists'), { code: 2 });
 });
 
+test('selects stable chapter IDs in reading order and rejects unknown IDs before writing', async (t) => {
+  const { directory, output } = await makeFixture(t, [
+    { id: '30', title: 'Opening', pages: ['page.gif'] },
+    { id: '10', title: 'Middle', pages: ['missing.gif'] },
+    { id: '20', title: 'Finale', pages: ['page.gif'] },
+  ]);
+  const args = [
+    'download',
+    '--fixture',
+    directory,
+    '--output',
+    output,
+    '--jobs',
+    '1',
+  ];
+  await assert.rejects(run(...args, '--chapter', '20', '--chapter', '1'), {
+    code: 2,
+    stdout: '',
+    stderr: /Unknown chapter ID.*"1"/,
+  });
+  await assert.rejects(readdir(output), { code: 'ENOENT' });
+
+  const selection = ['--chapter', '20', '--chapter', '30', '--chapter', '20'];
+  assert.match(
+    (await run(...args, ...selection)).stdout,
+    /^Downloaded: .*chapter-30-.*\nDownloaded: .*chapter-20-.*\nSummary: 2 downloaded, 0 skipped, 0 failed, 0 cancelled\n$/,
+  );
+  assert.equal((await readdir(output)).length, 2);
+  assert.match(
+    (await run(...args, ...selection)).stdout,
+    /0 downloaded, 2 skipped/,
+  );
+});
+
 test('handles identical chapter titles and rejects path traversal and unsafe output links', async (t) => {
   const { directory, output, manifest, writeManifest } = await makeFixture(t, [
     { id: '../same', title: 'Same', pages: ['page.gif'] },

@@ -1,4 +1,9 @@
-import { Uint8ArrayReader, Uint8ArrayWriter, ZipReader } from '@zip.js/zip.js';
+import {
+  Uint8ArrayReader,
+  Uint8ArrayWriter,
+  ZipReader,
+  ZipWriter,
+} from '@zip.js/zip.js';
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { execFile } from 'node:child_process';
@@ -137,6 +142,25 @@ test('a complete CBZ from another chapter is not skipped', async (t) => {
   );
   assert.ok(secondFilename);
   await writeFile(join(output, secondFilename), firstArchive);
+
+  assert.match((await download()).stdout, /^Downloaded: /);
+  assert.match((await download()).stdout, /^Skipped: /);
+});
+
+test('a same-named legacy CBZ without the identity marker is not skipped', async (t) => {
+  const { download, output, secondPath } = await makeFixture(t);
+  await writeFile(secondPath, secondPage);
+  await download();
+  const [filename] = await readdir(output);
+  const archivePath = join(output, filename);
+
+  const writer = new ZipWriter(new Uint8ArrayWriter(), {
+    useWebWorkers: false,
+  });
+  await writer.add('1.gif', new Uint8ArrayReader(firstPage));
+  await writer.add('2.gif', new Uint8ArrayReader(secondPage));
+  await writeFile(archivePath, await writer.close());
+  await assertPages(archivePath, [firstPage, secondPage]);
 
   assert.match((await download()).stdout, /^Downloaded: /);
   assert.match((await download()).stdout, /^Skipped: /);

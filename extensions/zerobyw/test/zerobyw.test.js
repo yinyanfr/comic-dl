@@ -13,7 +13,7 @@ import { fileURLToPath, URL } from 'node:url';
 import { promisify } from 'node:util';
 
 const exec = promisify(execFile);
-const cli = fileURLToPath(new URL('../dist/index.js', import.meta.url));
+const cli = fileURLToPath(new URL('../../../dist/index.js', import.meta.url));
 const site = 'https://www.zerobyw33.com';
 const cdn = 'https://tupa.zerobyw33.com';
 const signed = '?signature=never-log-this';

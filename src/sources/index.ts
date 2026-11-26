@@ -5,8 +5,16 @@ import type { SourceExtension } from '../extension.js';
 import { fixtureSource } from './fixture.js';
 import type { ChapterSource } from './source.js';
 
+export function isLocalExtensionPath(value: string) {
+  return /^\.\.?(\/|\\)/.test(value);
+}
+
+export function isSourceId(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
+}
+
 function moduleSpecifier(input: string) {
-  if (isAbsolute(input) || /^\.\.?(\/|\\)/.test(input)) {
+  if (isAbsolute(input) || isLocalExtensionPath(input)) {
     return pathToFileURL(resolve(input)).href;
   }
   if (/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/.test(input)) {
@@ -24,8 +32,7 @@ function isExtension(value: unknown): value is SourceExtension {
     'apiVersion' in value &&
     value.apiVersion === extensionApiVersion &&
     'id' in value &&
-    typeof value.id === 'string' &&
-    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.id) &&
+    isSourceId(value.id) &&
     'create' in value &&
     typeof value.create === 'function'
   );

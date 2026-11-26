@@ -17,9 +17,13 @@
   "scripts": {
     "build": "tsc",
     "prepack": "npm run build",
+    "test": "npm run build:core --prefix ../.. && npm run build && node --test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "@zip.js/zip.js": "^2.25.0"
   }
 }

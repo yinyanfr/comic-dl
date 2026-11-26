@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { env, execPath } from 'node:process';
@@ -95,4 +95,90 @@ test('extensions with an unsupported version, a duplicate ID or an invalid sourc
       stderr: /installed package name or a local extension file path/,
     },
   );
+});
+
+test('loads config-relative paths and gives explicit options precedence', async (t) => {
+  const directory = await makeDirectory(t);
+  const file = join(directory, 'comic-dl.json');
+  await copyFile(join(root, hello), join(directory, 'hello.mjs'));
+  await writeFile(
+    file,
+    JSON.stringify({
+      version: 1,
+      extensions: ['./hello.mjs'],
+      source: 'hello',
+      output: 'configured-output',
+      jobs: 1,
+      retries: 0,
+    }),
+  );
+  const config = ['--config', file];
+  assert.equal((await run('sources', ...config)).stdout, 'fixture\nhello\n');
+  assert.equal(
+    (await run('list', 'demo', ...config)).stdout,
+    'welcome\tWelcome\n',
+  );
+  const args = ['download', 'demo', ...config, '--chapter', 'welcome'];
+  const configured = join(directory, 'configured-output');
+  const output = join(directory, 'cli-output');
+  assert.ok(
+    (await run(...args)).stdout.startsWith(`Downloaded: ${configured}`),
+  );
+  assert.equal((await readdir(configured)).length, 1);
+  await rm(join(directory, 'hello.mjs'));
+  assert.ok(
+    (
+      await run(
+        ...args,
+        '--extension',
+        hello,
+        '--source',
+        'hello',
+        '--output',
+        output,
+      )
+    ).stdout.startsWith(`Downloaded: ${output}`),
+  );
+  assert.equal((await readdir(output)).length, 1);
+  await assert.rejects(
+    run('list', 'demo', ...config, '--extension', hello, '--source', 'other'),
+    {
+      code: 1,
+      stderr: /Unknown source: other/,
+    },
+  );
+});
+
+test('validates config without echoing its contents and exposes command-specific help', async (t) => {
+  const directory = await makeDirectory(t);
+  const file = join(directory, 'config.json');
+  assert.match((await run('--help')).stdout, /^Usage: comic-dl <command>/);
+  assert.match((await run('-V')).stdout, /^\d+\.\d+\.\d+.*\n$/);
+  assert.match(
+    (await run('download', '--help', '--config', file)).stdout,
+    /^Usage: comic-dl download[\s\S]*--chapter <id>[\s\S]*--config <file>/,
+  );
+  assert.doesNotMatch((await run('list', '-h')).stdout, /--output|--jobs/);
+  await assert.rejects(run('list', 'demo', '--output', directory), { code: 2 });
+  await assert.rejects(run('ls', '-u', 'demo'), { code: 2 });
+  const options = ['sources', '--config', file];
+  await assert.rejects(run(...options), {
+    code: 2,
+    stderr: /Could not read config/,
+  });
+  for (const [contents, diagnostic] of [
+    ['not-json-secret', /not valid JSON/],
+    ['{"version":2}', /"version": 1/],
+    ['{"version":1,"auth":"not-json-secret"}', /unknown field/],
+    ['{"version":1,"jobs":"2"}', /"jobs" requires an integer/],
+  ]) {
+    await writeFile(file, contents);
+    await assert.rejects(run(...options), (error) => {
+      assert.equal(error.code, 2);
+      assert.equal(error.stdout, '');
+      assert.match(error.stderr, diagnostic);
+      assert.doesNotMatch(error.stderr, /not-json-secret/);
+      return true;
+    });
+  }
 });

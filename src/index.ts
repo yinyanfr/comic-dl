@@ -1,19 +1,57 @@
 #!/usr/bin/env node
+import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
+import { nonempty, readConfig } from './config.js';
 import { downloadSeries } from './download.js';
-import { loadSources } from './sources/index.js';
+import { isSourceId, loadSources } from './sources/index.js';
 
-const usage = `Usage: node dist/index.js <command>
-  sources [--extension <module>]
-  search --extension <module> --source <id> [keyword] [--page <n>]
-  list --fixture <directory>
-  list --extension <module> --source <id> <series-input>
-  chapter --fixture <directory> --output <directory> [--chapter <id>] [--retries <n>]
-  chapter --extension <module> --source <id> <chapter-input> --output <directory> [--retries <n>]
-  download --fixture <directory> --output <directory> [--jobs <n>] [--retries <n>]
-  download --extension <module> --source <id> <series-input> --output <directory> [--jobs <n>] [--retries <n>]
+const usage = `Usage: comic-dl <command> [options]
 
-Repeat --extension to load multiple installed packages or local ESM files.`;
+Commands:
+  sources                   List available source IDs
+  search [query]            Search or browse a source
+  list <series-input>       List chapter IDs and titles
+  chapter <chapter-input>   Download one chapter by its direct link
+  download <series-input>   Download all or selected chapters of a series
+
+Run comic-dl <command> --help for command options.
+  -h, --help       Show help
+  -V, --version    Show the installed version`;
+
+const commandHelp = {
+  sources: `Usage: comic-dl sources [options]
+
+List the built-in source and explicitly loaded extensions.`,
+  search: `Usage: comic-dl search [query] [options]
+
+Omit query to browse the catalog. Requires --source <id> unless set in config.
+  --page <n>          Results page (default: 1)`,
+  list: `Usage: comic-dl list <series-input> [options]
+       comic-dl list --fixture <directory> [options]
+
+Print each chapter ID and title. Use --source <id> or set a source in config.`,
+  chapter: `Usage: comic-dl chapter <chapter-input> [options]
+       comic-dl chapter --fixture <directory> [--chapter <id>] [options]
+
+Download one chapter by direct input. Use --source <id> or set a source in config.
+  --output <dir>      Required output directory (may come from config)
+  --retries <n>       Additional attempts for transient failures (default: 2)
+
+With a series input, use download --chapter <id> instead.`,
+  download: `Usage: comic-dl download <series-input> [options]
+       comic-dl download --fixture <directory> [options]
+
+Download a series. Use --source <id> or set a source in config.
+  --output <dir>      Required output directory (may come from config)
+  --chapter <id>      Select an ID printed by list; repeat to select multiple chapters
+  --jobs <n>          Maximum concurrent chapters (default: 2)
+  --retries <n>       Additional attempts for transient failures (default: 2)`,
+};
+
+const commonHelp = `
+  --config <file>     Read defaults from an explicit JSON config file
+  --extension <name>  Load an installed package or local ESM file; repeat to load more
+  -h, --help          Show this help`;
 
 function integer(name: string, value: string, minimum: number) {
   const number = Number(value);
@@ -31,128 +69,190 @@ const help = { type: 'boolean', short: 'h' } as const;
 const fixture = { type: 'string' } as const;
 const source = { type: 'string' } as const;
 const extension = { type: 'string', multiple: true } as const;
+const commonOptions = { help, extension, config: { type: 'string' } } as const;
 
 function parseInput(
   values: { fixture?: string; source?: string },
   positionals: string[],
+  defaultSource?: string,
 ) {
-  if (values.fixture && values.source === undefined && !positionals.length) {
-    return { sourceId: 'fixture', input: values.fixture } as const;
+  if (values.fixture !== undefined) {
+    if (
+      !nonempty(values.fixture) ||
+      values.source !== undefined ||
+      positionals.length
+    ) {
+      throw new Error(
+        '--fixture requires a directory and cannot be combined with --source or a positional input',
+      );
+    }
+    return { sourceId: 'fixture', input: values.fixture };
   }
-  if (
-    values.fixture === undefined &&
-    values.source &&
-    positionals.length === 1 &&
-    positionals[0]
-  ) {
-    return { sourceId: values.source, input: positionals[0] } as const;
+  if (positionals.length !== 1 || !nonempty(positionals[0])) {
+    throw new Error('Provide exactly one positional input');
   }
-  throw new Error('Provide --fixture <directory> or --source <id> <input>');
+  return {
+    sourceId: requireSource(values.source ?? defaultSource),
+    input: positionals[0],
+  };
 }
 
-function parseCommand(args: string[]) {
+function requireSource(id: string | undefined) {
+  if (!isSourceId(id)) {
+    throw new Error('Provide --source <id> or set "source" in config');
+  }
+  return id;
+}
+
+async function parseCommand(args: string[], signal: AbortSignal) {
   const [command, ...rest] = args;
-  if (!command || command === '--help' || command === '-h') {
-    return { command: 'help' } as const;
+  if (
+    !command ||
+    ((command === '--help' || command === '-h') && !rest.length)
+  ) {
+    return { command: 'help', text: usage } as const;
+  }
+  if ((command === '--version' || command === '-V') && !rest.length) {
+    return { command: 'version' } as const;
   }
   if (command === 'sources') {
-    const { values } = parseArgs({ args: rest, options: { help, extension } });
-    return values.help
-      ? ({ command: 'help' } as const)
-      : ({ command: 'sources', extensions: values.extension ?? [] } as const);
+    const { values } = parseArgs({ args: rest, options: commonOptions });
+    if (values.help) {
+      return {
+        command: 'help',
+        text: commandHelp.sources + commonHelp,
+      } as const;
+    }
+    const config = await readConfig(values.config, signal);
+    return {
+      command,
+      extensions: values.extension ?? config.extensions ?? [],
+    } as const;
   }
   if (command === 'search') {
     const { values, positionals } = parseArgs({
       args: rest,
       options: {
+        ...commonOptions,
         source,
-        extension,
-        help,
-        page: { type: 'string', default: '1' },
+        page: { type: 'string' },
       },
       allowPositionals: true,
     });
     if (values.help) {
-      return { command: 'help' } as const;
+      return {
+        command: 'help',
+        text: commandHelp.search + commonHelp,
+      } as const;
     }
-    if (!values.source || positionals.length > 1) {
-      throw new Error(
-        'search requires --source <id> and accepts one keyword argument',
-      );
+    if (positionals.length > 1) {
+      throw new Error('search accepts at most one query argument');
     }
+    const config = await readConfig(values.config, signal);
     return {
       command,
-      sourceId: values.source,
-      extensions: values.extension ?? [],
+      sourceId: requireSource(values.source ?? config.source),
+      extensions: values.extension ?? config.extensions ?? [],
       query: positionals[0] ?? '',
-      page: integer('page', values.page, 1),
+      page: integer('page', values.page ?? '1', 1),
     } as const;
   }
   if (command === 'list') {
     const { values, positionals } = parseArgs({
       args: rest,
-      options: { fixture, source, extension, help },
+      options: { ...commonOptions, fixture, source },
       allowPositionals: true,
     });
     if (values.help) {
-      return { command: 'help' } as const;
+      return { command: 'help', text: commandHelp.list + commonHelp } as const;
     }
+    const config = await readConfig(values.config, signal);
     return {
       command,
-      extensions: values.extension ?? [],
-      ...parseInput(values, positionals),
+      extensions: values.extension ?? config.extensions ?? [],
+      ...parseInput(values, positionals, config.source),
     } as const;
   }
   if (command !== 'chapter' && command !== 'download') {
-    throw new Error(`Unknown command: ${command}`);
+    throw new Error(
+      'Unknown command. Run comic-dl --help for available commands.',
+    );
   }
 
   const { values, positionals } = parseArgs({
     args: rest,
     allowPositionals: true,
     options: {
+      ...commonOptions,
       fixture,
       source,
-      extension,
-      help,
       output: { type: 'string' },
-      retries: { type: 'string', default: '2' },
-      chapter: { type: 'string' },
-      jobs: { type: 'string' },
+      retries: { type: 'string' },
+      chapter: { type: 'string', multiple: true },
+      ...(command === 'download' ? { jobs: { type: 'string' } as const } : {}),
     },
   });
   if (values.help) {
-    return { command: 'help' } as const;
+    return {
+      command: 'help',
+      text: commandHelp[command] + commonHelp,
+    } as const;
   }
-  if (!values.output) {
-    throw new Error(`${command} requires --output`);
+  const config = await readConfig(values.config, signal);
+  const directory = values.output ?? config.output;
+  if (!nonempty(directory)) {
+    throw new Error(
+      `${command} requires --output <directory> or "output" in config`,
+    );
   }
-  if (values.chapter === '') {
+  const chapterIds = values.chapter ?? [];
+  if (!chapterIds.every(nonempty)) {
     throw new Error('--chapter requires a non-empty ID');
   }
-  if (command === 'chapter' && values.jobs !== undefined) {
-    throw new Error('--jobs is only supported by download');
-  }
   if (
-    (command !== 'chapter' || values.fixture === undefined) &&
-    values.chapter !== undefined
+    command === 'chapter' &&
+    chapterIds.length &&
+    (values.fixture === undefined || chapterIds.length > 1)
   ) {
-    throw new Error('--chapter is only supported by chapter with --fixture');
+    throw new Error(
+      'Use download --chapter <id> to select chapters from a series',
+    );
   }
   return {
     command,
-    extensions: values.extension ?? [],
-    ...parseInput(values, positionals),
-    chapterId: values.chapter,
-    directory: values.output,
-    jobs: command === 'chapter' ? 1 : integer('jobs', values.jobs ?? '2', 1),
-    retries: integer('retries', values.retries, 0),
+    extensions: values.extension ?? config.extensions ?? [],
+    ...parseInput(values, positionals, config.source),
+    chapterIds,
+    directory,
+    jobs:
+      command === 'chapter'
+        ? 1
+        : typeof values.jobs === 'string'
+          ? integer('jobs', values.jobs, 1)
+          : (config.jobs ?? 2),
+    retries:
+      values.retries === undefined
+        ? (config.retries ?? 2)
+        : integer('retries', values.retries, 0),
   } as const;
 }
 
-async function run(args: ReturnType<typeof parseCommand>, signal: AbortSignal) {
+async function run(
+  args: Awaited<ReturnType<typeof parseCommand>>,
+  signal: AbortSignal,
+) {
   if (args.command === 'help') {
-    console.log(usage);
+    console.log(args.text);
+    return 0;
+  }
+  if (args.command === 'version') {
+    const { version } = JSON.parse(
+      await readFile(new URL('../package.json', import.meta.url), {
+        encoding: 'utf8',
+        signal,
+      }),
+    ) as { version: string };
+    console.log(version);
     return 0;
   }
   const sources = await loadSources(args.extensions, signal);
@@ -194,20 +294,25 @@ async function run(args: ReturnType<typeof parseCommand>, signal: AbortSignal) {
     }
     return 0;
   }
-  const series = await (args.command === 'chapter' &&
-  args.chapterId === undefined
+  const series = await (args.command === 'chapter' && !args.chapterIds.length
     ? source.getChapter(args.input, signal).then(({ workId, chapter }) => ({
         id: workId,
         chapters: [chapter],
       }))
     : source.getSeries(args.input, signal));
   let selected = series;
-  if (args.chapterId !== undefined) {
-    const chapter = series.chapters.find(({ id }) => id === args.chapterId);
-    if (!chapter) {
-      throw new Error(`Unknown chapter ID: ${args.chapterId}`);
+  if (args.chapterIds.length) {
+    const requested = new Set(args.chapterIds);
+    const chapters = series.chapters.filter(({ id }) => requested.delete(id));
+    if (requested.size) {
+      logError(
+        new Error(
+          `Unknown chapter ID(s): ${[...requested].map((id) => JSON.stringify(id)).join(', ')}. Run comic-dl list to see valid IDs.`,
+        ),
+      );
+      return 2;
     }
-    selected = { ...series, chapters: [chapter] };
+    selected = { ...series, chapters };
   }
 
   const counts = { downloaded: 0, skipped: 0, failed: 0, restricted: 0 };
@@ -255,18 +360,25 @@ function logError(error: unknown) {
 }
 
 async function main() {
-  let args;
-  try {
-    args = parseCommand(process.argv.slice(2));
-  } catch (error) {
-    logError(error);
-    return 2;
-  }
-
   const controller = new AbortController();
   const interrupt = () => controller.abort();
   process.on('SIGINT', interrupt);
   try {
+    let args;
+    try {
+      args = await parseCommand(process.argv.slice(2), controller.signal);
+    } catch (error) {
+      controller.signal.throwIfAborted();
+      logError(error);
+      if (
+        error instanceof TypeError &&
+        'code' in error &&
+        error.code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION'
+      ) {
+        console.error('Run comic-dl <command> --help for supported options.');
+      }
+      return 2;
+    }
     const code = await run(args, controller.signal);
     return controller.signal.aborted ? 130 : code;
   } catch (error) {
