@@ -7,7 +7,7 @@ on:
       - '.github/workflows/docs.yml'
       - '.node-version'
   push:
-    branches: [revive]
+    branches: [main]
     paths:
       - 'docs/**'
       - '.github/workflows/docs.yml'

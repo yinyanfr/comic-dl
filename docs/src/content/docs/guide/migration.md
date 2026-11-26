@@ -1,5 +1,5 @@
 ---
-title: 从 legacy 迁移
+title: 从旧版迁移
 description: 将旧版命令、预设、Cookie 和下载目录迁移到新版。
 ---
 

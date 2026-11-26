@@ -3,7 +3,7 @@ title: 源扩展 API v1
 description: 适配器导出、稳定标识、读取顺序、认证和错误约定。
 ---
 
-公开 TypeScript 接口来自 `comic-dl/extension`，入口源码见 [`src/extension.ts`](https://github.com/yinyanfr/comic-dl/blob/revive/src/extension.ts)。完整实现流程见[扩展开发指南](../../extensions/develop/)。
+公开 TypeScript 接口来自 `comic-dl/extension`，入口源码见 [`src/extension.ts`](https://github.com/yinyanfr/comic-dl/blob/main/src/extension.ts)。完整实现流程见[扩展开发指南](../../extensions/develop/)。
 
 ## 模块契约
 

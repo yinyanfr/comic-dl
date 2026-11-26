@@ -5,7 +5,7 @@ description: 本地开发、测试、代码边界与文档站维护。
 
 ## 环境和检查
 
-在 `revive` 分支使用 Node.js 24。核心采用原生 ESM 和 TypeScript `NodeNext`；相对模块导入使用运行时 `.js` 扩展名。旧实现保留在 `legacy`，供查看历史行为。
+项目使用 Node.js 24。核心采用原生 ESM 和 TypeScript `NodeNext`；相对模块导入使用运行时 `.js` 扩展名。
 
 ```sh
 npm ci
@@ -40,4 +40,4 @@ npm run build --prefix docs
 npm run preview --prefix docs
 ```
 
-本地预览从 `/comic-dl/` 进入，和 [GitHub Pages](https://yinyanfr.github.io/comic-dl/) 的子路径一致。PR 会验证文档构建，`revive` 上的文档变更会部署。仓库的 **Settings → Pages → Source** 须设为 **GitHub Actions**。
+本地预览从 `/comic-dl/` 进入，和 [GitHub Pages](https://yinyanfr.github.io/comic-dl/) 的子路径一致。PR 会验证文档构建，`main` 上的文档变更会部署。仓库的 **Settings → Pages → Source** 须设为 **GitHub Actions**。

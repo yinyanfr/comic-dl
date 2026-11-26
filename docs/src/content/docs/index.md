@@ -17,4 +17,4 @@ hero:
 
 - [参考手册](./reference/cli/)：查阅命令、选项、配置和退出码。
 - [源扩展 API v1](./specs/source-extension-v1/)：查阅适配器接口、稳定标识和错误约定。
-- [从 legacy 迁移](./guide/migration/)：把旧脚本、预设和下载目录迁到新版。
+- [从旧版迁移](./guide/migration/)：把旧脚本、预设和下载目录迁到新版。

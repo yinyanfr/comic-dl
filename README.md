@@ -1,8 +1,8 @@
 # comic-dl
 
-comic-dl 是一个支持漫画源扩展的 CLI 下载器，输出为每章一个 CBZ。核心提供本地测试源；Zerobyw 需要加载独立扩展。旧实现在 `legacy` 分支。
+comic-dl 是一个支持漫画源扩展的 CLI 下载器，输出为每章一个 CBZ。核心提供本地测试源；Zerobyw 需要加载独立扩展。
 
-访问 [comic-dl 文档站](https://yinyanfr.github.io/comic-dl/) 查看使用指南、扩展与项目开发、参考手册和规范。首次使用可从[快速入门](docs/quickstart.md)开始；旧用户请看 [legacy 迁移指南](docs/migration.md)。已安装时也可运行 `comic-dl --help`。
+访问 [comic-dl 文档站](https://yinyanfr.github.io/comic-dl/) 查看使用指南、扩展与项目开发、参考手册和规范。首次使用可从[快速入门](docs/quickstart.md)开始；旧用户请看[旧版迁移指南](docs/migration.md)。已安装时也可运行 `comic-dl --help`。
 
 ## 离线下载一章
 

@@ -11,7 +11,7 @@ description: 安装 comic-dl，加载并认证 Zerobyw，然后下载漫画。
 
 ```sh
 node --version
-git clone --branch revive https://github.com/yinyanfr/comic-dl.git
+git clone https://github.com/yinyanfr/comic-dl.git
 cd comic-dl
 npm ci
 npm run build

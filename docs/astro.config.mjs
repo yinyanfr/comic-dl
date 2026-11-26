@@ -20,7 +20,7 @@ export default defineConfig({
         },
       ],
       editLink: {
-        baseUrl: 'https://github.com/yinyanfr/comic-dl/edit/revive/docs/',
+        baseUrl: 'https://github.com/yinyanfr/comic-dl/edit/main/docs/',
       },
       sidebar: [
         {

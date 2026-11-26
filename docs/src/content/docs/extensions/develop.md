@@ -7,7 +7,7 @@ description: 编写、测试和打包由 comic-dl 显式加载的漫画源。
 
 ## 运行最小原型
 
-仓库中的 [hello-extension.mjs](https://github.com/yinyanfr/comic-dl/blob/revive/examples/hello-extension.mjs) 只有一部作品、一章和一张 GIF，不需要联网。运行：
+仓库中的 [hello-extension.mjs](https://github.com/yinyanfr/comic-dl/blob/main/examples/hello-extension.mjs) 只有一部作品、一章和一张 GIF，不需要联网。运行：
 
 ```sh
 npm ci
@@ -53,7 +53,7 @@ export default {
 }
 ```
 
-[Zerobyw](https://github.com/yinyanfr/comic-dl/tree/revive/extensions/zerobyw) 是完整实例。它用独立的 npm 包声明 HTML 解析依赖，核心包不依赖 Zerobyw 或该解析库。从仓库测试独立安装：
+[Zerobyw](https://github.com/yinyanfr/comic-dl/tree/main/extensions/zerobyw) 是完整实例。它用独立的 npm 包声明 HTML 解析依赖，核心包不依赖 Zerobyw 或该解析库。从仓库测试独立安装：
 
 ```sh
 npm run build
@@ -68,4 +68,4 @@ npm install /path/to/comic-dl-0.0.0.tgz /path/to/comic-dl-zerobyw-0.0.0.tgz
 npm exec -- comic-dl sources --extension @comic-dl/zerobyw
 ```
 
-扩展自己的回归测试宜用脱敏样本和回环 HTTP 服务覆盖页面顺序、认证过期、访问受限及重定向。仓库里的 [Zerobyw 测试](https://github.com/yinyanfr/comic-dl/blob/revive/extensions/zerobyw/test/zerobyw.test.js) 通过真实 CLI 加载扩展，不使用账号，也不访问真实站点。根目录的 `npm test` 会运行这些测试，也可用 `npm test --workspace @comic-dl/zerobyw` 单独运行。
+扩展自己的回归测试宜用脱敏样本和回环 HTTP 服务覆盖页面顺序、认证过期、访问受限及重定向。仓库里的 [Zerobyw 测试](https://github.com/yinyanfr/comic-dl/blob/main/extensions/zerobyw/test/zerobyw.test.js) 通过真实 CLI 加载扩展，不使用账号，也不访问真实站点。根目录的 `npm test` 会运行这些测试，也可用 `npm test --workspace @comic-dl/zerobyw` 单独运行。
