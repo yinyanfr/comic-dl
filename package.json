@@ -19,6 +19,9 @@
   "files": [
     "dist",
     "docs/extensions.md",
+    "docs/migration.md",
+    "docs/quickstart.md",
+    "docs/src/content/docs/**/*.md",
     "examples/hello-extension.mjs"
   ],
   "engines": {

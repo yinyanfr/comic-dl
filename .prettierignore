@@ -2,3 +2,4 @@ dist/
 .husky/_/
 package-lock.json
 tmp/
+docs/.astro/

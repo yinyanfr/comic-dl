@@ -4,8 +4,12 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  globalIgnores(['**/dist/', '.husky/_/']),
+  globalIgnores(['**/dist/', '.husky/_/', 'docs/.astro/']),
   js.configs.recommended,
+  {
+    files: ['docs/src/**/*.ts'],
+    extends: [tseslint.configs.recommended],
+  },
   {
     files: ['src/**/*.ts', 'extensions/*/src/**/*.ts'],
     extends: [tseslint.configs.recommendedTypeChecked],
