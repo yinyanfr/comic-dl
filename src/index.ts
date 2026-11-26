@@ -4,15 +4,24 @@ import { parseArgs } from 'node:util';
 import { nonempty, readConfig } from './config.js';
 import { downloadSeries } from './download.js';
 import { isSourceId, loadSources } from './sources/index.js';
+import type { Series } from './sources/source.js';
+
+const aliases = new Map([
+  ['src', 'sources'],
+  ['s', 'search'],
+  ['l', 'list'],
+  ['c', 'chapter'],
+  ['d', 'download'],
+]);
 
 const usage = `Usage: comic-dl <command> [options]
 
 Commands:
-  sources                   List available source IDs
-  search [query]            Search or browse a source
-  list <series-input>       List chapter IDs and titles
-  chapter <chapter-input>   Download one chapter by its direct link
-  download <series-input>   Download all or selected chapters of a series
+  sources (src)              List available source IDs
+  search (s) [query]         Search or browse a source
+  list (l) <series-input>    List chapter IDs and titles
+  chapter (c) <chapter-input> Download one chapter by its direct link
+  download (d) <series-input> Download all or selected chapters of a series
 
 Run comic-dl <command> --help for command options.
   -h, --help       Show help
@@ -21,7 +30,7 @@ Run comic-dl <command> --help for command options.
 const commandHelp = {
   sources: `Usage: comic-dl sources [options]
 
-List the built-in source and explicitly loaded extensions.`,
+List available source IDs.`,
   search: `Usage: comic-dl search [query] [options]
 
 Omit query to browse the catalog. Requires --source <id> unless set in config.
@@ -29,21 +38,26 @@ Omit query to browse the catalog. Requires --source <id> unless set in config.
   list: `Usage: comic-dl list <series-input> [options]
        comic-dl list --fixture <directory> [options]
 
-Print each chapter ID and title. Use --source <id> or set a source in config.`,
+Print each chapter ID and title. Full URLs can select the source automatically.
+  --source <id>      Select a source explicitly`,
   chapter: `Usage: comic-dl chapter <chapter-input> [options]
        comic-dl chapter --fixture <directory> [--chapter <id>] [options]
 
-Download one chapter by direct input. Use --source <id> or set a source in config.
-  --output <dir>      Required output directory (may come from config)
+Download one chapter by direct input. Full URLs can select the source automatically.
+  --source <id>      Select a source explicitly
+  -o, --output <dir>  Required output directory (may come from config)
+  -c, --chapter <id>  Select one ID with --fixture
   --retries <n>       Additional attempts for transient failures (default: 2)
 
 With a series input, use download --chapter <id> instead.`,
   download: `Usage: comic-dl download <series-input> [options]
        comic-dl download --fixture <directory> [options]
 
-Download a series. Use --source <id> or set a source in config.
-  --output <dir>      Required output directory (may come from config)
-  --chapter <id>      Select an ID printed by list; repeat to select multiple chapters
+Download a series. Full URLs can select the source automatically.
+  --source <id>      Select a source explicitly
+  -o, --output <dir>  Output directory (default: current directory)
+  -c, --chapter <selection>
+                     Chapter ID or inclusive 1-based range (e.g. 2-4); repeat to combine
   --jobs <n>          Maximum concurrent chapters (default: 2)
   --retries <n>       Additional attempts for transient failures (default: 2)`,
 };
@@ -91,10 +105,16 @@ function parseInput(
   if (positionals.length !== 1 || !nonempty(positionals[0])) {
     throw new Error('Provide exactly one positional input');
   }
-  return {
-    sourceId: requireSource(values.source ?? defaultSource),
-    input: positionals[0],
-  };
+  const input = positionals[0];
+  const sourceId = values.source ?? defaultSource;
+  if (
+    sourceId === undefined &&
+    /^https?:\/\//i.test(input) &&
+    URL.canParse(input)
+  ) {
+    return { sourceId, input };
+  }
+  return { sourceId: requireSource(sourceId), input };
 }
 
 function requireSource(id: string | undefined) {
@@ -105,7 +125,8 @@ function requireSource(id: string | undefined) {
 }
 
 async function parseCommand(args: string[], signal: AbortSignal) {
-  const [command, ...rest] = args;
+  const [name, ...rest] = args;
+  const command = aliases.get(name) ?? name;
   if (
     !command ||
     ((command === '--help' || command === '-h') && !rest.length)
@@ -186,9 +207,9 @@ async function parseCommand(args: string[], signal: AbortSignal) {
       ...commonOptions,
       fixture,
       source,
-      output: { type: 'string' },
+      output: { type: 'string', short: 'o' },
       retries: { type: 'string' },
-      chapter: { type: 'string', multiple: true },
+      chapter: { type: 'string', multiple: true, short: 'c' },
       ...(command === 'download' ? { jobs: { type: 'string' } as const } : {}),
     },
   });
@@ -199,20 +220,25 @@ async function parseCommand(args: string[], signal: AbortSignal) {
     } as const;
   }
   const config = await readConfig(values.config, signal);
-  const directory = values.output ?? config.output;
+  const directory =
+    values.output ??
+    config.output ??
+    (command === 'download' ? '.' : undefined);
   if (!nonempty(directory)) {
     throw new Error(
-      `${command} requires --output <directory> or "output" in config`,
+      directory === undefined
+        ? 'chapter requires --output <directory> or "output" in config'
+        : '--output requires a non-empty directory',
     );
   }
-  const chapterIds = values.chapter ?? [];
-  if (!chapterIds.every(nonempty)) {
-    throw new Error('--chapter requires a non-empty ID');
+  const selections = values.chapter ?? [];
+  if (!selections.every(nonempty)) {
+    throw new Error('--chapter requires a non-empty selection');
   }
   if (
     command === 'chapter' &&
-    chapterIds.length &&
-    (values.fixture === undefined || chapterIds.length > 1)
+    selections.length &&
+    (values.fixture === undefined || selections.length > 1)
   ) {
     throw new Error(
       'Use download --chapter <id> to select chapters from a series',
@@ -222,7 +248,7 @@ async function parseCommand(args: string[], signal: AbortSignal) {
     command,
     extensions: values.extension ?? config.extensions ?? [],
     ...parseInput(values, positionals, config.source),
-    chapterIds,
+    selections,
     directory,
     jobs:
       command === 'chapter'
@@ -235,6 +261,49 @@ async function parseCommand(args: string[], signal: AbortSignal) {
         ? (config.retries ?? 2)
         : integer('retries', values.retries, 0),
   } as const;
+}
+
+function selectChapters(
+  series: Series,
+  selections: readonly string[],
+  allowRanges: boolean,
+) {
+  const byId = new Map(
+    series.chapters.map((chapter, index) => [chapter.id, index]),
+  );
+  const selected = new Set<number>();
+  const unknown = new Set<string>();
+  for (const selection of selections) {
+    const index = byId.get(selection);
+    if (index !== undefined) {
+      selected.add(index);
+      continue;
+    }
+    const range = allowRanges && /^(\d+)-(\d+)$/.exec(selection);
+    if (!range) {
+      unknown.add(selection);
+      continue;
+    }
+    const first = Number(range[1]);
+    const last = Number(range[2]);
+    if (first < 1 || first > last || last > series.chapters.length) {
+      throw new Error(
+        `Invalid chapter range ${JSON.stringify(selection)}: use an ascending range within 1-${series.chapters.length}.`,
+      );
+    }
+    for (let index = first - 1; index < last; index++) {
+      selected.add(index);
+    }
+  }
+  if (unknown.size) {
+    throw new Error(
+      `Unknown chapter ID(s): ${[...unknown].map((id) => JSON.stringify(id)).join(', ')}. Run comic-dl list to see valid IDs.`,
+    );
+  }
+  return {
+    ...series,
+    chapters: series.chapters.filter((_, index) => selected.has(index)),
+  };
 }
 
 async function run(
@@ -263,13 +332,29 @@ async function run(
     return 0;
   }
 
-  const create = sources.get(args.sourceId);
-  if (!create) {
-    throw new Error(
-      `Unknown source: ${args.sourceId}. Load it with --extension.`,
-    );
+  let sourceId = args.sourceId;
+  if (sourceId === undefined && args.command !== 'search') {
+    const kind = args.command === 'chapter' ? 'chapter' : 'series';
+    const matches = [...sources]
+      .filter(([, source]) => source.matchesUrl?.(new URL(args.input), kind))
+      .map(([id]) => id);
+    if (matches.length !== 1) {
+      logError(
+        new Error(
+          matches.length
+            ? `Multiple sources match this URL (${matches.join(', ')}). Select one with --source.`
+            : 'No source matches this URL. Use --source or load the appropriate extension with --extension.',
+        ),
+      );
+      return 2;
+    }
+    [sourceId] = matches;
   }
-  const source = create();
+  const entry = sourceId === undefined ? undefined : sources.get(sourceId);
+  if (!entry) {
+    throw new Error(`Unknown source: ${sourceId}. Load it with --extension.`);
+  }
+  const source = entry.create();
   if (args.command === 'search') {
     if (!source.search) {
       throw new Error(`Source ${source.id} does not support search`);
@@ -294,25 +379,24 @@ async function run(
     }
     return 0;
   }
-  const series = await (args.command === 'chapter' && !args.chapterIds.length
+  const series = await (args.command === 'chapter' && !args.selections.length
     ? source.getChapter(args.input, signal).then(({ workId, chapter }) => ({
         id: workId,
         chapters: [chapter],
       }))
     : source.getSeries(args.input, signal));
   let selected = series;
-  if (args.chapterIds.length) {
-    const requested = new Set(args.chapterIds);
-    const chapters = series.chapters.filter(({ id }) => requested.delete(id));
-    if (requested.size) {
-      logError(
-        new Error(
-          `Unknown chapter ID(s): ${[...requested].map((id) => JSON.stringify(id)).join(', ')}. Run comic-dl list to see valid IDs.`,
-        ),
+  if (args.selections.length) {
+    try {
+      selected = selectChapters(
+        series,
+        args.selections,
+        args.command === 'download',
       );
+    } catch (error) {
+      logError(error);
       return 2;
     }
-    selected = { ...series, chapters };
   }
 
   const counts = { downloaded: 0, skipped: 0, failed: 0, restricted: 0 };

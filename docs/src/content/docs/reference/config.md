@@ -3,7 +3,7 @@ title: 配置与环境变量
 description: 保存常用 CLI 选项，并为漫画源配置认证。
 ---
 
-创建 `zerobyw.json`，然后运行 `comic-dl sources --config ./zerobyw.json`：
+第一次写配置时，可以跟着[配置文件教程](../../guide/config-tutorial/)逐步验证。下面是一份 Zerobyw 配置：保存为 `zerobyw.json`，然后运行 `comic-dl sources --config ./zerobyw.json`。
 
 ```json
 {
@@ -26,4 +26,4 @@ description: 保存常用 CLI 选项，并为漫画源配置认证。
 | ------------------------- | ------------------- | -------------------------------------------------- |
 | `COMIC_DL_ZEROBYW_COOKIE` | `@comic-dl/zerobyw` | Zerobyw 的 `Cookie` 请求头值；搜索公开目录时不需要 |
 
-各漫画源自行定义认证方式。凭据不进入 CLI 配置；获取和更新 Zerobyw Cookie 的步骤见[快速入门](../../guide/quickstart/#3-登录并配置-cookie)。
+各漫画源自行定义认证方式。凭据不进入 CLI 配置；获取和更新 Zerobyw Cookie 的步骤见[快速入门](../../guide/quickstart/#登录并配置-cookie)。

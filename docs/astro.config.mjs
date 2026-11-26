@@ -25,11 +25,17 @@ export default defineConfig({
       sidebar: [
         {
           label: '使用指南',
-          items: ['guide/quickstart', 'guide/copymanga', 'guide/migration'],
+          items: [
+            'guide/quickstart',
+            'guide/config-tutorial',
+            'guide/copymanga',
+            'guide/fixture',
+            'guide/migration',
+          ],
         },
         {
           label: '扩展开发',
-          items: ['extensions/develop'],
+          items: ['extensions/develop', 'extensions/zerobyw-walkthrough'],
         },
         {
           label: '项目开发',

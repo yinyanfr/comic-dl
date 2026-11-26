@@ -29,14 +29,14 @@ async function makeDirectory(t) {
 
 test('the CLI loads multiple explicit extensions and downloads through an independent source', async (t) => {
   const directory = await makeDirectory(t);
-  assert.equal((await run('sources')).stdout, 'fixture\n');
+  assert.equal((await run('src')).stdout, 'fixture\ncopymanga\nzerobyw\n');
   await assert.rejects(run('list', '--source', 'hello', 'demo'), {
     code: 1,
     stderr: /Unknown source: hello/,
   });
   assert.equal(
     (await run('sources', '--extension', hello, '--extension', zerobyw)).stdout,
-    'fixture\nhello\nzerobyw\n',
+    'fixture\nhello\nzerobyw\ncopymanga\n',
   );
   const options = ['--extension', hello, '--source', 'hello'];
   assert.equal(
@@ -113,7 +113,10 @@ test('loads config-relative paths and gives explicit options precedence', async 
     }),
   );
   const config = ['--config', file];
-  assert.equal((await run('sources', ...config)).stdout, 'fixture\nhello\n');
+  assert.equal(
+    (await run('sources', ...config)).stdout,
+    'fixture\nhello\ncopymanga\nzerobyw\n',
+  );
   assert.equal(
     (await run('list', 'demo', ...config)).stdout,
     'welcome\tWelcome\n',
@@ -155,8 +158,8 @@ test('validates config without echoing its contents and exposes command-specific
   assert.match((await run('--help')).stdout, /^Usage: comic-dl <command>/);
   assert.match((await run('-V')).stdout, /^\d+\.\d+\.\d+.*\n$/);
   assert.match(
-    (await run('download', '--help', '--config', file)).stdout,
-    /^Usage: comic-dl download[\s\S]*--chapter <id>[\s\S]*--config <file>/,
+    (await run('d', '--help', '--config', file)).stdout,
+    /^Usage: comic-dl download[\s\S]*--chapter <selection>[\s\S]*--config <file>/,
   );
   assert.doesNotMatch((await run('list', '-h')).stdout, /--output|--jobs/);
   await assert.rejects(run('list', 'demo', '--output', directory), { code: 2 });

@@ -9,6 +9,7 @@ description: 适配器导出、稳定标识、读取顺序、认证和错误约�
 
 - 扩展默认导出 `{ apiVersion: 1, id, create }`。`id` 匹配 `[a-z0-9]+(?:-[a-z0-9]+)*`，不得与已加载的源重名，`fixture` 由核心占用。
 - `create(api)` 同步返回具有同一 `id` 的 `ChapterSource`。模块加载阶段可能只为了 `sources` 查询声明；在 `create()` 或之后初始化会话。
+- 可选的 `matchesUrl(url, kind)` 同步判断扩展能否处理完整 URL。`kind` 是 `'series'` 或 `'chapter'`；匹配阶段不发网络请求，也不创建会话。未提供该方法的扩展仍可用 `--source` 选择。
 
 ## 漫画、章节和页面
 

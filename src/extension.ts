@@ -30,5 +30,6 @@ export type SourceExtensionApi = typeof sourceExtensionApi;
 export interface SourceExtension {
   readonly apiVersion: typeof extensionApiVersion;
   readonly id: string;
+  matchesUrl?(url: URL, kind: 'series' | 'chapter'): boolean;
   create(api: SourceExtensionApi): ChapterSource;
 }

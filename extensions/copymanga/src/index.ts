@@ -58,17 +58,12 @@ function workUrl(slug: string) {
   return `${site}/comic/${slug}`;
 }
 
-function parseInput(input: string) {
-  if (segment.test(input)) {
-    return { slug: input, group: 'default' };
-  }
-  const url = URL.parse(input);
-  const path = url?.pathname.match(
+function parseUrl(url: URL) {
+  const path = url.pathname.match(
     /^\/comic\/([a-z0-9_-]+)(?:\/chapter\/([a-f0-9-]+))?\/?$/i,
   );
-  const group = url?.searchParams.get('group') ?? 'default';
+  const group = url.searchParams.get('group') ?? 'default';
   if (
-    !url ||
     url.origin !== site ||
     url.username ||
     url.password ||
@@ -76,11 +71,23 @@ function parseInput(input: string) {
     (path[2] && !uuid.test(path[2])) ||
     !segment.test(group)
   ) {
+    return;
+  }
+  return { slug: path[1], chapterId: path[2]?.toLowerCase(), group };
+}
+
+function parseInput(input: string) {
+  if (segment.test(input)) {
+    return { slug: input, chapterId: undefined, group: 'default' };
+  }
+  const url = URL.parse(input);
+  const parsed = url && parseUrl(url);
+  if (!parsed) {
     throw new Error(
       'Expected a CopyManga work ID, copy20.com series URL or chapter URL',
     );
   }
-  return { slug: path[1], chapterId: path[2]?.toLowerCase(), group };
+  return parsed;
 }
 
 function searchResults(items: readonly unknown[]) {
@@ -375,5 +382,9 @@ function create(
 export default {
   apiVersion: 1,
   id: 'copymanga',
+  matchesUrl(url, kind) {
+    const parsed = parseUrl(url);
+    return !!parsed && (kind === 'chapter') === !!parsed.chapterId;
+  },
   create,
 } satisfies SourceExtension;

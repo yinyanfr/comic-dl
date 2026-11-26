@@ -41,22 +41,18 @@ function run(...args) {
   return exec(execPath, [cli, ...args]);
 }
 
-test('lists sources and chapters; series continues past a failure and can resume', async (t) => {
+test('lists chapters; series continues past a failure and can resume', async (t) => {
   const { directory, output } = await makeFixture(t, [
     { id: '3', title: 'Opening', pages: ['page.gif'] },
     { id: '1', title: 'Middle', pages: ['missing.gif'] },
     { id: '2', title: 'Finale', pages: ['page.gif'] },
   ]);
-  assert.equal((await run('sources')).stdout, 'fixture\n');
   assert.equal(
-    (await run('list', '--fixture', directory)).stdout,
+    (await run('l', '--fixture', directory)).stdout,
     '3\tOpening\n1\tMiddle\n2\tFinale\n',
   );
   const options = ['--fixture', directory, '--output', output];
-  assert.match(
-    (await run('chapter', ...options, '--chapter', '3')).stdout,
-    /^Downloaded: /,
-  );
+  assert.match((await run('c', ...options, '-c', '3')).stdout, /^Downloaded: /);
   await assert.rejects(run('download', ...options, '--jobs', '1'), {
     code: 1,
     stderr: /Failed: chapter 1 \(attempts: 1\).*missing\.gif/,
@@ -79,6 +75,34 @@ test('lists sources and chapters; series continues past a failure and can resume
   });
   await assert.rejects(run('chapter', '--fixture', directory), { code: 2 });
   await assert.rejects(run('lists'), { code: 2 });
+});
+
+test('downloads inclusive reading positions and validates every selection before writing', async (t) => {
+  const { directory, output } = await makeFixture(
+    t,
+    ['1-2', '10', '20', '30', '40'].map((id) => ({
+      id,
+      title: id,
+      pages: ['page.gif'],
+    })),
+  );
+  const args = ['d', '--fixture', directory, '-o', output, '--jobs', '1'];
+  for (const range of ['0-2', '4-2', '2-6', '2-999999999999999999']) {
+    await assert.rejects(run(...args, '-c', '10', '-c', range), {
+      code: 2,
+      stdout: '',
+      stderr: /Invalid chapter range/,
+    });
+  }
+  await assert.rejects(readdir(output), { code: 'ENOENT' });
+
+  const { stdout } = await run(...args, '-c', '2-4', '-c', '1-2', '-c', '20');
+  assert.deepEqual(
+    [...stdout.matchAll(/^Downloaded: .*chapter-(.+)-[a-f0-9]+\.cbz$/gm)].map(
+      ([, id]) => id,
+    ),
+    ['1-2', '10', '20', '30'],
+  );
 });
 
 test('selects stable chapter IDs in reading order and rejects unknown IDs before writing', async (t) => {

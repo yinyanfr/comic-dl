@@ -423,6 +423,9 @@ function createZerobywSource(
 export default {
   apiVersion: 1,
   id: 'zerobyw',
+  matchesUrl(url, kind) {
+    return !!pageId(siteUrl(url.href), kind === 'series' ? 'details' : 'view');
+  },
   create(api) {
     return createZerobywSource(process.env[cookieVariable], api);
   },

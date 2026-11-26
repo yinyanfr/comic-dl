@@ -77,7 +77,11 @@ function mockFetch(config, fixtures) {
       if (url.pathname === '/api/v3/comic2/example') {
         return ok({ comic, groups: { default: {}, tankobon: {} } });
       }
-      if (url.pathname === '/api/v3/comic/example/group/tankobon/chapters') {
+      if (
+        /^\/api\/v3\/comic\/example\/group\/(?:default|tankobon)\/chapters$/.test(
+          url.pathname,
+        )
+      ) {
         const offset = Number(url.searchParams.get('offset'));
         const item =
           offset === 0
@@ -112,26 +116,61 @@ function mockFetch(config, fixtures) {
   };
 }
 
-function run(args, config = {}) {
+function runCli(args, config = {}, cwd) {
   const preload = `(${mockFetch.toString()})(${JSON.stringify(config)}, ${JSON.stringify({ site, hotApi, userAgent, image, first, second, comic, refusalMessage, query })});`;
-  return exec(execPath, [
-    '--import',
-    `data:text/javascript;base64,${Buffer.from(preload).toString('base64')}`,
-    cli,
-    ...args,
-    '--extension',
-    '@comic-dl/copymanga',
-    '--source',
-    'copymanga',
-  ]);
+  return exec(
+    execPath,
+    [
+      '--import',
+      `data:text/javascript;base64,${Buffer.from(preload).toString('base64')}`,
+      cli,
+      ...args,
+    ],
+    { cwd },
+  );
+}
+
+function run(args, config) {
+  return runCli(
+    [...args, '--extension', '@comic-dl/copymanga', '--source', 'copymanga'],
+    config,
+  );
 }
 
 test('CopyManga searches and browses the public website anonymously', async () => {
-  const result = await run(['search', query, '--page', '2']);
+  const result = await runCli([
+    's',
+    query,
+    '--source',
+    'copymanga',
+    '--page',
+    '2',
+  ]);
   assert.equal(result.stdout, `${work}\tSecond page\n`);
   assert.equal(result.stderr, '');
   assert.match((await run(['search', query])).stderr, /Next page: 2/);
   assert.equal((await run(['search'])).stdout, `${work}\tCatalog example\n`);
+});
+
+test('CopyManga URLs select the source and download to the working directory by default', async (t) => {
+  const cwd = await mkdtemp(join(tmpdir(), 'comic-dl-copy-default-'));
+  t.after(() => rm(cwd, { recursive: true, force: true }));
+  const result = await runCli(['d', work], {}, cwd);
+  assert.match(
+    result.stdout,
+    /1 downloaded, 0 skipped, 1 restricted, 0 failed/,
+  );
+  const [filename] = await readdir(cwd);
+  assert.match(filename, /^chapter-.*\.cbz$/);
+  assert.deepEqual(await readdir(cwd), [filename]);
+
+  await assert.rejects(
+    runCli(['d', `${site}.invalid/comic/example`], {}, cwd),
+    {
+      code: 2,
+      stderr: /No source matches this URL/,
+    },
+  );
 });
 
 test('CopyManga paginates a chapter group and uses the same ordered CBZ for chapter and series inputs', async (t) => {

@@ -14,7 +14,7 @@ npx comic-dl ls -u "$series_url"
 npx comic-dl dl -u "$series_url" --chapters 0,4 --output ./old-downloads
 ```
 
-新版用完整命令名和位置参数。先核对作品的当前 URL，再从 `list` 输出的第一列取实际章节 ID；下面的 `101`、`105` 仅为示例：
+新版用位置参数，并提供 `l`（`list`）和 `d`（`download`）等简写。先核对作品的当前 URL，再从 `list` 输出的第一列取实际章节 ID；下面的 `101`、`105` 仅为示例：
 
 ```sh
 comic-dl list "$series_url" --extension @comic-dl/zerobyw --source zerobyw
@@ -22,7 +22,7 @@ comic-dl download "$series_url" --extension @comic-dl/zerobyw --source zerobyw \
   --chapter 101 --chapter 105 --output ./new-downloads
 ```
 
-省略 `--chapter` 会下载整个系列。已有章节直链时，用 `chapter <chapter-url>`。`list` 只列章节，不写 ComicInfo。旧快捷命令、`--url`、`--module` 和无子命令的 URL 调用需要改写，详见 `comic-dl <command> --help`。
+省略 `--chapter` 会下载整个系列。也可用 `-c 2-4` 选择第 2 到第 4 项，位置从 `1` 开始。已有章节直链时，用 `chapter <chapter-url>`。`list` 只列章节，不写 ComicInfo。旧快捷命令、`--url`、`--module` 和无子命令的 URL 调用需要改写，详见 `comic-dl <command> --help`。
 
 ## 复用 Cookie 文件
 
@@ -73,4 +73,4 @@ comic-dl download "$series_url" --config ./zerobyw.json --chapter 101
 
 旧图片目录、ZIP 和 CBZ 可以继续在原阅读器中使用。新版使用章节身份和页序校验标记来判断能否跳过归档，旧归档同名也不会被视为已下载；请保留原目录，并让新版写到独立目录。用旧 `history.txt` 或 URL 清单查找作品时，先核对当前 URL；不要假定旧域名或短 ID 可直接使用。
 
-旧版 Copymanga 脚本请改用 [CopyManga 扩展](../copymanga/)和当前站点 URL。Ganma、批量 URL 下载、历史记录写入、旧库 API 和模块生成命令没有直接替代。编写漫画源请参考[扩展开发指南](../../extensions/develop/)。
+Ganma、批量 URL 下载、历史记录写入、旧库 API 和模块生成命令没有直接替代。编写漫画源请参考[扩展开发指南](../../extensions/develop/)。
