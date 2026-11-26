@@ -1,3 +1,4 @@
 dist/
 .husky/_/
 package-lock.json
+tmp/

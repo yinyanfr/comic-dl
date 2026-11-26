@@ -1,11 +1,14 @@
 import { setTimeout } from 'node:timers/promises';
 import { saveCbz } from './output/cbz.js';
-import { TransientSourceError } from './sources/source.js';
+import {
+  RestrictedChapterError,
+  TransientSourceError,
+} from './sources/source.js';
 import type { Chapter, Page, Series } from './sources/source.js';
 
 export type ChapterResult = { chapterId: string; attempts: number } & (
   | { status: 'downloaded' | 'skipped'; path: string }
-  | { status: 'failed'; error: string }
+  | { status: 'failed' | 'restricted'; error: string }
 );
 
 interface DownloadOptions {
@@ -71,7 +74,8 @@ async function downloadChapter(
         return {
           chapterId,
           attempts,
-          status: 'failed',
+          status:
+            error instanceof RestrictedChapterError ? 'restricted' : 'failed',
           error: error instanceof Error ? error.message : String(error),
         };
       }

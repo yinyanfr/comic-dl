@@ -4,18 +4,37 @@
   "private": true,
   "type": "module",
   "license": "MIT",
+  "workspaces": [
+    "extensions/*"
+  ],
+  "bin": {
+    "comic-dl": "dist/index.js"
+  },
+  "exports": {
+    "./extension": {
+      "types": "./dist/extension.d.ts",
+      "import": "./dist/extension.js"
+    }
+  },
+  "files": [
+    "dist",
+    "docs/extensions.md",
+    "examples/hello-extension.mjs"
+  ],
   "engines": {
     "node": ">=24"
   },
   "scripts": {
-    "build": "tsc",
-    "check": "npm run format:check && npm run lint && npm run typecheck",
+    "build": "npm run build:core && npm run build --workspaces --if-present",
+    "build:core": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true });\" && tsc",
+    "check": "npm run format:check && npm run typecheck && npm run lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings 0",
     "prepare": "husky",
+    "prepack": "npm run build:core",
     "test": "npm run build && node --test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "npm run build:core && npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

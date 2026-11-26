@@ -1,8 +1,22 @@
+import { URL } from 'node:url';
 import { TransientSourceError } from './source.js';
 
 interface SourceHttpOptions {
   readonly credentialHeaders: Readonly<Record<string, string>>;
   readonly credentialOrigins: readonly string[];
+  readonly allowedOrigins?: readonly string[];
+}
+
+interface SourceHttpResponse {
+  bytes: Uint8Array;
+  url: URL;
+  contentType: string | null;
+}
+
+export class SourceHttpError extends Error {
+  constructor(readonly status: number) {
+    super(`Source returned HTTP ${status}`);
+  }
 }
 
 function validateUrl(url: URL) {
@@ -24,6 +38,7 @@ function validateUrl(url: URL) {
 export function createSourceHttp({
   credentialHeaders,
   credentialOrigins,
+  allowedOrigins,
 }: SourceHttpOptions) {
   const origins = new Set(
     credentialOrigins.map((origin) => {
@@ -41,13 +56,18 @@ export function createSourceHttp({
     input: string | URL,
     signal: AbortSignal,
     authenticated = false,
-  ): Promise<Uint8Array> {
+  ): Promise<SourceHttpResponse> {
     const timeout = AbortSignal.timeout(30_000);
     const requestSignal = AbortSignal.any([signal, timeout]);
     let url = new URL(input);
     try {
       for (let redirects = 0; ; redirects++) {
         validateUrl(url);
+        if (allowedOrigins && !allowedOrigins.includes(url.origin)) {
+          throw new Error(
+            'Source request redirected to an unrecognized origin',
+          );
+        }
         authenticated &&= origins.has(url.origin);
         const response = await fetch(url, {
           redirect: 'manual',
@@ -73,9 +93,13 @@ export function createSourceHttp({
           if ([408, 429, 500, 502, 503, 504].includes(response.status)) {
             throw new TransientSourceError(message);
           }
-          throw new Error(message);
+          throw new SourceHttpError(response.status);
         }
-        return new Uint8Array(await response.arrayBuffer());
+        return {
+          bytes: new Uint8Array(await response.arrayBuffer()),
+          url,
+          contentType: response.headers.get('content-type'),
+        };
       }
     } catch (cause) {
       signal.throwIfAborted();

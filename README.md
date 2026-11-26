@@ -1,6 +1,6 @@
 # comic-dl
 
-comic-dl 正在从零重写。目前可从本地测试源下载单章或整个系列，输出为每章一个 CBZ。旧实现在 `legacy` 分支。
+comic-dl 是一个支持漫画源扩展的 CLI 下载器，输出为每章一个 CBZ。核心提供本地测试源；Zerobyw 需要加载独立扩展。旧实现在 `legacy` 分支。
 
 ## 离线下载一章
 
@@ -50,6 +50,25 @@ node dist/index.js download --fixture ./demo --output ./downloads --jobs 2 --ret
 - `--retries` 默认最多额外重试两次，只重试暂态错误；设为 `0` 可关闭重试。按 `Ctrl+C` 会停止待处理章节并清理进行中的归档，保留已完成的 CBZ。
 - 退出码：`0` 全部下载或跳过，`1` 运行或下载失败，`2` 参数错误，`130` 用户中断。
 
+## Zerobyw
+
+在本仓库运行 `npm ci` 和 `npm run build` 后，可以通过 `--extension @comic-dl/zerobyw` 加载扩展。Zerobyw 需要有效的会话 Cookie。登录 `https://www.zerobyw33.com/` 后，把浏览器请求中的 `Cookie` 头值保存到本地文件，通过 `COMIC_DL_ZEROBYW_COOKIE` 提供给 CLI。会话失效时，重新登录并更新该变量。
+
+```sh
+node dist/index.js sources --extension @comic-dl/zerobyw
+node dist/index.js search --extension @comic-dl/zerobyw --source zerobyw '关键词' --page 1
+export COMIC_DL_ZEROBYW_COOKIE="$(cat /path/to/zerobyw-cookie.txt)"
+node dist/index.js list --extension @comic-dl/zerobyw --source zerobyw 'https://www.zerobyw33.com/pc/details/?kuid=作品ID'
+node dist/index.js chapter --extension @comic-dl/zerobyw --source zerobyw 'https://www.zerobyw33.com/pc/view/index.php?zjid=章节ID' --output ./downloads
+node dist/index.js download --extension @comic-dl/zerobyw --source zerobyw 'https://www.zerobyw33.com/pc/details/?kuid=作品ID' --output ./downloads
+```
+
+搜索公开目录不需要 Cookie。省略关键词可浏览目录；有后续结果时会提示下一页。搜索结果中的作品 URL 可以直接传给 `list` 或 `download`。同一站点的 `http://` 旧链接会改用 HTTPS。
+
+目录和阅读器的站点行为参考了 [Keiyoushi 的 Zerobyw 扩展](https://github.com/keiyoushi/extensions-source/tree/main/src/zh/zerobyw)。
+
+用站点实际的完整 URL 替换示例地址。系列下载继续处理其他章节，并把「无权限跳过」（`restricted`）和「已有完整归档」（`skipped`）分别统计。仅因权限跳过部分章节且其余章节已完成时返回 `0`；全部受限、指定的单章受限或遇到其他错误时返回 `1`。
+
 ## 开发
 
 使用 Node.js 24 和 npm：
@@ -61,3 +80,5 @@ npm test
 ```
 
 `npm run check` 检查格式、lint 和类型；用 `npm run format` 修正格式。`npm test` 构建并运行本地回归测试（包括回环 HTTP 测试，不访问真实漫画站）。安装依赖时会设置 Husky，提交时只检查暂存文件；GitHub Actions 会运行完整检查和测试。
+
+编写新源、加载本地模块或单独打包扩展，见[漫画源扩展开发指南](docs/extensions.md)。

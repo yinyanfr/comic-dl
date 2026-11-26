@@ -18,8 +18,18 @@ export interface Series {
   readonly chapters: readonly Chapter[];
 }
 
+export interface SearchPage {
+  readonly results: readonly { title: string; url: string }[];
+  readonly hasNext: boolean;
+}
+
 export interface ChapterSource {
   readonly id: string;
+  search?(
+    query: string,
+    page: number,
+    signal: AbortSignal,
+  ): Promise<SearchPage>;
   getSeries(input: string, signal: AbortSignal): Promise<Series>;
   getChapter(
     input: string,
@@ -28,3 +38,4 @@ export interface ChapterSource {
 }
 
 export class TransientSourceError extends Error {}
+export class RestrictedChapterError extends Error {}
