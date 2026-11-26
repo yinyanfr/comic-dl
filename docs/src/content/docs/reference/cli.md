@@ -12,14 +12,17 @@ description: 查阅命令、可用选项、标准输出和退出码。
 | `list <series-input>`     | `l`   | 列出作品章节的稳定 ID 与标题                             |
 | `chapter <chapter-input>` | `c`   | 使用章节直链或源定义的标识下载一章                       |
 | `download <series-input>` | `d`   | 下载整个系列或指定章节                                   |
+| `add <package>`           | `a`   | 安装 npm 源扩展，可附加 `@版本` 或 `@标签`               |
+| `update [package]`        | `u`   | 按已保存的版本范围更新单个或全部扩展                     |
+| `remove <package>`        | `rm`  | 卸载 CLI 管理的扩展                                      |
 
 ### 选项
 
 | 选项                        | 适用命令                      | 说明                                                    |
 | --------------------------- | ----------------------------- | ------------------------------------------------------- |
-| `--config <file>`           | 全部                          | 加载显式 JSON 配置，见[配置参考](../config/)            |
-| `--extension <name>`        | 全部                          | 加载已安装的 npm 包或本地 ESM 文件，可重复              |
-| `--source <id>`             | 除 `sources` 外               | 选择已注册的源；可取自配置                              |
+| `--config <file>`           | `sources` 及漫画操作命令      | 加载显式 JSON 配置，见[配置参考](../config/)            |
+| `--extension <name>`        | `sources` 及漫画操作命令      | 加载可解析的 npm 包或本地 ESM 文件，可重复              |
+| `--source <id>`             | 漫画操作命令                  | 选择已注册的源；可取自配置                              |
 | `--fixture <directory>`     | `list`、`chapter`、`download` | 使用离线测试源；与位置输入或显式 `--source` 互斥        |
 | `-o, --output <directory>`  | `chapter`、`download`         | 可取自配置；`download` 默认当前目录，`chapter` 要求指定 |
 | `-c, --chapter <selection>` | `download`                    | 章节 ID 或包含两端的范围（如 `2-4`），可重复            |
@@ -27,9 +30,26 @@ description: 查阅命令、可用选项、标准输出和退出码。
 | `--jobs <n>`                | `download`                    | 最大并行章节数，默认 `2`                                |
 | `--retries <n>`             | `chapter`、`download`         | 暂态错误的额外重试次数，默认 `2`，设为 `0` 禁用         |
 
+### 安装和管理漫画源
+
+从扩展作者的文档或 npm 获取包名。例如：
+
+```sh
+comic-dl add @comic-dl/zerobyw
+comic-dl update @comic-dl/zerobyw
+comic-dl update
+comic-dl remove @comic-dl/zerobyw
+```
+
+`update` 不会突破已保存的版本范围；跨版本范围可用 `add '包名@版本'`。管理命令使用 npm 包名，下载时的 `--source` 使用源 ID（如 `zerobyw`）。CLI 通过 npm 将扩展安装在用户数据目录下的独立项目中，安装时不运行 npm 生命周期脚本；扩展加载时以本地进程权限执行，只添加信任的扩展。
+
+默认目录在 Unix 上是 `$XDG_DATA_HOME/comic-dl/extensions`，未设置时用 `~/.local/share/comic-dl/extensions`；Windows 使用 `%LOCALAPPDATA%\comic-dl\extensions`。可设置 `COMIC_DL_EXTENSION_DIR` 指向其他目录。
+
 ### 选择漫画源
 
-已安装的官方扩展（CopyManga 和 Zerobyw）会自动加载，其他扩展可通过 `--extension` 或配置加载。`--source` 优先于配置中的 `source`。两者都未指定时，`list`、`chapter` 和 `download` 会让已加载的扩展识别完整 URL；匹配不到或有多个来源匹配时，会提示检查扩展或显式选源。作品短 ID 和搜索关键词需要指定源或使用配置中的默认源。
+用 `add` 安装的扩展会自动加载。`--extension` 或配置可以额外加载本地文件或与 CLI 装在同一个 npm 项目中的包，不会安装或登记扩展。显式指定已登记的同名包时只加载一次；不同包声明相同源 ID 时会报错。
+
+`--source` 优先于配置中的 `source`。两者都未指定时，`list`、`chapter` 和 `download` 会让已加载的扩展识别完整 URL；匹配不到或有多个来源匹配时，会提示检查扩展或显式选源。作品短 ID 和搜索关键词需要指定源或使用配置中的默认源。
 
 ### 选择章节
 

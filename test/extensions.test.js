@@ -1,23 +1,36 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { copyFile, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { env, execPath } from 'node:process';
 import { test } from 'node:test';
 import { fileURLToPath, URL } from 'node:url';
 import { promisify } from 'node:util';
+import downloader, { createDownloader } from 'comic-dl';
+import helloExtension from '../examples/hello-extension.mjs';
 
 const exec = promisify(execFile);
 const root = fileURLToPath(new URL('../', import.meta.url));
 const cli = join(root, 'dist/index.js');
 const hello = './examples/hello-extension.mjs';
-const zerobyw = '@comic-dl/zerobyw';
 
 function run(...args) {
   return exec(execPath, [cli, ...args], {
     cwd: root,
-    env: { ...env, COMIC_DL_ZEROBYW_COOKIE: '' },
+    env: {
+      ...env,
+      COMIC_DL_EXTENSION_DIR: join(root, 'test', 'no-managed-extensions'),
+    },
   });
 }
 
@@ -29,21 +42,35 @@ async function makeDirectory(t) {
 
 test('the CLI loads multiple explicit extensions and downloads through an independent source', async (t) => {
   const directory = await makeDirectory(t);
-  assert.equal((await run('src')).stdout, 'fixture\ncopymanga\nzerobyw\n');
+  await writeFile(
+    join(directory, 'second.mjs'),
+    `import hello from ${JSON.stringify(new URL('../examples/hello-extension.mjs', import.meta.url).href)};
+    export default { ...hello, id: 'second' };`,
+  );
+  assert.equal((await run('src')).stdout, 'fixture\n');
   await assert.rejects(run('list', '--source', 'hello', 'demo'), {
     code: 1,
     stderr: /Unknown source: hello/,
   });
   assert.equal(
-    (await run('sources', '--extension', hello, '--extension', zerobyw)).stdout,
-    'fixture\nhello\nzerobyw\ncopymanga\n',
+    (
+      await run(
+        'sources',
+        '--extension',
+        hello,
+        '--extension',
+        join(directory, 'second.mjs'),
+      )
+    ).stdout,
+    'fixture\nhello\nsecond\n',
   );
   const options = ['--extension', hello, '--source', 'hello'];
   assert.equal(
     (await run('list', ...options, 'demo')).stdout,
     'welcome\tWelcome\n',
   );
-  const output = ['--output', directory];
+  const outputDirectory = join(directory, 'downloads');
+  const output = ['--output', outputDirectory];
   assert.match(
     (await run('chapter', ...options, 'welcome', ...output)).stdout,
     /^Downloaded: /,
@@ -53,7 +80,7 @@ test('the CLI loads multiple explicit extensions and downloads through an indepe
     /0 downloaded, 1 skipped, 0 restricted, 0 failed/,
   );
   assert.match(
-    (await readdir(directory)).join('\n'),
+    (await readdir(outputDirectory)).join('\n'),
     /^chapter-welcome-[a-f0-9]+\.cbz$/,
   );
 });
@@ -113,10 +140,7 @@ test('loads config-relative paths and gives explicit options precedence', async 
     }),
   );
   const config = ['--config', file];
-  assert.equal(
-    (await run('sources', ...config)).stdout,
-    'fixture\nhello\ncopymanga\nzerobyw\n',
-  );
+  assert.equal((await run('sources', ...config)).stdout, 'fixture\nhello\n');
   assert.equal(
     (await run('list', 'demo', ...config)).stdout,
     'welcome\tWelcome\n',
@@ -184,4 +208,114 @@ test('validates config without echoing its contents and exposes command-specific
       return true;
     });
   }
+});
+
+test('the library registers sources without reading CLI state and returns download results', async (t) => {
+  const directory = await makeDirectory(t);
+  const instance = createDownloader().use(helloExtension);
+  assert.deepEqual(downloader.sources(), []);
+  assert.deepEqual(instance.sources(), ['hello']);
+  assert.equal((await instance.list('demo', { source: 'hello' })).id, 'demo');
+  const [result] = await instance.download('demo', {
+    source: 'hello',
+    directory,
+  });
+  assert.equal(result.status, 'downloaded');
+  assert.equal((await readdir(directory)).length, 1);
+});
+
+test('npm-managed extensions are discovered and updates stay in range', async (t) => {
+  const directory = await makeDirectory(t);
+  const name = '@example/comic-dl-test-source';
+  const registry = new Map();
+  const archives = new Map();
+  const server = createServer((request, response) => {
+    const path = decodeURIComponent(request.url);
+    if (archives.has(path)) {
+      response.end(archives.get(path));
+    } else if (registry.has(path.slice(1))) {
+      response.setHeader('content-type', 'application/json');
+      response.end(JSON.stringify(registry.get(path.slice(1))));
+    } else {
+      response.writeHead(404).end();
+    }
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  async function publish(version, apiVersion = 1, packageName = name) {
+    const project = join(
+      directory,
+      `${version}-${packageName.split('/').at(-1)}`,
+    );
+    await mkdir(project);
+    const manifest = {
+      name: packageName,
+      version,
+      type: 'module',
+      exports: './index.js',
+      scripts: { postinstall: 'node -e "process.exit(55)"' },
+    };
+    await writeFile(join(project, 'package.json'), JSON.stringify(manifest));
+    const sample = await readFile(join(root, hello), 'utf8');
+    await writeFile(
+      join(project, 'index.js'),
+      sample
+        .replace('apiVersion: 1', `apiVersion: ${apiVersion}`)
+        .replace("title: 'Welcome'", `title: '${version}'`),
+    );
+    const { stdout } = await exec(
+      'npm',
+      ['pack', '--ignore-scripts', '--json'],
+      { cwd: project },
+    );
+    const [{ filename, integrity }] = JSON.parse(stdout);
+    const path = `/tarballs/${filename}`;
+    archives.set(path, await readFile(join(project, filename)));
+    const packument = registry.get(packageName) ?? {
+      name: packageName,
+      versions: {},
+      'dist-tags': {},
+    };
+    packument.versions[version] = {
+      ...manifest,
+      dist: { tarball: origin + path, integrity },
+    };
+    packument['dist-tags'].latest = version;
+    registry.set(packageName, packument);
+  }
+  const managed = (...args) =>
+    exec(execPath, [cli, ...args], {
+      cwd: directory,
+      env: {
+        ...env,
+        COMIC_DL_EXTENSION_DIR: join(directory, 'store'),
+        npm_config_cache: join(directory, 'npm-cache'),
+        npm_config_registry: origin,
+        npm_config_fetch_retries: '0',
+      },
+    });
+  const list = () => managed('list', '--source', 'hello', 'demo');
+  await publish('1.0.0');
+  await managed('add', name);
+  assert.equal(
+    (await managed('sources', '--extension', name)).stdout,
+    'fixture\nhello\n',
+  );
+  assert.equal((await list()).stdout, 'welcome\t1.0.0\n');
+  await publish('1.1.0');
+  await publish('2.0.0');
+  await managed('update', name);
+  assert.equal((await list()).stdout, 'welcome\t1.1.0\n');
+  await publish('1.2.0');
+  await managed('update');
+  assert.equal((await list()).stdout, 'welcome\t1.2.0\n');
+  const invalid = '@example/invalid';
+  await publish('1.0.0', 2, invalid);
+  await assert.rejects(managed('add', invalid), {
+    stderr: /Invalid source extension/,
+  });
+  assert.equal((await list()).stdout, 'welcome\t1.2.0\n');
+  await managed('remove', name);
+  assert.equal((await managed('sources')).stdout, 'fixture\n');
 });

@@ -3,16 +3,17 @@ title: 动手制作 Zerobyw 扩展
 description: 用 Zerobyw 的脱敏页面写一个可离线运行的扩展，再对照正式实现添加会话、搜索和测试。
 ---
 
-本教程从 Zerobyw 的作品页和阅读页出发，写一个能列章、下载并生成 CBZ 的扩展。前半段只读本地样本，不需要账号或连接漫画站；后半段对照[正式扩展源码](https://github.com/yinyanfr/comic-dl/blob/main/extensions/zerobyw/src/index.ts)，了解如何换成真实请求。
+本教程从 Zerobyw 的作品页和阅读页出发，写一个能列章、下载并生成 CBZ 的扩展。前半段只读本地样本，不需要账号或连接漫画站；后半段对照[正式扩展源码](https://github.com/yinyanfr/comic-dl-extensions/blob/main/extensions/zerobyw/src/index.ts)，了解如何换成真实请求。
 
 ## 1. 从链接提取作品和章节 ID
 
-使用 Node.js 24。在仓库根目录安装依赖、构建 CLI，并创建一个练习目录。这里直接写 `.mjs`，用仓库 workspace 安装的 Cheerio 解析 HTML。
+使用 Node.js 24。在核心仓库根目录安装依赖、构建 CLI，再为练习目录单独安装解析 HTML 的 Cheerio。
 
 ```sh
 npm ci
 npm run build
 workshop="$(mktemp -d ./zerobyw-workshop.XXXXXX)"
+npm install --prefix "$workshop" cheerio@1
 ```
 
 在 `$workshop` 下创建 `source.mjs`，写入下面的代码。作品页的 `kuid` 是作品 ID，阅读页的 `zjid` 是章节 ID。保留站点 ID 作为字符串，章节改名或调整顺序时也能定位同一章。
@@ -130,7 +131,7 @@ const extension = {
 export default extension;
 ```
 
-在同一个终端、从仓库根目录依次运行。因为练习扩展和正式扩展识别同一站点，这里用 `--source` 选中练习版本。
+在同一个终端、从仓库根目录依次运行。若已用 `add` 安装正式扩展，它和练习扩展会识别同一站点；这里用 `--source` 选中练习版本。
 
 ```sh
 work_url='https://www.zerobyw33.com/pc/details/?kuid=1'
@@ -145,7 +146,7 @@ node dist/index.js download "$work_url" --extension "$workshop/source.mjs" --sou
 
 ## 4. 对照正式扩展接入真实站点
 
-打开[正式扩展源码](https://github.com/yinyanfr/comic-dl/blob/main/extensions/zerobyw/src/index.ts)，按下面的顺序把练习中的固定样本换成站点实现。
+打开[正式扩展源码](https://github.com/yinyanfr/comic-dl-extensions/blob/main/extensions/zerobyw/src/index.ts)，按下面的顺序把练习中的固定样本换成站点实现。
 
 1. **建立两套 HTTP 读取器。** 在 `createZerobywSource` 里用 `api.createSourceHttp` 初始化 `readHtml` 和 `readImage`。从 `COMIC_DL_ZEROBYW_COOKIE` 读取会话；`document()` 仅在读取作品详情页或阅读页时为指定站点 Origin 附加 Cookie。公开搜索和图片请求保持匿名。
 2. **还原完整章节列表。** 在 `getSeries` 中确认详情页的登录状态与作品 ID，再从「章节列表」按页面顺序提取卡片。可读卡片的 ID 来自链接；明确标记为 VIP 且无链接的卡片才从 `mangaDownloadChapters` 补 ID。需要校对列表长度、标题以及可读卡片的 ID，避免把相邻章节配错。脚本中的数据用 `JSON.parse` 读取，不执行网页脚本。
@@ -155,12 +156,12 @@ node dist/index.js download "$work_url" --extension "$workshop/source.mjs" --sou
 
 ## 5. 用离线回归验证，再打包
 
-运行正式扩展的回归测试：
+在 [comic-dl-extensions](https://github.com/yinyanfr/comic-dl-extensions) 仓库安装依赖后运行正式扩展的回归测试：
 
 ```sh
 npm test --workspace @comic-dl/zerobyw
 ```
 
-[测试源码](https://github.com/yinyanfr/comic-dl/blob/main/extensions/zerobyw/test/zerobyw.test.js)用回环 HTTP 服务模拟站点和图片主机。写自己的扩展时，可以沿用三组断言：`list` 返回预期的稳定 ID 和阅读顺序；单章与系列路径使用同一归档身份且页序正确；Cookie 只到指定站点，受限章节、登录过期和解析失败能区分。还可以加入真实页面变体的脱敏样本，覆盖懒加载、无链接的受限卡片和分页。
+[测试源码](https://github.com/yinyanfr/comic-dl-extensions/blob/main/extensions/zerobyw/test/zerobyw.test.js)用回环 HTTP 服务模拟站点和图片主机。写自己的扩展时，可以沿用三组断言：`list` 返回预期的稳定 ID 和阅读顺序；单章与系列路径使用同一归档身份且页序正确；Cookie 只到指定站点，受限章节、登录过期和解析失败能区分。还可以加入真实页面变体的脱敏样本，覆盖懒加载、无链接的受限卡片和分页。
 
 练习文件适合用 `--extension` 加载。准备分享时，按[独立打包指南](../develop/#独立打包)改成独立 ESM 包，声明自己的运行时依赖，并用 [API v1 规范](../../specs/source-extension-v1/)核对接口。

@@ -3,7 +3,7 @@ title: CopyManga（拷贝漫画）
 description: 用 CopyManga 匿名搜索、浏览和下载章节。
 ---
 
-CopyManga 的当前站点是 `https://www.copy20.com/`。通过[快速入门](../quickstart/)从仓库安装时，CopyManga 已经可用。如果使用独立打包产物，将 `@comic-dl/copymanga` 和核心安装到同一个 npm 项目即可自动加载。
+CopyManga 的当前站点是 `https://www.copy20.com/`。按[快速入门](../quickstart/)安装 CLI 后，运行 `comic-dl add @comic-dl/copymanga` 安装漫画源。
 
 ```sh
 comic-dl sources

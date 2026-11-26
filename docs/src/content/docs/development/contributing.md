@@ -14,18 +14,18 @@ npm test
 node dist/index.js --help
 ```
 
-`npm run check` 检查格式、类型和 lint；`npm test` 构建核心与扩展，并运行离线回归。用 `npm test --workspace @comic-dl/zerobyw` 单独运行 Zerobyw 测试。站点测试使用回环 HTTP 和最小 HTML 样本，不需要真实 Cookie。Husky 只检查暂存文件，提交前仍应运行完整检查。
+`npm run check` 检查格式、类型和 lint；`npm test` 构建核心并运行离线回归。CopyManga 和 Zerobyw 的源码和测试位于 [comic-dl-extensions](https://github.com/yinyanfr/comic-dl-extensions)。站点测试使用回环 HTTP 和最小 HTML 样本，不需要真实 Cookie。Husky 只检查暂存文件，提交前仍应运行完整检查。
 
 ## 代码边界
 
-| 路径                                           | 职责                                        |
-| ---------------------------------------------- | ------------------------------------------- |
-| `src/index.ts`、`src/config.ts`                | CLI、配置、展示和退出码                     |
-| `src/extension.ts`、`src/sources/`             | 公开扩展接口、源加载、HTTP 助手与内置测试源 |
-| `src/download.ts`                              | 下载编排、并发、暂态重试、取消和结果汇总    |
-| `src/output/`                                  | 安全输出路径、CBZ 写入与完整性检查          |
-| `extensions/zerobyw/`、`extensions/copymanga/` | 各源的识别、会话、站点解析与集成测试        |
-| `test/`                                        | 核心 CLI、下载和输出的回归测试              |
+| 路径                                       | 职责                                        |
+| ------------------------------------------ | ------------------------------------------- |
+| `src/index.ts`、`src/config.ts`            | CLI、配置、展示和退出码                     |
+| `src/library.ts`、`src/extension-store.ts` | 库入口、CLI 扩展安装和发现                  |
+| `src/extension.ts`、`src/sources/`         | 公开扩展接口、源加载、HTTP 助手与内置测试源 |
+| `src/download.ts`                          | 下载编排、并发、暂态重试、取消和结果汇总    |
+| `src/output/`                              | 安全输出路径、CBZ 写入与完整性检查          |
+| `test/`                                    | 核心 CLI、下载和输出的回归测试              |
 
 涉及站点的识别、认证和解析放在扩展侧。下载服务接收源给出的章节和有序页面，不解释站点 URL。写归档时，输出层先生成临时文件，再将完成的 CBZ 移到最终路径。当前实现会校验归档标记、页序和 CRC 才跳过已有归档；文件命名和标记格式属于实现细节。
 

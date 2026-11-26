@@ -3,7 +3,7 @@ title: 开发漫画源扩展
 description: 编写、测试和打包由 comic-dl 显式加载的漫画源。
 ---
 
-漫画源扩展是 Node.js 24 ESM 模块，通过 `--extension` 或配置加载；已安装的官方扩展也会自动加载。扩展负责输入识别、登录会话和站点解析；核心负责并发、章节重试、取消、CBZ 和退出码。扩展可以实现 `matchesUrl`，让 CLI 根据完整 URL 自动选源。
+漫画源扩展是独立发布的 Node.js 24 ESM 包。CLI 用户用 `comic-dl add <包名>` 安装，库用户通过 `.use()` 注册；开发时可用 `--extension` 或配置加载本地模块。扩展负责输入识别、登录会话和站点解析；核心负责并发、章节重试、取消、CBZ 和退出码。扩展可以实现 `matchesUrl`，让核心根据完整 URL 自动选源。
 
 想边写边跑，可以先跟着 [Zerobyw 动手教程](../zerobyw-walkthrough/)做一遍，从解析样本到生成第一个 CBZ。
 
@@ -55,19 +55,13 @@ export default {
 }
 ```
 
-[Zerobyw](https://github.com/yinyanfr/comic-dl/tree/main/extensions/zerobyw) 是完整实例。它用独立的 npm 包声明 HTML 解析依赖，核心包不依赖 Zerobyw 或该解析库。从仓库测试独立安装：
+[Zerobyw](https://github.com/yinyanfr/comic-dl-extensions/tree/main/extensions/zerobyw) 是完整实例。你可以在自己的仓库和 npm scope 下发布，也可以把多个扩展放在同一个 workspace，分别打包。CLI 安装时不运行生命周期脚本，发布的包应包含已编译入口。
+
+发布前在扩展项目运行 `npm pack`，再到一个临时 npm 项目测试生成的包：
 
 ```sh
-npm run build
-npm pack
-npm pack --workspace @comic-dl/zerobyw
+npm install comic-dl@3.0.0-alpha /path/to/example-comic-dl-source-0.1.0.tgz
+npm exec -- comic-dl sources --extension @example/comic-dl-source
 ```
 
-在另一个 npm 项目安装生成的两个包（用实际文件路径），然后运行：
-
-```sh
-npm install /path/to/comic-dl-0.0.0.tgz /path/to/comic-dl-zerobyw-0.0.0.tgz
-npm exec -- comic-dl sources --extension @comic-dl/zerobyw
-```
-
-扩展自己的回归测试宜用脱敏样本和回环 HTTP 服务覆盖页面顺序、认证过期、访问受限及重定向。仓库里的 [Zerobyw 测试](https://github.com/yinyanfr/comic-dl/blob/main/extensions/zerobyw/test/zerobyw.test.js) 通过真实 CLI 加载扩展，不使用账号，也不访问真实站点。根目录的 `npm test` 会运行这些测试，也可用 `npm test --workspace @comic-dl/zerobyw` 单独运行。
+扩展自己的回归测试宜用脱敏样本和回环 HTTP 服务覆盖页面顺序、认证过期、访问受限及重定向。[Zerobyw 测试](https://github.com/yinyanfr/comic-dl-extensions/blob/main/extensions/zerobyw/test/zerobyw.test.js)通过真实 CLI 加载扩展，无需账号或访问真实漫画站。在 `comic-dl-extensions` 仓库运行 `npm test --workspace @comic-dl/zerobyw` 可单独验证该扩展。

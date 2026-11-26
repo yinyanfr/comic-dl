@@ -1,15 +1,8 @@
-import { existsSync } from 'node:fs';
 import { isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { extensionApiVersion, sourceExtensionApi } from '../extension.js';
 import type { SourceExtension } from '../extension.js';
-import { fixtureSource } from './fixture.js';
 import type { ChapterSource } from './source.js';
-
-const officialPackages = {
-  copymanga: '@comic-dl/copymanga',
-  zerobyw: '@comic-dl/zerobyw',
-};
 
 export function isLocalExtensionPath(value: string) {
   return /^\.\.?(\/|\\)/.test(value);
@@ -19,11 +12,15 @@ export function isSourceId(value: unknown): value is string {
   return typeof value === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value);
 }
 
-function moduleSpecifier(input: string) {
+export function isPackageName(input: string) {
+  return /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/.test(input);
+}
+
+export function moduleSpecifier(input: string) {
   if (isAbsolute(input) || isLocalExtensionPath(input)) {
     return pathToFileURL(resolve(input)).href;
   }
-  if (/^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/.test(input)) {
+  if (isPackageName(input)) {
     return input;
   }
   throw new Error(
@@ -47,7 +44,7 @@ function isExtension(value: unknown): value is SourceExtension {
   );
 }
 
-async function importExtension(specifier: string, label: string) {
+export async function importExtension(specifier: string, label: string) {
   let extension: unknown;
   try {
     const module = (await import(specifier)) as { default?: unknown };
@@ -63,43 +60,28 @@ async function importExtension(specifier: string, label: string) {
   return extension;
 }
 
-function installedPackage(name: string) {
-  try {
-    const entry = import.meta.resolve(name);
-    if (existsSync(new URL(entry))) {
-      return entry;
-    }
-  } catch (error) {
-    if (
-      error instanceof Error &&
-      'code' in error &&
-      error.code === 'ERR_MODULE_NOT_FOUND'
-    ) {
-      return;
-    }
-    throw error;
-  }
-}
-
-export async function loadSources(
-  extensions: readonly string[],
-  signal: AbortSignal,
-) {
-  const sources = new Map<
+export class SourceRegistry {
+  #sources = new Map<
     string,
-    {
-      create: () => ChapterSource;
-      matchesUrl?: SourceExtension['matchesUrl'];
-    }
-  >([[fixtureSource.id, { create: () => fixtureSource }]]);
+    { label: string; create: () => ChapterSource; extension: SourceExtension }
+  >();
 
-  function register(extension: SourceExtension) {
-    const { id } = extension;
-    if (sources.has(id)) {
-      throw new Error(`Duplicate source ID: ${id}`);
+  use(extension: SourceExtension, label?: string) {
+    if (!isExtension(extension)) {
+      throw new Error(
+        `Invalid source extension${label ? ` ${label}` : ''}: expected API version ${extensionApiVersion} and a default export with id and create()`,
+      );
     }
-    sources.set(id, {
-      matchesUrl: extension.matchesUrl?.bind(extension),
+    const { id } = extension;
+    const previous = this.#sources.get(id);
+    if (previous) {
+      throw new Error(
+        `Duplicate source ID: ${id} (${previous.label}, ${label ?? id})`,
+      );
+    }
+    this.#sources.set(id, {
+      label: label ?? id,
+      extension,
       create() {
         const source = extension.create(sourceExtensionApi);
         if (
@@ -113,21 +95,36 @@ export async function loadSources(
         return source;
       },
     });
+    return this;
   }
-  for (const input of extensions) {
-    signal.throwIfAborted();
-    register(await importExtension(moduleSpecifier(input), input));
+
+  ids() {
+    return [...this.#sources.keys()];
   }
-  for (const [id, name] of Object.entries(officialPackages)) {
-    signal.throwIfAborted();
-    if (sources.has(id)) {
-      continue;
+
+  match(input: string, kind: 'series' | 'chapter') {
+    const url = URL.parse(input);
+    const matches =
+      url && /^https?:$/.test(url.protocol)
+        ? [...this.#sources].filter(([, { extension }]) =>
+            extension.matchesUrl?.(url, kind),
+          )
+        : [];
+    if (matches.length !== 1) {
+      throw new Error(
+        matches.length
+          ? `Multiple sources match this URL (${matches.map(([id]) => id).join(', ')}). Select a source explicitly.`
+          : 'No source matches this URL.',
+      );
     }
-    const specifier = installedPackage(name);
-    if (specifier) {
-      register(await importExtension(specifier, name));
-    }
+    return matches[0][0];
   }
-  signal.throwIfAborted();
-  return sources;
+
+  create(id: string) {
+    const entry = this.#sources.get(id);
+    if (!entry) {
+      throw new Error(`Unknown source: ${id}.`);
+    }
+    return entry.create();
+  }
 }

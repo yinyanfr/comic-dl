@@ -27,6 +27,7 @@ export default defineConfig({
           label: '使用指南',
           items: [
             'guide/quickstart',
+            'guide/library',
             'guide/config-tutorial',
             'guide/copymanga',
             'guide/fixture',

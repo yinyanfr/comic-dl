@@ -3,7 +3,14 @@ import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { nonempty, readConfig } from './config.js';
 import { downloadSeries } from './download.js';
-import { isSourceId, loadSources } from './sources/index.js';
+import {
+  extensionPackage,
+  manageExtensions,
+  withExtensions,
+} from './extension-store.js';
+import { extensionApiVersion } from './extension.js';
+import { fixtureSource } from './sources/fixture.js';
+import { isSourceId, SourceRegistry } from './sources/index.js';
 import type { Series } from './sources/source.js';
 
 const aliases = new Map([
@@ -12,6 +19,9 @@ const aliases = new Map([
   ['l', 'list'],
   ['c', 'chapter'],
   ['d', 'download'],
+  ['a', 'add'],
+  ['u', 'update'],
+  ['rm', 'remove'],
 ]);
 
 const usage = `Usage: comic-dl <command> [options]
@@ -22,12 +32,24 @@ Commands:
   list (l) <series-input>    List chapter IDs and titles
   chapter (c) <chapter-input> Download one chapter by its direct link
   download (d) <series-input> Download all or selected chapters of a series
+  add (a) <package>           Install an npm source extension
+  update (u) [package]       Update one or all managed extensions
+  remove (rm) <package>      Uninstall a managed extension
 
 Run comic-dl <command> --help for command options.
   -h, --help       Show help
   -V, --version    Show the installed version`;
 
 const commandHelp = {
+  add: `Usage: comic-dl add <package>[@version-or-tag]
+
+Install a published npm extension into the managed extension directory.`,
+  update: `Usage: comic-dl update [package]
+
+Update one or all installed extensions within their saved npm version ranges.`,
+  remove: `Usage: comic-dl remove <package>
+
+Uninstall a managed npm extension by package name.`,
   sources: `Usage: comic-dl sources [options]
 
 List available source IDs.`,
@@ -135,6 +157,23 @@ async function parseCommand(args: string[], signal: AbortSignal) {
   }
   if ((command === '--version' || command === '-V') && !rest.length) {
     return { command: 'version' } as const;
+  }
+  if (command === 'add' || command === 'update' || command === 'remove') {
+    const { values, positionals } = parseArgs({
+      args: rest,
+      options: { help },
+      allowPositionals: true,
+    });
+    if (values.help)
+      return { command: 'help', text: commandHelp[command] } as const;
+    if (positionals.length > 1)
+      throw new Error(`${command} accepts at most one package`);
+    extensionPackage(command, positionals[0]);
+    return {
+      command: 'manage',
+      action: command,
+      package: positionals[0],
+    } as const;
   }
   if (command === 'sources') {
     const { values } = parseArgs({ args: rest, options: commonOptions });
@@ -324,9 +363,30 @@ async function run(
     console.log(version);
     return 0;
   }
-  const sources = await loadSources(args.extensions, signal);
+  if (args.command === 'manage') {
+    await manageExtensions(args.action, args.package, signal);
+    return 0;
+  }
+  const sources = new SourceRegistry().use({
+    apiVersion: extensionApiVersion,
+    id: fixtureSource.id,
+    create: () => fixtureSource,
+  });
+  return withExtensions(sources, args.extensions, signal, () =>
+    runSourceCommand(args, sources, signal),
+  );
+}
+
+async function runSourceCommand(
+  args: Extract<
+    Awaited<ReturnType<typeof parseCommand>>,
+    { extensions: readonly string[] }
+  >,
+  sources: SourceRegistry,
+  signal: AbortSignal,
+) {
   if (args.command === 'sources') {
-    for (const id of sources.keys()) {
+    for (const id of sources.ids()) {
       console.log(id);
     }
     return 0;
@@ -335,26 +395,21 @@ async function run(
   let sourceId = args.sourceId;
   if (sourceId === undefined && args.command !== 'search') {
     const kind = args.command === 'chapter' ? 'chapter' : 'series';
-    const matches = [...sources]
-      .filter(([, source]) => source.matchesUrl?.(new URL(args.input), kind))
-      .map(([id]) => id);
-    if (matches.length !== 1) {
+    try {
+      sourceId = sources.match(args.input, kind);
+    } catch (error) {
       logError(
-        new Error(
-          matches.length
-            ? `Multiple sources match this URL (${matches.join(', ')}). Select one with --source.`
-            : 'No source matches this URL. Use --source or load the appropriate extension with --extension.',
-        ),
+        `${error instanceof Error ? error.message : String(error)} Install a source with comic-dl add <package> or select one with --source.`,
       );
       return 2;
     }
-    [sourceId] = matches;
   }
-  const entry = sourceId === undefined ? undefined : sources.get(sourceId);
-  if (!entry) {
-    throw new Error(`Unknown source: ${sourceId}. Load it with --extension.`);
+  if (!sourceId || !sources.ids().includes(sourceId)) {
+    throw new Error(
+      `Unknown source: ${sourceId}. Install it with comic-dl add <package> or load it with --extension.`,
+    );
   }
-  const source = entry.create();
+  const source = sources.create(sourceId);
   if (args.command === 'search') {
     if (!source.search) {
       throw new Error(`Source ${source.id} does not support search`);

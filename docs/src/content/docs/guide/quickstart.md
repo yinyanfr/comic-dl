@@ -7,7 +7,14 @@ comic-dl 将漫画每章保存为一个 CBZ。命令示例适用于 Bash / Zsh�
 
 ## 安装 comic-dl
 
-安装 Node.js 24（自带 npm），然后从仓库构建当前版本：
+安装 Node.js 24（自带 npm），再安装新版 CLI 的 alpha 版本。核心不附带在线漫画源。
+
+```sh
+npm install -g comic-dl@3.0.0-alpha
+comic-dl --help
+```
+
+如果要从源码构建，可以改用：
 
 ```sh
 node --version
@@ -19,13 +26,14 @@ npm link
 comic-dl --help
 ```
 
-`npm link` 让你可以在任意下载目录运行 `comic-dl`。也可以跳过这一步，在仓库里用 `node dist/index.js` 调用。若通过本地安装包使用，请把核心和需要的扩展安装到同一个 npm 项目，使用 `npm exec -- comic-dl`。打包方式见[独立打包](../../extensions/develop/#独立打包)。
+`npm link` 让你可以在任意下载目录运行 `comic-dl`。也可以跳过这一步，在仓库里用 `node dist/index.js` 调用。
 
 ## 从链接下载
 
-从仓库安装时已经包含 CopyManga 和 Zerobyw。进入希望保存漫画的目录，贴上作品链接即可下载：
+先安装 CopyManga 扩展，然后进入希望保存漫画的目录，贴上作品链接即可下载：
 
 ```sh
+comic-dl add @comic-dl/copymanga
 comic-dl d "https://www.copy20.com/comic/xiangkanbaitiantongxuederuanruobiaoqing"
 ```
 
@@ -39,12 +47,11 @@ comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --source copymanga -o ~/manga
 
 ## 使用 Zerobyw
 
-通过 `comic-dl sources` 确认列表中包含 `zerobyw`，或者用 `--extension @comic-dl/zerobyw` 显式加载扩展。为避免重复指定源和目录，可新建 `zerobyw.json`：
+运行 `comic-dl add @comic-dl/zerobyw` 安装扩展，再用 `comic-dl sources` 确认列表中包含 `zerobyw`。为避免重复指定源和目录，可新建 `zerobyw.json`：
 
 ```json
 {
   "version": 1,
-  "extensions": ["@comic-dl/zerobyw"],
   "source": "zerobyw",
   "output": "./downloads"
 }

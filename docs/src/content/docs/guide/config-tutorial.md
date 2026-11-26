@@ -54,11 +54,11 @@ mkdir "$demo/run"
 )
 ```
 
-这次 CBZ 会写到 `$demo/run/preview/`。命令行上的相对路径以**当前工作目录**为基准，且命令行选项优先于配置文件；`hello.json` 里的 `output` 不会被改写。类似地，`--source` 可临时替换默认源。传入 `--extension` 时会替换整个配置扩展列表，已安装的官方扩展仍会自动加载。
+这次 CBZ 会写到 `$demo/run/preview/`。命令行上的相对路径以**当前工作目录**为基准，且命令行选项优先于配置文件；`hello.json` 里的 `output` 不会被改写。类似地，`--source` 可临时替换默认源。传入 `--extension` 时会替换整个配置扩展列表，用 `add` 安装的扩展仍会加载。
 
 ## 4. 为日常下载保存一份配置
 
-在希望存放下载目录的位置创建 `copymanga.json`。从仓库安装时，CopyManga 已自动加载，所以这里可以省略 `extensions`。
+先运行 `comic-dl add @comic-dl/copymanga`，再在希望存放下载目录的位置创建 `copymanga.json`。用 `add` 安装的扩展会自动加载，所以这里可以省略 `extensions`。
 
 ```json
 {
