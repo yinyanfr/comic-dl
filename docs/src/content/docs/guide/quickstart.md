@@ -5,15 +5,17 @@ description: 安装 comic-dl CLI，并添加、更新或移除独立的漫画源
 
 ## 安装 comic-dl
 
-先安装 Node.js 24（自带 npm），再安装 CLI。
+先安装 Node.js 24（自带 npm），再安装最新版本的 CLI。
 
 ```sh
 node --version
-npm install -g comic-dl
+npm install -g comic-dl@latest
 comic-dl --version
 ```
 
 核心不含在线漫画源。要下载某个网站或自托管书库的漫画，先添加相应的扩展。
+
+已安装旧版时，重新运行上面的安装命令即可升级到最新版本。升级后可继续使用已安装的漫画源，并按[书架指南](../../shelf/manage/)开始使用书架和自动追更。
 
 ## 添加漫画源
 

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { isLocalExtensionPath, isSourceId } from './sources/index.js';
 
 export interface CliConfig {
@@ -19,6 +19,16 @@ export function outputPath(output: string, base = process.cwd()) {
   if (output === '~') return homedir();
   if (/^~[/\\]/.test(output)) return resolve(homedir(), `./${output.slice(2)}`);
   return resolve(base, output);
+}
+
+export function userDataDirectory() {
+  const base =
+    process.platform === 'win32'
+      ? process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local')
+      : isAbsolute(process.env.XDG_DATA_HOME ?? '')
+        ? process.env.XDG_DATA_HOME!
+        : join(homedir(), '.local', 'share');
+  return join(base, 'comic-dl');
 }
 
 export async function readConfig(

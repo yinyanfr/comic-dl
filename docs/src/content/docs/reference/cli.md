@@ -12,6 +12,7 @@ description: 查阅命令、可用选项、标准输出和退出码。
 | `list <series-input>`     | `l`   | 列出作品章节的稳定 ID 与标题                             |
 | `chapter <chapter-input>` | `c`   | 使用章节直链或源定义的标识下载一章                       |
 | `download <series-input>` | `d`   | 下载整个系列或指定章节                                   |
+| `shelf <action>`          |       | 收藏不同来源的作品、管理订阅并自动追更                   |
 | `add <package>`           | `a`   | 安装 npm 源扩展，可附加 `@版本` 或 `@标签`               |
 | `update [package]`        | `u`   | 按已保存的版本范围更新单个或全部扩展                     |
 | `remove <package>`        | `rm`  | 卸载 CLI 管理的扩展                                      |
@@ -58,6 +59,30 @@ comic-dl remove @comic-dl/zerobyw
 ### 选择章节
 
 `-c 2-4` 选择当前章节列表中按阅读顺序排列的第 2 到第 4 项（含两端）。位置从 `1` 开始，与站点的章节标题和稳定 ID 无关；`list` 的输出顺序就是范围使用的顺序。也可用 `-c <id>` 指定 `list` 输出第一列的稳定 ID；若输入恰好与某个 ID 相同，优先按 ID 处理。可以重复传入 `-c` 混用范围和 ID，命令会先校验所有选择，再按阅读顺序下载，每章只处理一次。范围倒序、超界或 ID 不存在时返回 `2`，且不会开始下载。
+
+### 管理跨来源书架
+
+| 命令                                 | 用途                                                |
+| ------------------------------------ | --------------------------------------------------- |
+| `shelf add <series-input>`           | 收藏作品，可选 `--source <id>` 和 `--title <title>` |
+| `shelf list`                         | 输出条目 ID、来源、订阅状态和标题，以制表符分隔     |
+| `shelf follow <entry-id>`            | 开启订阅                                            |
+| `shelf unfollow <entry-id>`          | 暂停追更，保留收藏及检查记录                        |
+| `shelf set-input <entry-id> <input>` | 修改同一作品的定位输入                              |
+| `shelf remove <entry-id>`            | 移除条目和订阅，保留已下载的 CBZ                    |
+
+所有书架子命令都接受 `--shelf-db <file>`。`shelf add`、`set-input`、`check` 和 `watch` 也接受 `--config` 和 `--extension`；其他书架操作可离线执行。完整流程见[管理跨来源书架](../../shelf/manage/)。
+
+### 检查更新和自动下载
+
+| 命令                                  | 用途                                                         |
+| ------------------------------------- | ------------------------------------------------------------ |
+| `shelf check [entry-id]`              | 检查全部或指定订阅；指定条目时可加 `--include-history`       |
+| `shelf status [entry-id]`             | 离线查询检查和下载状态                                       |
+| `shelf watch`                         | 在前台定期检查并下载，需指定 `--output <dir>` 或在配置中设置 |
+| `shelf retry <entry-id> <chapter-id>` | 重新排队指定失败或受限章节                                   |
+
+`watch` 支持 `--interval <seconds>`（默认 `3600`）、`--jobs <n>`（默认 `2`）和 `--require-output-marker <name>`（标记文件不可用时推迟下载）。详见[检查更新与自动下载](../../shelf/updates/)。
 
 ### 脚本输出与退出码
 

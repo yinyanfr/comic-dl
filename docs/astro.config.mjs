@@ -42,6 +42,11 @@ export default defineConfig({
           ],
         },
         {
+          label: '书架与自动追更',
+          translations: { en: 'Shelf and automatic updates' },
+          items: ['shelf/manage', 'shelf/updates'],
+        },
+        {
           label: '扩展开发',
           translations: { en: 'Extension development' },
           items: ['extensions/develop', 'extensions/zerobyw-walkthrough'],

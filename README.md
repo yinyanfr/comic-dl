@@ -30,6 +30,12 @@ comic-dl sources
 
 `comic-dl update @comic-dl/copymanga` 更新单个扩展，`comic-dl update` 更新全部，`comic-dl remove @comic-dl/copymanga` 卸载。我们维护的扩展位于 [comic-dl-extensions](https://github.com/yinyanfr/comic-dl-extensions)；第三方也可独立发布 npm 包。
 
+## 跨来源书架与自动追更
+
+从 3.1.0 起，可以用 `comic-dl shelf add` 把不同来源的作品收藏到同一个本地书架，再用 `shelf follow <条目 ID>` 订阅。`shelf check` 手动检查并登记新章，`shelf watch --output ~/manga` 定时检查并把队列中的章节保存为 CBZ。首次成功检查默认只记录已有章节；要补下载，可用 `shelf check <条目 ID> --include-history`。
+
+详见[管理书架](https://yinyanfr.github.io/comic-dl/shelf/manage/)和[检查更新与自动下载](https://yinyanfr.github.io/comic-dl/shelf/updates/)。
+
 ## 在项目中使用
 
 ```sh

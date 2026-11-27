@@ -7,8 +7,10 @@ Version 3.x is a TypeScript rewrite. This guide uses `2.4.0` as the baseline. Ke
 
 ## Install the new CLI and its sources
 
+Install the latest version and verify that the CLI has been updated:
+
 ```sh
-npm install -g comic-dl@3.0.0
+npm install -g comic-dl@latest
 comic-dl --version
 comic-dl add @comic-dl/copymanga
 comic-dl sources
@@ -16,7 +18,7 @@ comic-dl sources
 
 The new CLI requires Node.js 24. CopyManga and Zerobyw were bundled in 2.x; in 3.x they are provided by `@comic-dl/copymanga` and `@comic-dl/zerobyw`. Install each once and the CLI loads it automatically. The old Ganma module is not bundled in 3.x. See the [extensions repository](https://github.com/yinyanfr/comic-dl-extensions/blob/main/README.en.md) for available sources, current URLs, and login requirements.
 
-Pin the version explicitly if your scripts use `npx comic-dl`. The new commands below assume `comic-dl --version` reports `3.0.0`.
+Pin the version explicitly if your scripts use `npx comic-dl`. To save series and subscribe to new chapters after upgrading, see the [shelf guide](../../shelf/manage/).
 
 ## Update commands and chapter selection
 
