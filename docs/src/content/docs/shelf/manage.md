@@ -5,7 +5,7 @@ description: 收藏不同漫画源的作品、管理订阅，并选择本地书�
 
 书架把不同来源的作品保存在同一个本地数据库里。收藏和订阅是两件事：你可以只收藏作品，也可以订阅它，让 comic-dl [检查和下载新章节](../updates/)。
 
-示例以 Bash / Zsh 为例，假设已[安装 CLI 并添加漫画源](../../guide/quickstart/)。如果安装的是 npm 上的 `3.0.0`，需要在仓库根目录运行 `npm ci` 和 `npm run build`，再把下文的 `comic-dl` 换成 `node dist/index.js`。可用 `comic-dl shelf --help` 确认当前 CLI 是否包含书架命令。
+以下 Bash / Zsh 示例假设已[安装最新版本的 CLI 并添加漫画源](../../guide/quickstart/)。如果运行 `comic-dl shelf --help` 时提示命令不存在，请先升级。
 
 ## 收藏作品
 
@@ -53,7 +53,7 @@ comic-dl shelf set-input "$entry_id" "$new_series_url"
 
 ## 选择书架数据库
 
-默认数据库是 `$XDG_DATA_HOME/comic-dl/shelf.sqlite`；未设置该变量时使用 `~/.local/share/comic-dl/shelf.sqlite`。Windows 默认位置为 `%LOCALAPPDATA%\comic-dl\shelf.sqlite`。如果希望试用独立书架，或在服务中明确指定路径，可以给每条书架命令传同一个 `--shelf-db <文件>`：
+默认数据库是 `$XDG_DATA_HOME/comic-dl/shelf.sqlite`；该变量未设置或不是绝对路径时，使用 `~/.local/share/comic-dl/shelf.sqlite`。Windows 默认位置为 `%LOCALAPPDATA%\comic-dl\shelf.sqlite`。如果希望试用独立书架，或在服务中明确指定路径，可以给每条书架命令传同一个 `--shelf-db <文件>`：
 
 ```sh
 comic-dl shelf list --shelf-db "$HOME/test-shelf.sqlite"

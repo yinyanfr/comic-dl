@@ -5,7 +5,7 @@ description: Save series from different manga sources, manage subscriptions, and
 
 The shelf keeps series from different sources in one local database. Saving a series and subscribing to it are separate actions: you can keep it on the shelf, or subscribe so comic-dl can [check for and download new chapters](../updates/).
 
-These Bash / Zsh examples assume you have [installed the CLI and added a source](../../guide/quickstart/). If you installed `3.0.0` from npm, run `npm ci` and `npm run build` from the repository root, then replace `comic-dl` in these examples with `node dist/index.js`. Run `comic-dl shelf --help` to check whether your CLI has the shelf commands.
+These Bash / Zsh examples assume you have [installed the latest CLI and added a source](../../guide/quickstart/). If `comic-dl shelf --help` reports an unknown command, upgrade the CLI first.
 
 ## Save a series
 
@@ -53,7 +53,7 @@ Set `new_series_url` to a new series URL or another input supported by the sourc
 
 ## Choose a shelf database
 
-The default database is `$XDG_DATA_HOME/comic-dl/shelf.sqlite`, or `~/.local/share/comic-dl/shelf.sqlite` if that variable is unset. On Windows, the default is `%LOCALAPPDATA%\comic-dl\shelf.sqlite`. To try an isolated shelf or set an explicit path for a service, pass the same `--shelf-db <file>` to each shelf command:
+The default database is `$XDG_DATA_HOME/comic-dl/shelf.sqlite`, or `~/.local/share/comic-dl/shelf.sqlite` if the variable is unset or is not an absolute path. On Windows, the default is `%LOCALAPPDATA%\comic-dl\shelf.sqlite`. To try an isolated shelf or set an explicit path for a service, pass the same `--shelf-db <file>` to each shelf command:
 
 ```sh
 comic-dl shelf list --shelf-db "$HOME/test-shelf.sqlite"

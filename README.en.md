@@ -32,9 +32,9 @@ Run `comic-dl update @comic-dl/copymanga` to update one extension, `comic-dl upd
 
 ## Cross-source shelf and automatic updates
 
-Use `comic-dl shelf add` to save series from different sources to one local shelf, then use `shelf follow` to subscribe to the ones you want to keep up with. Run `shelf check` to check manually, or `shelf watch --output ~/manga` to check periodically and download new chapters as CBZ files. The first successful check records existing chapters; downloading them is opt-in.
+Since 3.1.0, you can use `comic-dl shelf add` to save series from different sources to one local shelf and `shelf follow <entry-id>` to subscribe. Run `shelf check` to check manually and queue new chapters, or `shelf watch --output ~/manga` to check periodically and download queued chapters as CBZ files. The first successful check only records existing chapters by default. To queue them too, use `shelf check <entry-id> --include-history`.
 
-See [Manage your shelf](https://yinyanfr.github.io/comic-dl/en/shelf/manage/) and [Check updates and download automatically](https://yinyanfr.github.io/comic-dl/en/shelf/updates/). These commands are not in the npm `3.0.0` release; build from this repository to try them.
+See [Manage your shelf](https://yinyanfr.github.io/comic-dl/en/shelf/manage/) and [Check updates and download automatically](https://yinyanfr.github.io/comic-dl/en/shelf/updates/).
 
 ## Use as a library
 

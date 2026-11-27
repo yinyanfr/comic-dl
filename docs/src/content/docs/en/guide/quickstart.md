@@ -5,15 +5,17 @@ description: Install the comic-dl CLI, then add, update, or remove source extens
 
 ## Install comic-dl
 
-Install Node.js 24 (which includes npm), then install the CLI.
+Install Node.js 24 (which includes npm), then install the latest version of the CLI.
 
 ```sh
 node --version
-npm install -g comic-dl
+npm install -g comic-dl@latest
 comic-dl --version
 ```
 
 The core package does not bundle online manga sources. Add an extension for the site or self-hosted library you want to use.
+
+If you already have the CLI, rerun the install command above to upgrade to the latest version. Installed source extensions remain available after upgrading. See the [shelf guide](../../shelf/manage/) to get started with the shelf and automatic updates.
 
 ## Add a manga source
 

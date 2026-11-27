@@ -32,9 +32,9 @@ comic-dl sources
 
 ## 跨来源书架与自动追更
 
-用 `comic-dl shelf add` 把不同来源的作品收藏到同一个本地书架，再用 `shelf follow` 订阅想追更的作品。`shelf check` 手动检查更新，`shelf watch --output ~/manga` 定时检查并把新章节保存为 CBZ。首次成功检查只记录已有章节；需要补下载时可显式选择。
+从 3.1.0 起，可以用 `comic-dl shelf add` 把不同来源的作品收藏到同一个本地书架，再用 `shelf follow <条目 ID>` 订阅。`shelf check` 手动检查并登记新章，`shelf watch --output ~/manga` 定时检查并把队列中的章节保存为 CBZ。首次成功检查默认只记录已有章节；要补下载，可用 `shelf check <条目 ID> --include-history`。
 
-详见[管理书架](https://yinyanfr.github.io/comic-dl/shelf/manage/)和[检查更新与自动下载](https://yinyanfr.github.io/comic-dl/shelf/updates/)。这些命令尚未随 npm 上的 `3.0.0` 发布，可从本仓库构建后试用。
+详见[管理书架](https://yinyanfr.github.io/comic-dl/shelf/manage/)和[检查更新与自动下载](https://yinyanfr.github.io/comic-dl/shelf/updates/)。
 
 ## 在项目中使用
 

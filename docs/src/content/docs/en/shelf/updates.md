@@ -13,7 +13,7 @@ comic-dl shelf check "$entry_id"
 comic-dl shelf status
 ```
 
-`shelf check` scans all subscriptions, or just the one you specify. It reads the catalog and queues chapters without downloading images. `baseline` means the first check succeeded, `updated` means chapters were queued, and `unchanged` means there are no new tasks. If a source check fails, the CLI continues checking other subscriptions.
+`shelf check` scans all active subscriptions, or just the one you specify. It reads the catalog and queues chapters without downloading images. `baseline` means the first check succeeded, `updated` means chapters were queued, and `unchanged` means there are no new tasks. If a source check fails, the CLI continues checking other subscriptions and exits with `1`. If the specified entry is not followed or does not exist, it exits with `2`.
 
 By default, the first successful check only records the current catalog. Later checks queue chapter IDs that have never been seen. Renaming, reordering, or restoring an existing chapter does not queue it again. A new ID still counts if it appears earlier in the reading order.
 
@@ -31,7 +31,7 @@ comic-dl shelf check "$entry_id" --include-history
 comic-dl shelf watch --output "$HOME/manga" --interval 1800 --jobs 2
 ```
 
-`watch` runs in the foreground. It handles checks and downloads that are due when it starts. Press `Ctrl+C` to stop it. `--interval` is in seconds and defaults to one hour. `--jobs` controls how many chapters download at once and defaults to `2`. An output directory is required, either on the command line or in a [configuration file](../../guide/config-tutorial/). All subscriptions write their CBZ files directly to that directory, without creating series subdirectories.
+`watch` runs in the foreground. It handles checks and downloads that are due when it starts. Press `Ctrl+C` to stop it. `--interval` is in seconds and defaults to one hour. `--jobs` controls how many chapters download at once and defaults to `2`. Pass `--config <file>` to read `output`, `jobs`, and `retries` from a [configuration file](../../guide/config-tutorial/). The command-line `--output` and `--jobs` take precedence. An output directory is required. All subscriptions write their CBZ files directly to that directory, without creating series subdirectories.
 
 Run one watcher per shelf database. On restart, it continues processing the saved queue and skips existing CBZ files that pass integrity checks. To keep the watcher running on a server, use its service manager to launch the foreground command. Use the same shelf database for the service and manual commands. If an extension requires authentication, provide its credentials to the service process as described by the extension.
 
