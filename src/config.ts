@@ -2,6 +2,8 @@ import { readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { isLocalExtensionPath, isSourceId } from './sources/index.js';
+import { assignment, isOptionKey, isOptionValue } from './source-options.js';
+import type { OptionValues, SettingsBySource } from './source-options.js';
 
 export interface CliConfig {
   extensions?: string[];
@@ -9,10 +11,64 @@ export interface CliConfig {
   output?: string;
   jobs?: number;
   retries?: number;
+  sourceSettings?: SettingsBySource;
+}
+
+function record(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readSourceSettings(value: unknown): SettingsBySource {
+  if (!record(value))
+    throw new Error('Config "sourceSettings" must be an object');
+  return Object.fromEntries(
+    Object.entries(value).map(([id, settings]) => {
+      if (
+        !isSourceId(id) ||
+        !record(settings) ||
+        Object.entries(settings).some(
+          ([key, entry]) => !isOptionKey(key) || !isOptionValue(entry),
+        )
+      ) {
+        throw new Error(
+          'Config "sourceSettings" requires source IDs and scalar settings with valid keys',
+        );
+      }
+      return [id, settings as OptionValues];
+    }),
+  );
+}
+
+export function sourceOverrides(
+  inputs: readonly string[] = [],
+): SettingsBySource {
+  const overrides = new Map<string, Record<string, string>>();
+  for (const input of inputs) {
+    const [path, value] = assignment(input, '--set');
+    const [id, key, extra] = path.split('.');
+    if (!isSourceId(id) || !key || !isOptionKey(key) || extra !== undefined) {
+      throw new Error('--set requires <source-id>.<key>=<value>');
+    }
+    const settings =
+      overrides.get(id) ?? (Object.create(null) as Record<string, string>);
+    settings[key] = value;
+    overrides.set(id, settings);
+  }
+  return Object.fromEntries(overrides);
 }
 
 export function nonempty(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+export function isOutputMarker(value: string) {
+  return (
+    nonempty(value) &&
+    !/[/\\]/u.test(value) &&
+    !value.includes('\0') &&
+    value !== '.' &&
+    value !== '..'
+  );
 }
 
 export function outputPath(output: string, base = process.cwd()) {
@@ -32,8 +88,8 @@ export function userDataDirectory() {
 }
 
 export async function readConfig(
-  file: string | undefined,
-  signal: AbortSignal,
+  file?: string,
+  signal: AbortSignal = new AbortController().signal,
 ): Promise<CliConfig> {
   if (file === undefined) {
     return {};
@@ -69,13 +125,14 @@ export async function readConfig(
     'output',
     'jobs',
     'retries',
+    'sourceSettings',
   ];
   if (Object.keys(fields).some((key) => !allowed.includes(key))) {
     throw new Error(
       `Config contains an unknown field. Allowed fields: ${allowed.join(', ')}`,
     );
   }
-  const { extensions, source, output, jobs, retries } = fields;
+  const { extensions, source, output, jobs, retries, sourceSettings } = fields;
   if (
     extensions !== undefined &&
     (!Array.isArray(extensions) || !extensions.every(nonempty))
@@ -99,6 +156,10 @@ export async function readConfig(
     ),
     source,
     output: output === undefined ? undefined : outputPath(output, directory),
+    sourceSettings:
+      sourceSettings === undefined
+        ? undefined
+        : readSourceSettings(sourceSettings),
     jobs: jobs === undefined ? undefined : configInteger('jobs', jobs, 1),
     retries:
       retries === undefined ? undefined : configInteger('retries', retries, 0),

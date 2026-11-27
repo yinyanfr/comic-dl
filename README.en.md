@@ -23,7 +23,7 @@ CBZ files go straight into the output directory. If you download multiple series
 Use Node.js 24. The core package does not bundle online sources; add them to the CLI separately:
 
 ```sh
-npm install -g comic-dl
+npm install -g comic-dl@latest
 comic-dl add @comic-dl/copymanga
 comic-dl sources
 ```
@@ -39,7 +39,7 @@ See [Manage your shelf](https://yinyanfr.github.io/comic-dl/en/shelf/manage/) an
 ## Use as a library
 
 ```sh
-npm install comic-dl @comic-dl/zerobyw
+npm install comic-dl@latest @comic-dl/zerobyw
 ```
 
 ```typescript
@@ -58,10 +58,12 @@ console.log(results);
 
 See the [Zerobyw extension README](https://github.com/yinyanfr/comic-dl-extensions/blob/main/extensions/zerobyw/README.en.md) for session setup.
 
+Independent Node.js services and Web UI backends can use the library API to search, download selected chapters, manage the shelf and subscriptions, run automatic updates, and install, update, or remove extensions. They can share the CLI's shelf and extension store or use separate paths. See the [library guide](https://yinyanfr.github.io/comic-dl/en/guide/library/).
+
 ## Documentation
 
 - [Install comic-dl and add sources](https://yinyanfr.github.io/comic-dl/en/guide/quickstart/) and [basic usage](https://yinyanfr.github.io/comic-dl/en/guide/basic/)
 - [Advanced usage](https://yinyanfr.github.io/comic-dl/en/guide/advanced/), [configuration files](https://yinyanfr.github.io/comic-dl/en/guide/config-tutorial/), and [CLI reference](https://yinyanfr.github.io/comic-dl/en/reference/cli/)
-- [Use as a library](https://yinyanfr.github.io/comic-dl/en/guide/library/)
+- [Use as a library](https://yinyanfr.github.io/comic-dl/en/guide/library/): CLI-to-API reference, shelf updates, and extension management examples
 - [Upgrade from 2.x to 3.x](https://yinyanfr.github.io/comic-dl/en/migration/v2-to-v3/)
 - [Contribute to the project](https://yinyanfr.github.io/comic-dl/en/development/contributing/), [test locally](https://yinyanfr.github.io/comic-dl/en/development/local-testing/), or [build a source extension](https://yinyanfr.github.io/comic-dl/en/extensions/develop/)

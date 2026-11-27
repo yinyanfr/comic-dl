@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
+import { extensionApiVersion } from '../extension.js';
+import type { SourceExtension } from '../extension.js';
 import { imageExtensions } from './source.js';
 import type { Chapter, ChapterSource, Page } from './source.js';
 
@@ -120,4 +122,10 @@ export const fixtureSource: ChapterSource = {
     });
     return { id, chapters };
   },
+};
+
+export const fixtureExtension: SourceExtension = {
+  apiVersion: extensionApiVersion,
+  id: fixtureSource.id,
+  create: () => fixtureSource,
 };

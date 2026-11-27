@@ -5,6 +5,22 @@ import {
   TransientSourceError,
 } from './sources/source.js';
 import type { ChapterSource } from './sources/source.js';
+import type {
+  CatalogCapabilities,
+  OptionValues,
+  SettingDefinition,
+} from './source-options.js';
+
+export type {
+  CatalogCapabilities,
+  CatalogMode,
+  CatalogOptions,
+  OptionChoice,
+  OptionDefinition,
+  OptionValue,
+  OptionValues,
+  SettingDefinition,
+} from './source-options.js';
 
 export type {
   Chapter,
@@ -30,6 +46,14 @@ export type SourceExtensionApi = typeof sourceExtensionApi;
 export interface SourceExtension {
   readonly apiVersion: typeof extensionApiVersion;
   readonly id: string;
-  matchesUrl?(url: URL, kind: 'series' | 'chapter'): boolean;
-  create(api: SourceExtensionApi): ChapterSource;
+  readonly settings?: Readonly<Record<string, SettingDefinition>>;
+  readonly catalog?: CatalogCapabilities;
+  /** Optional site-specific validation of resolved, non-secret settings. */
+  validateSettings?(settings: OptionValues): void;
+  matchesUrl?(
+    url: URL,
+    kind: 'series' | 'chapter',
+    settings?: OptionValues,
+  ): boolean;
+  create(api: SourceExtensionApi, settings?: OptionValues): ChapterSource;
 }

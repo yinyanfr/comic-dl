@@ -56,6 +56,12 @@ See [local development testing](../../development/local-testing/) for the `--fix
 
 `--source` takes precedence over the configured `source`. If neither is set, `list`, `chapter`, and `download` ask loaded extensions to match the full URL. If none or several match, check the installed extensions or select a source explicitly. Short series IDs and search queries require a source ID on the command line or in configuration.
 
+### Browse, sort, and filter
+
+`search --source <id> --options` lists catalog sorts and filters as JSON. Include a keyword to see the options available for keyword search instead. Choose a sort with `--sort <id>` and pass `--filter <key>=<value>` once per filter key. Keep the query, sort, and filters when requesting another `--page <n>`. Options the source does not declare are rejected. `list` still prints chapters in reading order.
+
+Use `sources --source <id> --options` to discover source settings. See the [configuration reference](../config/) for overrides.
+
 ### Select chapters
 
 `-c 2-4` selects entries 2 through 4, inclusive. Positions start at `1`, follow the order shown by `list`, and are independent of titles or stable IDs. Pass `-c <id>` to use an ID from the first column of `list`. An exact ID match takes precedence over a range. Repeat `-c` to combine IDs and ranges: the CLI validates all selections before downloading, then processes each selected chapter once in reading order. Reversed or out-of-bounds ranges and unknown IDs exit with `2` before downloading.
@@ -71,7 +77,7 @@ See [local development testing](../../development/local-testing/) for the `--fix
 | `shelf set-input <entry-id> <input>` | Change the input for the same work                                       |
 | `shelf remove <entry-id>`            | Remove the entry and subscription while keeping downloaded CBZ files     |
 
-All shelf commands accept `--shelf-db <file>`. `shelf add`, `set-input`, `check`, and `watch` also accept `--config` and `--extension`; other shelf commands work offline. See [Manage a cross-source shelf](../../shelf/manage/) for the full workflow.
+All shelf commands accept `--shelf-db <file>`. `shelf add`, `set-input`, `check`, and `watch` also accept `--config`, `--extension`, and `--set`; other shelf commands work offline. See [Manage a cross-source shelf](../../shelf/manage/) for the full workflow.
 
 ### Check updates and download automatically
 

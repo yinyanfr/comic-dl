@@ -19,6 +19,23 @@ Pass `--config` explicitly. CLI options take precedence over configuration value
 
 See the [configuration v1 specification](../../specs/config-v1/) for supported fields and validation rules.
 
+## Runtime source settings
+
+Run `comic-dl sources --source <id> --options` to see the extension's settings, defaults, and allowed choices. Save overrides by source ID under `sourceSettings`, for example:
+
+```json
+{
+  "version": 1,
+  "sourceSettings": {
+    "copymanga": { "site-url": "https://www.copy20.com" }
+  }
+}
+```
+
+Load the file with `--config <file>`, or repeat `--set <id>.<key>=<value>` to override individual settings for one invocation. Precedence is `--set`, the config file, any legacy environment variable declared by the extension, then the extension default. Cookies, passwords, and API keys are still managed by extensions.
+
+These settings also apply to URL matching and online shelf actions. Restart `shelf watch` after changing its config.
+
 ## Environment variables
 
 `COMIC_DL_EXTENSION_DIR` overrides the CLI's [extension installation directory](../cli/#install-and-manage-sources). Each source defines its own authentication variables; for example, Zerobyw uses `COMIC_DL_ZEROBYW_COOKIE`. Keep credentials out of the CLI config and consult the [extension README](https://github.com/yinyanfr/comic-dl-extensions/blob/main/README.en.md) for setup and renewal.

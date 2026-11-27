@@ -4,7 +4,7 @@ import {
   RestrictedChapterError,
   TransientSourceError,
 } from './sources/source.js';
-import type { Chapter, Page, Series } from './sources/source.js';
+import type { Chapter, ChapterSource, Page, Series } from './sources/source.js';
 
 export type ChapterResult = { chapterId: string; attempts: number } & (
   | { status: 'downloaded' | 'skipped'; path: string }
@@ -12,6 +12,61 @@ export type ChapterResult = { chapterId: string; attempts: number } & (
 );
 
 export const defaultRetries = 2;
+export const defaultJobs = 2;
+
+export async function resolveDownloadSeries(
+  source: ChapterSource,
+  input: string,
+  direct: boolean,
+  signal: AbortSignal,
+): Promise<Series> {
+  if (!direct) return source.getSeries(input, signal);
+  const { workId, chapter } = await source.getChapter(input, signal);
+  return { id: workId, chapters: [chapter] };
+}
+
+export function selectChapters(
+  series: Series,
+  selections: readonly string[],
+  allowRanges = true,
+): Series {
+  const byId = new Map(
+    series.chapters.map((chapter, index) => [chapter.id, index]),
+  );
+  const selected = new Set<number>();
+  const unknown = new Set<string>();
+  for (const selection of selections) {
+    const index = byId.get(selection);
+    if (index !== undefined) {
+      selected.add(index);
+      continue;
+    }
+    const range = allowRanges && /^(\d+)-(\d+)$/.exec(selection);
+    if (!range) {
+      unknown.add(selection);
+      continue;
+    }
+    const first = Number(range[1]);
+    const last = Number(range[2]);
+    if (first < 1 || first > last || last > series.chapters.length) {
+      throw new Error(
+        `Invalid chapter range ${JSON.stringify(selection)}: use an ascending range within 1-${series.chapters.length}.`,
+      );
+    }
+    for (let index = first - 1; index < last; index++) {
+      selected.add(index);
+    }
+  }
+  if (unknown.size) {
+    throw new Error(
+      `Unknown chapter ID(s): ${[...unknown].map((id) => JSON.stringify(id)).join(', ')}.`,
+    );
+  }
+  return {
+    ...series,
+    chapters: series.chapters.filter((_, index) => selected.has(index)),
+  };
+}
 
 interface DownloadOptions {
   directory: string;

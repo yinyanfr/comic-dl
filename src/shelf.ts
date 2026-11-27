@@ -5,19 +5,8 @@ import Database from 'better-sqlite3';
 import { nonempty, outputPath } from './config.js';
 import { retrySourceRead } from './download.js';
 import { ShelfTracking, trackingSchema } from './shelf-tracking.js';
+import type { ShelfEntry } from './shelf-types.js';
 import type { SourceRegistry } from './sources/index.js';
-
-export interface ShelfEntry {
-  id: string;
-  sourceId: string;
-  workId: string;
-  input: string;
-  title: string;
-  following: 0 | 1;
-  createdAt: string;
-  updatedAt: string;
-  revision: number;
-}
 
 const schemaVersion = 2;
 const columns = `

@@ -56,6 +56,12 @@ comic-dl remove @comic-dl/zerobyw
 
 `--source` 优先于配置中的 `source`。两者都未指定时，`list`、`chapter` 和 `download` 会让已加载的扩展识别完整 URL；匹配不到或有多个来源匹配时，会提示检查扩展或显式选源。作品短 ID 和搜索关键词需要指定源或使用配置中的默认源。
 
+### 浏览、排序和筛选
+
+`search --source <id> --options` 返回浏览目录的排序和筛选选项（JSON）。加上关键词可查询该来源在关键词搜索中支持的选项。用 `--sort <id>` 选择排序，用 `--filter <key>=<value>` 指定筛选，可重复指定不同的键。要翻页，保留相同的关键词、排序和筛选，并传入 `--page <n>`。来源未声明的选项会报错。`list` 仍按阅读顺序列出作品的章节。
+
+插件设置可用 `sources --source <id> --options` 查看，覆盖方式见[配置参考](../config/)。
+
 ### 选择章节
 
 `-c 2-4` 选择当前章节列表中按阅读顺序排列的第 2 到第 4 项（含两端）。位置从 `1` 开始，与站点的章节标题和稳定 ID 无关；`list` 的输出顺序就是范围使用的顺序。也可用 `-c <id>` 指定 `list` 输出第一列的稳定 ID；若输入恰好与某个 ID 相同，优先按 ID 处理。可以重复传入 `-c` 混用范围和 ID，命令会先校验所有选择，再按阅读顺序下载，每章只处理一次。范围倒序、超界或 ID 不存在时返回 `2`，且不会开始下载。
@@ -71,7 +77,7 @@ comic-dl remove @comic-dl/zerobyw
 | `shelf set-input <entry-id> <input>` | 修改同一作品的定位输入                              |
 | `shelf remove <entry-id>`            | 移除条目和订阅，保留已下载的 CBZ                    |
 
-所有书架子命令都接受 `--shelf-db <file>`。`shelf add`、`set-input`、`check` 和 `watch` 也接受 `--config` 和 `--extension`；其他书架操作可离线执行。完整流程见[管理跨来源书架](../../shelf/manage/)。
+所有书架子命令都接受 `--shelf-db <file>`。`shelf add`、`set-input`、`check` 和 `watch` 也接受 `--config`、`--extension` 和 `--set`；其他书架操作可离线执行。完整流程见[管理跨来源书架](../../shelf/manage/)。
 
 ### 检查更新和自动下载
 

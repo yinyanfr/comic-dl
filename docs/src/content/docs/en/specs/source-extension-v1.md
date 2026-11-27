@@ -23,6 +23,13 @@ Import the public TypeScript interfaces from `comic-dl/extension`. See [`src/ext
 
 A work ID identifies a work within its source, a chapter ID within its work, and a page ID within its chapter. These stable IDs determine chapter selection, archive identity, and page order. Do not derive IDs from changing titles, temporary signatures, credentials, or a chapter's current position in the list.
 
+## Optional runtime settings and catalog capabilities
+
+- `settings` is a map keyed by stable IDs matching `[a-z][a-z0-9-]*`. Each definition has a `label` and `type`, with optional `description` and `default`. Types are `text`, `url`, `boolean`, `integer` (with optional `min` and `max`), and `select` (with `{ id, label }` choices). Use `env` only for compatibility with an existing non-secret environment variable.
+- The core validates values and passes the same read-only settings to `matchesUrl(url, kind, settings)` and `create(api, settings)`. An optional synchronous `validateSettings(settings)` can enforce site-specific rules. Extensions should retain their existing defaults when an older caller omits `settings`. Cookies, passwords and API keys are outside this interface.
+- `catalog.browse` and `catalog.search` declare `sorts` and `filters` for browsing and keyword search respectively. Sorts have stable `{ id, label }` values. Filters share the setting types and can additionally declare `dynamic-select` to load choices from `catalogChoices(key, mode, signal)`.
+- Validated options reach the extension as the optional fourth argument to `search(query, page, signal, { sort, filters })`. The extension translates options into the upstream query and calculates `hasNext` for those same conditions.
+
 ## HTTP and errors
 
 Honor the supplied `AbortSignal` in read operations. `api.createSourceHttp({ requestHeaders, credentialHeaders, credentialOrigins, allowedOrigins })` returns a function `(url, signal, authenticated = false)` that resolves to `{ bytes, url, contentType }`. `requestHeaders` and `allowedOrigins` are optional. Use `requestHeaders` for non-credential headers sent with each request. Credential headers are attached only when authentication is explicitly requested and the destination origin is allowed; they are not reattached after a cross-origin redirect.
