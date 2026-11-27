@@ -30,6 +30,12 @@ comic-dl sources
 
 Run `comic-dl update @comic-dl/copymanga` to update one extension, `comic-dl update` to update all installed extensions, or `comic-dl remove @comic-dl/copymanga` to uninstall it. See [comic-dl-extensions](https://github.com/yinyanfr/comic-dl-extensions) for maintained sources. Third parties can publish their own npm packages.
 
+## Cross-source shelf and automatic updates
+
+Use `comic-dl shelf add` to save series from different sources to one local shelf, then use `shelf follow` to subscribe to the ones you want to keep up with. Run `shelf check` to check manually, or `shelf watch --output ~/manga` to check periodically and download new chapters as CBZ files. The first successful check records existing chapters; downloading them is opt-in.
+
+See [Manage your shelf](https://yinyanfr.github.io/comic-dl/en/shelf/manage/) and [Check updates and download automatically](https://yinyanfr.github.io/comic-dl/en/shelf/updates/). These commands are not in the npm `3.0.0` release; build from this repository to try them.
+
 ## Use as a library
 
 ```sh

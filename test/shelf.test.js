@@ -229,12 +229,12 @@ test('a newer database is rejected without modifying it', async (t) => {
   const { shelf, directory } = await setup(t);
   const file = join(directory, 'newer.sqlite');
   const db = new Database(file);
-  db.exec('CREATE TABLE other (data TEXT); PRAGMA user_version = 2');
+  db.exec('CREATE TABLE other (data TEXT); PRAGMA user_version = 3');
   db.close();
   const before = await readFile(file);
   await assert.rejects(shelf('list', '--shelf-db', file), {
     code: 1,
-    stderr: /Unsupported shelf database version: 2/,
+    stderr: /Unsupported shelf database version: 3/,
   });
   assert.deepEqual(await readFile(file), before);
 });

@@ -15,7 +15,8 @@ import {
   withExtensions,
 } from './extension-store.js';
 import { extensionApiVersion } from './extension.js';
-import type { ShelfEntry } from './shelf.js';
+import type { Shelf, ShelfEntry } from './shelf.js';
+import type { CheckEvent, TaskEvent } from './shelf-updates.js';
 import { fixtureSource } from './sources/fixture.js';
 import { isSourceId, SourceRegistry } from './sources/index.js';
 import type { Series } from './sources/source.js';
@@ -98,11 +99,20 @@ Download a series. Full URLs can select the source automatically.
   follow <id>                 Subscribe to a saved work
   unfollow <id>               Unsubscribe while keeping the work on the shelf
   remove <id>                 Remove a work without deleting its downloads
+  check [id]                  Check subscriptions and queue new chapters, without downloading
+  status [id]                 Show check and download status offline
+  watch                       Check regularly and download queued chapters (foreground)
+  retry <id> <chapter-id>     Requeue a failed or restricted chapter
 
   --shelf-db <file>           Use a separate local SQLite database (default: shelf.sqlite in user data)
+  --include-history           Queue existing chapters when checking one specific subscription
+  -o, --output <dir>          Required for watch (may come from config)
+  --require-output-marker <name>
+                               Defer downloading unless this file exists in the output directory
+  --interval <seconds>        Watch check interval (default: 3600)
+  --jobs <n>                  Watch download concurrency (default: 2; may come from config)
 
-Subscriptions are saved for future update checks. The shelf does not download anything.
-The add and set-input actions accept source configuration options:`,
+The add, set-input, check and watch actions accept source configuration options:`,
 };
 
 const commonHelp = `
@@ -178,7 +188,11 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
     action !== 'set-input' &&
     action !== 'follow' &&
     action !== 'unfollow' &&
-    action !== 'remove'
+    action !== 'remove' &&
+    action !== 'check' &&
+    action !== 'status' &&
+    action !== 'watch' &&
+    action !== 'retry'
   ) {
     throw new Error('Unknown shelf action. Run comic-dl shelf --help.');
   }
@@ -190,6 +204,11 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
       'shelf-db': { type: 'string' },
       source,
       title: { type: 'string' },
+      'include-history': { type: 'boolean' },
+      output: { type: 'string', short: 'o' },
+      'require-output-marker': { type: 'string' },
+      interval: { type: 'string' },
+      jobs: { type: 'string' },
     },
     allowPositionals: true,
   });
@@ -202,10 +221,38 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
   ) {
     throw new Error('--source and --title are only accepted by shelf add');
   }
-  const count = action === 'set-input' ? 2 : action === 'list' ? 0 : 1;
-  if (positionals.length !== count || !positionals.every(nonempty)) {
+  if (
+    action !== 'watch' &&
+    (values.output !== undefined ||
+      values['require-output-marker'] !== undefined ||
+      values.interval !== undefined ||
+      values.jobs !== undefined)
+  ) {
     throw new Error(
-      `shelf ${action} requires ${count} positional argument(s).`,
+      '--output, --require-output-marker, --interval and --jobs require shelf watch',
+    );
+  }
+  if (
+    values['include-history'] &&
+    (action !== 'check' || positionals.length !== 1)
+  ) {
+    throw new Error('--include-history requires shelf check and one entry ID');
+  }
+  const optionalId = action === 'check' || action === 'status';
+  const count =
+    action === 'set-input' || action === 'retry'
+      ? 2
+      : action === 'list' || action === 'watch'
+        ? 0
+        : 1;
+  if (
+    (optionalId ? positionals.length > 1 : positionals.length !== count) ||
+    !positionals.every(nonempty)
+  ) {
+    throw new Error(
+      optionalId
+        ? `shelf ${action} accepts at most one entry ID.`
+        : `shelf ${action} requires ${count} positional argument(s).`,
     );
   }
   const dbOption = values['shelf-db'];
@@ -217,18 +264,71 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
     : join(userDataDirectory(), 'shelf.sqlite');
   const command = 'shelf' as const;
   const [id, input] = positionals;
-  if (action !== 'add' && action !== 'set-input') {
+  if (
+    action !== 'add' &&
+    action !== 'set-input' &&
+    action !== 'check' &&
+    action !== 'watch'
+  ) {
     if (values.config !== undefined || values.extension !== undefined) {
       throw new Error(
-        '--config and --extension require shelf add or set-input',
+        '--config and --extension require shelf add, set-input, check or watch',
       );
     }
-    return { command, action, file, id } as const;
+    return { command, action, file, id, input } as const;
   }
 
   const config = await readConfig(values.config, signal);
   const extensions = values.extension ?? config.extensions ?? [];
   const retries = config.retries;
+  if (action === 'check') {
+    return {
+      command,
+      action,
+      file,
+      id,
+      extensions,
+      retries,
+      includeHistory: values['include-history'],
+    } as const;
+  }
+  if (action === 'watch') {
+    const directory = values.output ?? config.output;
+    if (!nonempty(directory))
+      throw new Error(
+        'shelf watch requires --output <directory> or "output" in config',
+      );
+    const outputMarker = values['require-output-marker'];
+    if (
+      outputMarker !== undefined &&
+      (!nonempty(outputMarker) ||
+        /[/\\]/u.test(outputMarker) ||
+        outputMarker === '.' ||
+        outputMarker === '..' ||
+        outputMarker.includes('\0'))
+    ) {
+      throw new Error(
+        '--require-output-marker requires a filename inside the output directory',
+      );
+    }
+    const seconds = integer('interval', values.interval ?? '3600', 1);
+    if (seconds > 365 * 24 * 3600)
+      throw new Error('--interval must not exceed 365 days');
+    return {
+      command,
+      action,
+      file,
+      extensions,
+      retries,
+      directory: outputPath(directory),
+      outputMarker,
+      interval: seconds * 1000,
+      jobs:
+        values.jobs === undefined
+          ? (config.jobs ?? 2)
+          : integer('jobs', values.jobs, 1),
+    } as const;
+  }
   if (action === 'set-input') {
     return { command, action, file, id, input, extensions, retries } as const;
   }
@@ -504,13 +604,76 @@ async function runShelfCommand(
   signal.throwIfAborted();
   const shelf = new Shelf(args.file);
   try {
+    if (args.action === 'check' || args.action === 'watch') {
+      const { checkSubscriptions, watchShelf } =
+        await import('./shelf-updates.js');
+      const withSources = <T>(run: (sources: SourceRegistry) => Promise<T>) => {
+        const sources = builtinSources();
+        return withExtensions(
+          sources,
+          args.extensions,
+          signal,
+          () => run(sources),
+          () =>
+            logError(
+              'Could not load a source extension. Other available sources will still be checked.',
+            ),
+        );
+      };
+      const options = { signal, retries: args.retries, onCheck: printCheck };
+      if (args.action === 'watch') {
+        console.log('Watching shelf subscriptions. Press Ctrl+C to stop.');
+        await watchShelf(shelf.tracking, withSources, {
+          ...args,
+          ...options,
+          onTask: printTask,
+          onOutputUnavailable: () =>
+            logError('Output marker unavailable; downloads deferred.'),
+        });
+        return 0;
+      }
+
+      const entries = shelf.tracking.subscriptions(args.id);
+      if (!entries.length && args.id) {
+        logError('Subscription not found. Run comic-dl shelf list.');
+        return 2;
+      }
+      const result = entries.length
+        ? await withSources((sources) =>
+            checkSubscriptions(shelf.tracking, sources, entries, {
+              ...options,
+              includeHistory: args.includeHistory,
+            }),
+          )
+        : { failures: 0, queued: 0 };
+      console.log(
+        `Summary: ${entries.length} checked, ${result.queued} queued, ${result.failures} failed`,
+      );
+      return result.failures ? 1 : 0;
+    }
     if (args.action !== 'add' && args.action !== 'set-input') {
-      if (args.action === 'list') {
-        for (const entry of shelf.list()) printShelfEntry(entry);
-      } else if (args.action === 'remove') {
-        shelf.remove(args.id);
-      } else {
-        printShelfEntry(shelf.setFollowing(args.id, args.action === 'follow'));
+      switch (args.action) {
+        case 'status':
+          return printShelfStatus(shelf, args.id);
+        case 'retry':
+          if (!shelf.tracking.retry(args.id, args.input)) {
+            logError(
+              'No failed or restricted chapter to retry for this subscription. Run comic-dl shelf status.',
+            );
+            return 2;
+          }
+          console.log('Chapter queued.');
+          break;
+        case 'list':
+          for (const entry of shelf.list()) printShelfEntry(entry);
+          break;
+        case 'remove':
+          shelf.remove(args.id);
+          break;
+        default:
+          printShelfEntry(
+            shelf.setFollowing(args.id, args.action === 'follow'),
+          );
       }
       return 0;
     }
@@ -542,6 +705,49 @@ async function runShelfCommand(
   } finally {
     shelf.close();
   }
+}
+
+function printCheck(event: CheckEvent) {
+  const prefix = `${event.id}\t${event.sourceId}`;
+  if (event.status === 'failed') {
+    console.error(`${prefix}\tfailed\t${event.problem}`);
+  } else if (event.status === 'changed') {
+    console.log(`${prefix}\tchanged; check result discarded`);
+  } else {
+    console.log(`${prefix}\t${event.status}\t${event.queued} queued`);
+  }
+}
+
+function printTask(event: TaskEvent) {
+  console.log(
+    `${event.entryId}\tchapter ${JSON.stringify(event.chapterId)}\t${event.state}`,
+  );
+}
+
+function printShelfStatus(shelf: Shelf, id?: string) {
+  const statuses = shelf.tracking.status(id);
+  if (id && !statuses.length) {
+    logError('Shelf entry not found. Run comic-dl shelf list.');
+    return 2;
+  }
+  const displayTime = (time: number | null) =>
+    time === null ? '-' : new Date(time).toISOString();
+  for (const status of statuses) {
+    const state = status.following ? 'following' : 'not-following';
+    console.log(
+      `${status.id}\t${status.sourceId}\t${state}\tlast check: ${displayTime(status.lastCheck)}\t` +
+        `last success: ${displayTime(status.lastSuccess)}\t${status.result ?? 'unchecked'}\t` +
+        `${status.pending} pending (${status.restricted} restricted), ${status.blocked} blocked, ${status.complete} complete`,
+    );
+  }
+  if (id) {
+    for (const chapter of shelf.tracking.needsAttention(id)) {
+      console.log(
+        `${id}\tchapter ${JSON.stringify(chapter.id)}\t${chapter.state}`,
+      );
+    }
+  }
+  return 0;
 }
 
 function selectSourceId(
@@ -733,6 +939,9 @@ async function main() {
       }
       return 2;
     }
+    if (args.command === 'shelf' && args.action === 'watch') {
+      process.on('SIGTERM', interrupt);
+    }
     const code = await run(args, controller.signal);
     return controller.signal.aborted ? 130 : code;
   } catch (error) {
@@ -743,6 +952,7 @@ async function main() {
     return 1;
   } finally {
     process.off('SIGINT', interrupt);
+    process.off('SIGTERM', interrupt);
   }
 }
 

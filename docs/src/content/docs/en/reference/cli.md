@@ -5,17 +5,17 @@ description: Look up commands, options, standard output, and exit codes.
 
 Run `comic-dl --help` to see available commands, or `comic-dl <command> --help` for command-specific options. `-h` is short for `--help`, and `-V` for `--version`. When running from the repository, replace `comic-dl` with `node dist/index.js`.
 
-| Command                   | Alias | Purpose                                                                |
-| ------------------------- | ----- | ---------------------------------------------------------------------- |
-| `sources`                 | `src` | List built-in and loaded source IDs without opening source sessions    |
-| `search [query]`          | `s`   | Search titles, or omit the query to browse; `--page <n>` starts at `1` |
-| `list <series-input>`     | `l`   | List stable chapter IDs and titles for a series                        |
-| `chapter <chapter-input>` | `c`   | Download one chapter from a direct link or a source-defined identifier |
-| `download <series-input>` | `d`   | Download a series or selected chapters                                 |
-| `shelf <action>`          |       | Save works from multiple sources and manage subscriptions              |
-| `add <package>`           | `a`   | Install an npm extension, optionally with `@version` or `@tag`         |
-| `update [package]`        | `u`   | Update one or all installed extensions within saved version ranges     |
-| `remove <package>`        | `rm`  | Uninstall a CLI-managed extension                                      |
+| Command                   | Alias | Purpose                                                                    |
+| ------------------------- | ----- | -------------------------------------------------------------------------- |
+| `sources`                 | `src` | List built-in and loaded source IDs without opening source sessions        |
+| `search [query]`          | `s`   | Search titles, or omit the query to browse; `--page <n>` starts at `1`     |
+| `list <series-input>`     | `l`   | List stable chapter IDs and titles for a series                            |
+| `chapter <chapter-input>` | `c`   | Download one chapter from a direct link or a source-defined identifier     |
+| `download <series-input>` | `d`   | Download a series or selected chapters                                     |
+| `shelf <action>`          |       | Save works from multiple sources, manage subscriptions, and follow updates |
+| `add <package>`           | `a`   | Install an npm extension, optionally with `@version` or `@tag`             |
+| `update [package]`        | `u`   | Update one or all installed extensions within saved version ranges         |
+| `remove <package>`        | `rm`  | Uninstall a CLI-managed extension                                          |
 
 ### Options
 
@@ -62,14 +62,27 @@ See [local development testing](../../development/local-testing/) for the `--fix
 
 ### Manage a shelf across sources
 
-Find a series URL with `search`, then save it with `shelf add <series-url> --title <title>`. A full URL can select a source automatically; for a short ID, pass `--source <id>`. The title defaults to the source's work ID. Adding the same work from the same source keeps the existing entry. Versions from other sources get separate entries.
+| Command                              | Purpose                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------ |
+| `shelf add <series-input>`           | Save a series, optionally with `--source <id>` and `--title <title>`     |
+| `shelf list`                         | Print entry ID, source, subscription state, and title, separated by tabs |
+| `shelf follow <entry-id>`            | Subscribe to a saved series                                              |
+| `shelf unfollow <entry-id>`          | Pause updates and keep the entry and its check history                   |
+| `shelf set-input <entry-id> <input>` | Change the input for the same work                                       |
+| `shelf remove <entry-id>`            | Remove the entry and subscription while keeping downloaded CBZ files     |
 
-- `shelf list` prints `entry ID<TAB>source ID<TAB>subscription state<TAB>title`. The state is `following` or `not-following`.
-- `shelf follow <entry-id>` subscribes to a saved work. `shelf unfollow <entry-id>` unsubscribes and keeps the work on the shelf. Subscriptions are saved for future automatic updates.
-- `shelf set-input <entry-id> <series-input>` checks that the original source still resolves the input to the same work. Use it to update the URL or chapter group. Use a reusable input without credentials.
-- `shelf remove <entry-id>` removes the entry and its subscription while keeping downloaded CBZ files.
+All shelf commands accept `--shelf-db <file>`. `shelf add`, `set-input`, `check`, and `watch` also accept `--config` and `--extension`; other shelf commands work offline. See [Manage a cross-source shelf](../../shelf/manage/) for the full workflow.
 
-`add` and `set-input` accept `--config` and `--extension` and require the relevant source. Other shelf actions work offline. The database defaults to `comic-dl/shelf.sqlite` in the user data directory, alongside the extensions directory. Pass `--shelf-db <file>` to any shelf action to use a separate local database.
+### Check updates and download automatically
+
+| Command                               | Purpose                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| `shelf check [entry-id]`              | Check all or one subscription; use `--include-history` with one entry ID |
+| `shelf status [entry-id]`             | Show check and download status offline                                   |
+| `shelf watch`                         | Check and download in the foreground; set `--output <dir>` or use config |
+| `shelf retry <entry-id> <chapter-id>` | Requeue a failed or restricted chapter                                   |
+
+`watch` accepts `--interval <seconds>` (default `3600`), `--jobs <n>` (default `2`), and `--require-output-marker <name>` (defer downloads when the marker is unavailable). See [Check updates and download automatically](../../shelf/updates/).
 
 ### Script output and exit codes
 

@@ -60,11 +60,27 @@ export async function importExtension(specifier: string, label: string) {
   return extension;
 }
 
+export class DuplicateSourceError extends Error {
+  constructor(
+    readonly id: string,
+    previous: string,
+    next: string,
+  ) {
+    super(`Duplicate source ID: ${id} (${previous}, ${next})`);
+  }
+}
+
 export class SourceRegistry {
   #sources = new Map<
     string,
     { label: string; create: () => ChapterSource; extension: SourceExtension }
   >();
+  #ambiguous = new Set<string>();
+
+  excludeAmbiguous(id: string) {
+    this.#sources.delete(id);
+    this.#ambiguous.add(id);
+  }
 
   use(extension: SourceExtension, label?: string) {
     if (!isExtension(extension)) {
@@ -74,10 +90,8 @@ export class SourceRegistry {
     }
     const { id } = extension;
     const previous = this.#sources.get(id);
-    if (previous) {
-      throw new Error(
-        `Duplicate source ID: ${id} (${previous.label}, ${label ?? id})`,
-      );
+    if (previous || this.#ambiguous.has(id)) {
+      throw new DuplicateSourceError(id, previous?.label ?? id, label ?? id);
     }
     this.#sources.set(id, {
       label: label ?? id,

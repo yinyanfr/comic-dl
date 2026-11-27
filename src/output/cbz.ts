@@ -29,6 +29,8 @@ interface CbzResult {
   path: string;
 }
 
+export class OutputUnavailableError extends Error {}
+
 function hash(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(value)).digest('hex');
 }
@@ -222,6 +224,7 @@ export async function saveCbz(
   directory: string,
   chapter: CbzChapter,
   signal: AbortSignal,
+  validateOutput?: () => Promise<void>,
 ): Promise<CbzResult> {
   signal.throwIfAborted();
   const key = hash(chapter.identity);
@@ -240,11 +243,13 @@ export async function saveCbz(
     }
     return `${String(index + 1).padStart(width, '0')}.${extension}`;
   });
+  await validateOutput?.();
   const root = await getOutputDirectory(resolve(directory));
   const rootStat = await lstat(root);
   if (!rootStat.isDirectory()) {
     throw new Error(`Output directory is not a real directory: ${root}`);
   }
+  await validateOutput?.();
   const target = join(root, filename);
   if (await isComplete(target, marker, names, signal)) {
     return { status: 'skipped', path };
@@ -258,6 +263,7 @@ export async function saveCbz(
   try {
     await writeCbz(tempPath, marker, names, chapter.contents, signal);
     await checkArchivePath(target);
+    await validateOutput?.();
     await checkDirectoryIdentity(root, rootStat);
     await checkDirectoryIdentity(tempDirectory, tempStat);
     signal.throwIfAborted();

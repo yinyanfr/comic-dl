@@ -17,6 +17,7 @@ hero:
 
 - [Basic usage](./guide/basic/): Download from a series URL, or search and list chapters first.
 - [Advanced usage](./guide/advanced/) and [configuration files](./guide/config-tutorial/): Select specific chapters, adjust concurrency, and reuse settings.
+- [Shelf and automatic updates](./shelf/manage/): Save series from different sources, manage subscriptions, and download new chapters.
 - [Use as a library](./guide/library/): Register extensions and download from your Node.js project.
 - [Upgrade from 2.x to 3.x](./migration/v2-to-v3/): Update scripts and presets while keeping earlier downloads.
 - [CLI reference](./reference/cli/): Look up commands, flags, and exit codes.

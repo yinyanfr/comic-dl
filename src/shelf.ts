@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import Database from 'better-sqlite3';
 import { nonempty, outputPath } from './config.js';
 import { retrySourceRead } from './download.js';
+import { ShelfTracking, trackingSchema } from './shelf-tracking.js';
 import type { SourceRegistry } from './sources/index.js';
 
 export interface ShelfEntry {
@@ -18,13 +19,13 @@ export interface ShelfEntry {
   revision: number;
 }
 
-const schemaVersion = 1;
+const schemaVersion = 2;
 const columns = `
   id, source_id AS sourceId, work_id AS workId, input, title, following,
   created_at AS createdAt, updated_at AS updatedAt, revision
 `;
 
-function hasUrlCredentials(value: string) {
+export function hasUrlCredentials(value: string) {
   const url = URL.parse(value);
   if (!url) return false;
   const authParameter =
@@ -39,30 +40,37 @@ function hasUrlCredentials(value: string) {
 
 export class Shelf {
   readonly #db: Database.Database;
+  readonly tracking: ShelfTracking;
 
   constructor(file: string) {
     mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
     const db = new Database(file, { timeout: 3000 });
     this.#db = db;
+    this.tracking = new ShelfTracking(db);
     try {
-      if (this.#needsInitialization()) {
+      db.pragma('foreign_keys = ON');
+      if (this.#schemaVersion() < schemaVersion) {
         db.transaction(() => {
-          if (!this.#needsInitialization()) return;
-          db.exec(`
-            CREATE TABLE shelf_entries (
-              id TEXT PRIMARY KEY NOT NULL,
-              source_id TEXT NOT NULL,
-              work_id TEXT NOT NULL,
-              input TEXT NOT NULL,
-              title TEXT NOT NULL,
-              following INTEGER NOT NULL DEFAULT 0 CHECK (following IN (0, 1)),
-              created_at TEXT NOT NULL,
-              updated_at TEXT NOT NULL,
-              revision INTEGER NOT NULL DEFAULT 0,
-              UNIQUE (source_id, work_id)
-            ) STRICT;
-            PRAGMA user_version = ${schemaVersion};
-          `);
+          const version = this.#schemaVersion();
+          if (version === schemaVersion) return;
+          if (version === 0) {
+            db.exec(`
+              CREATE TABLE shelf_entries (
+                id TEXT PRIMARY KEY NOT NULL,
+                source_id TEXT NOT NULL,
+                work_id TEXT NOT NULL,
+                input TEXT NOT NULL,
+                title TEXT NOT NULL,
+                following INTEGER NOT NULL DEFAULT 0 CHECK (following IN (0, 1)),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                revision INTEGER NOT NULL DEFAULT 0,
+                UNIQUE (source_id, work_id)
+              ) STRICT;
+            `);
+          }
+          db.exec(trackingSchema);
+          db.pragma(`user_version = ${schemaVersion}`);
         }).immediate();
       }
     } catch (error) {
@@ -71,10 +79,10 @@ export class Shelf {
     }
   }
 
-  #needsInitialization() {
+  #schemaVersion() {
     const version = this.#db.pragma('user_version', { simple: true });
-    if (version === 0) return true;
-    if (version === schemaVersion) return false;
+    if (version === 0 || version === 1 || version === schemaVersion)
+      return version;
     throw new Error(`Unsupported shelf database version: ${String(version)}.`);
   }
 
@@ -208,6 +216,12 @@ export class Shelf {
         `
         UPDATE shelf_entries
         SET updated_at = CASE WHEN input = @input THEN updated_at ELSE @now END,
+            catalog_version = catalog_version + (input <> @input),
+            last_check = CASE WHEN input = @input THEN last_check END,
+            last_success = CASE WHEN input = @input THEN last_success END,
+            check_result = CASE WHEN input = @input THEN check_result END,
+            check_failures = CASE WHEN input = @input THEN check_failures ELSE 0 END,
+            next_check = CASE WHEN input = @input THEN next_check ELSE 0 END,
             revision = revision + (input <> @input), input = @input
         WHERE id = @id AND revision = @revision
         RETURNING ${columns}
@@ -232,6 +246,7 @@ export class Shelf {
         `
         UPDATE shelf_entries
         SET updated_at = CASE WHEN following = @following THEN updated_at ELSE @now END,
+            next_check = CASE WHEN following = @following THEN next_check ELSE 0 END,
             revision = revision + (following <> @following), following = @following
         WHERE id = @id
         RETURNING ${columns}

@@ -1,5 +1,5 @@
 import { setTimeout } from 'node:timers/promises';
-import { saveCbz } from './output/cbz.js';
+import { OutputUnavailableError, saveCbz } from './output/cbz.js';
 import {
   RestrictedChapterError,
   TransientSourceError,
@@ -18,7 +18,8 @@ interface DownloadOptions {
   jobs: number;
   retries: number;
   signal: AbortSignal;
-  onResult: (result: ChapterResult) => void;
+  onResult: (result: ChapterResult, retryable: boolean) => void | Promise<void>;
+  validateOutput?: () => Promise<void>;
 }
 
 async function* readPages(
@@ -79,8 +80,8 @@ async function downloadChapter(
   sourceId: string,
   workId: string,
   chapter: Chapter,
-  { directory, retries, signal }: DownloadOptions,
-): Promise<ChapterResult> {
+  { directory, retries, signal, validateOutput }: DownloadOptions,
+): Promise<{ result: ChapterResult; retryable: boolean }> {
   const chapterId = chapter.id;
   for (let attempts = 1; ; attempts++) {
     signal.throwIfAborted();
@@ -97,16 +98,22 @@ async function downloadChapter(
           contents: readPages(pages, signal),
         },
         signal,
+        validateOutput,
       );
-      return { ...result, chapterId, attempts };
+      return { result: { ...result, chapterId, attempts }, retryable: false };
     } catch (error) {
       if (!(await waitForRetry(error, attempts, retries, signal))) {
         return {
-          chapterId,
-          attempts,
-          status:
-            error instanceof RestrictedChapterError ? 'restricted' : 'failed',
-          error: error instanceof Error ? error.message : String(error),
+          result: {
+            chapterId,
+            attempts,
+            status:
+              error instanceof RestrictedChapterError ? 'restricted' : 'failed',
+            error: error instanceof Error ? error.message : String(error),
+          },
+          retryable:
+            error instanceof TransientSourceError ||
+            error instanceof OutputUnavailableError,
         };
       }
     }
@@ -143,7 +150,7 @@ export async function downloadSeries(
       }
       if (!callbackFailure) {
         try {
-          await Promise.resolve(onResult(result));
+          await Promise.resolve(onResult(result.result, result.retryable));
         } catch (error) {
           callbackFailure ??= { error };
         }

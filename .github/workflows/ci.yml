@@ -34,4 +34,4 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - run: npm test -- test/chapter.test.js test/extensions.test.js test/shelf.test.js test/source-http.test.js
+      - run: npm test -- test/chapter.test.js test/extensions.test.js test/shelf.test.js test/shelf-updates.test.js test/source-http.test.js

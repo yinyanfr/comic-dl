@@ -14,6 +14,7 @@ import { join, resolve } from 'node:path';
 import { userDataDirectory } from './config.js';
 import { pathToFileURL } from 'node:url';
 import {
+  DuplicateSourceError,
   importExtension,
   isPackageName,
   moduleSpecifier,
@@ -56,6 +57,7 @@ async function loadManaged(
   project: string,
   sources: SourceRegistry,
   signal: AbortSignal,
+  onLoadError?: (error: unknown) => void,
 ) {
   const { resolvePackage } = (await import(
     pathToFileURL(join(project, 'resolve.mjs')).href
@@ -63,12 +65,16 @@ async function loadManaged(
   const names = await packageNames(project);
   for (const name of names) {
     signal.throwIfAborted();
-    if (!isPackageName(name))
-      throw new Error(`Invalid installed package name: ${name}`);
     try {
+      if (!isPackageName(name))
+        throw new Error(`Invalid installed package name: ${name}`);
       await access(join(project, 'node_modules', name, 'package.json'));
       sources.use(await importExtension(resolvePackage(name), name), name);
     } catch (cause) {
+      if (onLoadError) {
+        onLoadError(cause);
+        continue;
+      }
       throw new Error(
         `Could not register ${name}: ${cause instanceof Error ? cause.message : String(cause)}`,
         { cause },
@@ -94,8 +100,17 @@ export async function withExtensions<T>(
   explicit: readonly string[],
   signal: AbortSignal,
   run: () => Promise<T>,
+  onLoadError?: () => void,
 ): Promise<T> {
   const store = storeDirectory();
+  const ignoreLoadError =
+    onLoadError &&
+    ((cause: unknown) => {
+      signal.throwIfAborted();
+      if (cause instanceof DuplicateSourceError)
+        sources.excludeAmbiguous(cause.id);
+      onLoadError();
+    });
   for (;;) {
     signal.throwIfAborted();
     const project = await currentProject(store);
@@ -111,14 +126,21 @@ export async function withExtensions<T>(
     try {
       if (project !== (await currentProject(store))) continue;
       const loaded = new Set(
-        project ? await loadManaged(project, sources, signal) : [],
+        project
+          ? await loadManaged(project, sources, signal, ignoreLoadError)
+          : [],
       );
       for (const input of explicit) {
         signal.throwIfAborted();
-        const specifier = moduleSpecifier(input);
-        if (!loaded.has(specifier)) {
-          sources.use(await importExtension(specifier, input), input);
-          loaded.add(specifier);
+        try {
+          const specifier = moduleSpecifier(input);
+          if (!loaded.has(specifier)) {
+            sources.use(await importExtension(specifier, input), input);
+            loaded.add(specifier);
+          }
+        } catch (cause) {
+          if (!ignoreLoadError) throw cause;
+          ignoreLoadError(cause);
         }
       }
       return await run();

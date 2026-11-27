@@ -12,7 +12,7 @@ description: 查阅命令、可用选项、标准输出和退出码。
 | `list <series-input>`     | `l`   | 列出作品章节的稳定 ID 与标题                             |
 | `chapter <chapter-input>` | `c`   | 使用章节直链或源定义的标识下载一章                       |
 | `download <series-input>` | `d`   | 下载整个系列或指定章节                                   |
-| `shelf <action>`          |       | 收藏不同来源的作品并管理订阅                             |
+| `shelf <action>`          |       | 收藏不同来源的作品、管理订阅并自动追更                   |
 | `add <package>`           | `a`   | 安装 npm 源扩展，可附加 `@版本` 或 `@标签`               |
 | `update [package]`        | `u`   | 按已保存的版本范围更新单个或全部扩展                     |
 | `remove <package>`        | `rm`  | 卸载 CLI 管理的扩展                                      |
@@ -62,14 +62,27 @@ comic-dl remove @comic-dl/zerobyw
 
 ### 管理跨来源书架
 
-用 `search` 找到作品 URL 后，可用 `shelf add <作品 URL> --title <标题>` 加入书架。完整 URL 可自动选源，短 ID 可以用 `--source <id>` 指定来源。`--title` 可省略，默认显示来源返回的作品 ID。同一源的同一作品只添加一次；其他来源的版本保留为单独条目。
+| 命令                                 | 用途                                                |
+| ------------------------------------ | --------------------------------------------------- |
+| `shelf add <series-input>`           | 收藏作品，可选 `--source <id>` 和 `--title <title>` |
+| `shelf list`                         | 输出条目 ID、来源、订阅状态和标题，以制表符分隔     |
+| `shelf follow <entry-id>`            | 开启订阅                                            |
+| `shelf unfollow <entry-id>`          | 暂停追更，保留收藏及检查记录                        |
+| `shelf set-input <entry-id> <input>` | 修改同一作品的定位输入                              |
+| `shelf remove <entry-id>`            | 移除条目和订阅，保留已下载的 CBZ                    |
 
-- `shelf list` 输出 `条目 ID<TAB>来源 ID<TAB>订阅状态<TAB>标题`。订阅状态为 `following` 或 `not-following`。
-- `shelf follow <条目 ID>` 开启订阅，`shelf unfollow <条目 ID>` 取消订阅并保留收藏。当前版本保存订阅状态，供未来自动追更使用。
-- `shelf set-input <条目 ID> <作品输入>` 用原来的来源验证新输入，可更新同一作品的 URL 或章节分组。请使用可复用、无凭据的输入。
-- `shelf remove <条目 ID>` 移除收藏及订阅，保留已下载的 CBZ。
+所有书架子命令都接受 `--shelf-db <file>`。`shelf add`、`set-input`、`check` 和 `watch` 也接受 `--config` 和 `--extension`；其他书架操作可离线执行。完整流程见[管理跨来源书架](../../shelf/manage/)。
 
-`add` 和 `set-input` 支持 `--config`、`--extension`，需要能加载相应来源；其余书架操作可离线执行。默认数据库位于用户数据目录下的 `comic-dl/shelf.sqlite`，与扩展目录并列。可在各子命令中传入 `--shelf-db <file>` 使用另一个本地数据库。
+### 检查更新和自动下载
+
+| 命令                                  | 用途                                                         |
+| ------------------------------------- | ------------------------------------------------------------ |
+| `shelf check [entry-id]`              | 检查全部或指定订阅；指定条目时可加 `--include-history`       |
+| `shelf status [entry-id]`             | 离线查询检查和下载状态                                       |
+| `shelf watch`                         | 在前台定期检查并下载，需指定 `--output <dir>` 或在配置中设置 |
+| `shelf retry <entry-id> <chapter-id>` | 重新排队指定失败或受限章节                                   |
+
+`watch` 支持 `--interval <seconds>`（默认 `3600`）、`--jobs <n>`（默认 `2`）和 `--require-output-marker <name>`（标记文件不可用时推迟下载）。详见[检查更新与自动下载](../../shelf/updates/)。
 
 ### 脚本输出与退出码
 
