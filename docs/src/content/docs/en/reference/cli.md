@@ -12,6 +12,7 @@ Run `comic-dl --help` to see available commands, or `comic-dl <command> --help` 
 | `list <series-input>`     | `l`   | List stable chapter IDs and titles for a series                        |
 | `chapter <chapter-input>` | `c`   | Download one chapter from a direct link or a source-defined identifier |
 | `download <series-input>` | `d`   | Download a series or selected chapters                                 |
+| `shelf <action>`          |       | Save works from multiple sources and manage subscriptions              |
 | `add <package>`           | `a`   | Install an npm extension, optionally with `@version` or `@tag`         |
 | `update [package]`        | `u`   | Update one or all installed extensions within saved version ranges     |
 | `remove <package>`        | `rm`  | Uninstall a CLI-managed extension                                      |
@@ -58,6 +59,17 @@ See [local development testing](../../development/local-testing/) for the `--fix
 ### Select chapters
 
 `-c 2-4` selects entries 2 through 4, inclusive. Positions start at `1`, follow the order shown by `list`, and are independent of titles or stable IDs. Pass `-c <id>` to use an ID from the first column of `list`. An exact ID match takes precedence over a range. Repeat `-c` to combine IDs and ranges: the CLI validates all selections before downloading, then processes each selected chapter once in reading order. Reversed or out-of-bounds ranges and unknown IDs exit with `2` before downloading.
+
+### Manage a shelf across sources
+
+Find a series URL with `search`, then save it with `shelf add <series-url> --title <title>`. A full URL can select a source automatically; for a short ID, pass `--source <id>`. The title defaults to the source's work ID. Adding the same work from the same source keeps the existing entry. Versions from other sources get separate entries.
+
+- `shelf list` prints `entry ID<TAB>source ID<TAB>subscription state<TAB>title`. The state is `following` or `not-following`.
+- `shelf follow <entry-id>` subscribes to a saved work. `shelf unfollow <entry-id>` unsubscribes and keeps the work on the shelf. Subscriptions are saved for future automatic updates.
+- `shelf set-input <entry-id> <series-input>` checks that the original source still resolves the input to the same work. Use it to update the URL or chapter group. Use a reusable input without credentials.
+- `shelf remove <entry-id>` removes the entry and its subscription while keeping downloaded CBZ files.
+
+`add` and `set-input` accept `--config` and `--extension` and require the relevant source. Other shelf actions work offline. The database defaults to `comic-dl/shelf.sqlite` in the user data directory, alongside the extensions directory. Pass `--shelf-db <file>` to any shelf action to use a separate local database.
 
 ### Script output and exit codes
 

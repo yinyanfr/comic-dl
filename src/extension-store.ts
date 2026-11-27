@@ -10,8 +10,8 @@ import {
   rm,
   writeFile,
 } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { isAbsolute, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
+import { userDataDirectory } from './config.js';
 import { pathToFileURL } from 'node:url';
 import {
   importExtension,
@@ -26,13 +26,7 @@ function storeDirectory() {
   if (process.env.COMIC_DL_EXTENSION_DIR) {
     return resolve(process.env.COMIC_DL_EXTENSION_DIR);
   }
-  const base =
-    process.platform === 'win32'
-      ? process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local')
-      : isAbsolute(process.env.XDG_DATA_HOME ?? '')
-        ? process.env.XDG_DATA_HOME!
-        : join(homedir(), '.local', 'share');
-  return join(base, 'comic-dl', 'extensions');
+  return join(userDataDirectory(), 'extensions');
 }
 
 function missing(error: unknown) {

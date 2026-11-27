@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { nonempty, outputPath, readConfig } from './config.js';
+import {
+  nonempty,
+  outputPath,
+  readConfig,
+  userDataDirectory,
+} from './config.js';
 import { defaultRetries, downloadSeries, retrySourceRead } from './download.js';
 import {
   extensionPackage,
@@ -9,6 +15,7 @@ import {
   withExtensions,
 } from './extension-store.js';
 import { extensionApiVersion } from './extension.js';
+import type { ShelfEntry } from './shelf.js';
 import { fixtureSource } from './sources/fixture.js';
 import { isSourceId, SourceRegistry } from './sources/index.js';
 import type { Series } from './sources/source.js';
@@ -32,6 +39,7 @@ Commands:
   list (l) <series-input>    List chapter IDs and titles
   chapter (c) <chapter-input> Download one chapter by its direct link
   download (d) <series-input> Download all or selected chapters of a series
+  shelf <action>             Save works from multiple sources and manage subscriptions
   add (a) <package>           Install an npm source extension
   update (u) [package]       Update one or all managed extensions
   remove (rm) <package>      Uninstall a managed extension
@@ -82,6 +90,19 @@ Download a series. Full URLs can select the source automatically.
                      Chapter ID or inclusive 1-based range (e.g. 2-4); repeat to combine
   --jobs <n>          Maximum concurrent chapters (default: 2)
   --retries <n>       Additional attempts for transient failures (default: 2)`,
+  shelf: `Usage: comic-dl shelf <action> [options]
+
+  add <series-input>          Add a work; accepts --source <id> and --title <title>
+  list                        List entry IDs, sources, subscription states and titles
+  set-input <id> <input>      Change the input for the same source and work
+  follow <id>                 Subscribe to a saved work
+  unfollow <id>               Unsubscribe while keeping the work on the shelf
+  remove <id>                 Remove a work without deleting its downloads
+
+  --shelf-db <file>           Use a separate local SQLite database (default: shelf.sqlite in user data)
+
+Subscriptions are saved for future update checks. The shelf does not download anything.
+The add and set-input actions accept source configuration options:`,
 };
 
 const commonHelp = `
@@ -146,6 +167,85 @@ function requireSource(id: string | undefined) {
   return id;
 }
 
+async function parseShelfCommand(args: string[], signal: AbortSignal) {
+  const [action, ...rest] = args;
+  if (!action || action === '--help' || action === '-h') {
+    return { command: 'help', text: commandHelp.shelf + commonHelp } as const;
+  }
+  if (
+    action !== 'add' &&
+    action !== 'list' &&
+    action !== 'set-input' &&
+    action !== 'follow' &&
+    action !== 'unfollow' &&
+    action !== 'remove'
+  ) {
+    throw new Error('Unknown shelf action. Run comic-dl shelf --help.');
+  }
+
+  const { values, positionals } = parseArgs({
+    args: rest,
+    options: {
+      ...commonOptions,
+      'shelf-db': { type: 'string' },
+      source,
+      title: { type: 'string' },
+    },
+    allowPositionals: true,
+  });
+  if (values.help) {
+    return { command: 'help', text: commandHelp.shelf + commonHelp } as const;
+  }
+  if (
+    action !== 'add' &&
+    (values.source !== undefined || values.title !== undefined)
+  ) {
+    throw new Error('--source and --title are only accepted by shelf add');
+  }
+  const count = action === 'set-input' ? 2 : action === 'list' ? 0 : 1;
+  if (positionals.length !== count || !positionals.every(nonempty)) {
+    throw new Error(
+      `shelf ${action} requires ${count} positional argument(s).`,
+    );
+  }
+  const dbOption = values['shelf-db'];
+  if (dbOption !== undefined && !nonempty(dbOption)) {
+    throw new Error('--shelf-db requires a file path');
+  }
+  const file = dbOption
+    ? outputPath(dbOption)
+    : join(userDataDirectory(), 'shelf.sqlite');
+  const command = 'shelf' as const;
+  const [id, input] = positionals;
+  if (action !== 'add' && action !== 'set-input') {
+    if (values.config !== undefined || values.extension !== undefined) {
+      throw new Error(
+        '--config and --extension require shelf add or set-input',
+      );
+    }
+    return { command, action, file, id } as const;
+  }
+
+  const config = await readConfig(values.config, signal);
+  const extensions = values.extension ?? config.extensions ?? [];
+  const retries = config.retries;
+  if (action === 'set-input') {
+    return { command, action, file, id, input, extensions, retries } as const;
+  }
+  if (values.title !== undefined && !nonempty(values.title)) {
+    throw new Error('--title requires a non-empty title');
+  }
+  return {
+    command,
+    action,
+    file,
+    extensions,
+    retries,
+    title: values.title,
+    ...parseInput(values, positionals, config.source),
+  } as const;
+}
+
 async function parseCommand(args: string[], signal: AbortSignal) {
   const [name, ...rest] = args;
   const command = aliases.get(name) ?? name;
@@ -157,6 +257,9 @@ async function parseCommand(args: string[], signal: AbortSignal) {
   }
   if ((command === '--version' || command === '-V') && !rest.length) {
     return { command: 'version' } as const;
+  }
+  if (command === 'shelf') {
+    return parseShelfCommand(rest, signal);
   }
   if (command === 'add' || command === 'update' || command === 'remove') {
     const { values, positionals } = parseArgs({
@@ -367,20 +470,113 @@ async function run(
     await manageExtensions(args.action, args.package, signal);
     return 0;
   }
-  const sources = new SourceRegistry().use({
-    apiVersion: extensionApiVersion,
-    id: fixtureSource.id,
-    create: () => fixtureSource,
-  });
+  if (args.command === 'shelf') {
+    return runShelfCommand(args, signal);
+  }
+  const sources = builtinSources();
   return withExtensions(sources, args.extensions, signal, () =>
     runSourceCommand(args, sources, signal),
   );
 }
 
+function builtinSources() {
+  return new SourceRegistry().use({
+    apiVersion: extensionApiVersion,
+    id: fixtureSource.id,
+    create: () => fixtureSource,
+  });
+}
+
+function printShelfEntry(entry: ShelfEntry) {
+  const title = entry.title.replace(/\p{Cc}/gu, ' ');
+  const state = entry.following ? 'following' : 'not-following';
+  console.log(`${entry.id}\t${entry.sourceId}\t${state}\t${title}`);
+}
+
+async function runShelfCommand(
+  args: Extract<
+    Awaited<ReturnType<typeof parseShelfCommand>>,
+    { command: 'shelf' }
+  >,
+  signal: AbortSignal,
+) {
+  const { Shelf } = await import('./shelf.js');
+  signal.throwIfAborted();
+  const shelf = new Shelf(args.file);
+  try {
+    if (args.action !== 'add' && args.action !== 'set-input') {
+      if (args.action === 'list') {
+        for (const entry of shelf.list()) printShelfEntry(entry);
+      } else if (args.action === 'remove') {
+        shelf.remove(args.id);
+      } else {
+        printShelfEntry(shelf.setFollowing(args.id, args.action === 'follow'));
+      }
+      return 0;
+    }
+
+    const sources = builtinSources();
+    return await withExtensions(sources, args.extensions, signal, async () => {
+      const options = { signal, retries: args.retries };
+      if (args.action === 'add') {
+        const sourceId = selectSourceId(
+          sources,
+          args.sourceId,
+          args.input,
+          'series',
+        );
+        if (!sourceId) return 2;
+        printShelfEntry(
+          await shelf.add(sources, sourceId, args.input, {
+            ...options,
+            title: args.title,
+          }),
+        );
+      } else {
+        printShelfEntry(
+          await shelf.setInput(sources, args.id, args.input, options),
+        );
+      }
+      return 0;
+    });
+  } finally {
+    shelf.close();
+  }
+}
+
+function selectSourceId(
+  sources: SourceRegistry,
+  explicit: string | undefined,
+  input: string,
+  kind: 'series' | 'chapter',
+) {
+  let id = explicit;
+  if (id === undefined) {
+    try {
+      id = sources.match(input, kind);
+    } catch (error) {
+      logError(
+        `${error instanceof Error ? error.message : String(error)} Install a source with comic-dl add <package> or select one with --source.`,
+      );
+      return;
+    }
+  }
+  if (!sources.ids().includes(id)) {
+    logError(
+      `Unknown source: ${id}. Install it with comic-dl add <package> or load it with --extension.`,
+    );
+    return;
+  }
+  return id;
+}
+
 async function runSourceCommand(
   args: Extract<
     Awaited<ReturnType<typeof parseCommand>>,
-    { extensions: readonly string[] }
+    {
+      extensions: readonly string[];
+      command: 'sources' | 'search' | 'list' | 'chapter' | 'download';
+    }
   >,
   sources: SourceRegistry,
   signal: AbortSignal,
@@ -392,24 +588,13 @@ async function runSourceCommand(
     return 0;
   }
 
-  let sourceId = args.sourceId;
-  if (sourceId === undefined && args.command !== 'search') {
-    const kind = args.command === 'chapter' ? 'chapter' : 'series';
-    try {
-      sourceId = sources.match(args.input, kind);
-    } catch (error) {
-      logError(
-        `${error instanceof Error ? error.message : String(error)} Install a source with comic-dl add <package> or select one with --source.`,
-      );
-      return 2;
-    }
-  }
-  if (!sourceId || !sources.ids().includes(sourceId)) {
-    logError(
-      `Unknown source: ${sourceId}. Install it with comic-dl add <package> or load it with --extension.`,
-    );
-    return 2;
-  }
+  const sourceId = selectSourceId(
+    sources,
+    args.sourceId,
+    args.command === 'search' ? '' : args.input,
+    args.command === 'chapter' ? 'chapter' : 'series',
+  );
+  if (!sourceId) return 2;
   const source = sources.create(sourceId);
   if (args.command === 'search') {
     if (!source.search) {

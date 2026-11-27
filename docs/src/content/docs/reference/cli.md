@@ -12,6 +12,7 @@ description: 查阅命令、可用选项、标准输出和退出码。
 | `list <series-input>`     | `l`   | 列出作品章节的稳定 ID 与标题                             |
 | `chapter <chapter-input>` | `c`   | 使用章节直链或源定义的标识下载一章                       |
 | `download <series-input>` | `d`   | 下载整个系列或指定章节                                   |
+| `shelf <action>`          |       | 收藏不同来源的作品并管理订阅                             |
 | `add <package>`           | `a`   | 安装 npm 源扩展，可附加 `@版本` 或 `@标签`               |
 | `update [package]`        | `u`   | 按已保存的版本范围更新单个或全部扩展                     |
 | `remove <package>`        | `rm`  | 卸载 CLI 管理的扩展                                      |
@@ -58,6 +59,17 @@ comic-dl remove @comic-dl/zerobyw
 ### 选择章节
 
 `-c 2-4` 选择当前章节列表中按阅读顺序排列的第 2 到第 4 项（含两端）。位置从 `1` 开始，与站点的章节标题和稳定 ID 无关；`list` 的输出顺序就是范围使用的顺序。也可用 `-c <id>` 指定 `list` 输出第一列的稳定 ID；若输入恰好与某个 ID 相同，优先按 ID 处理。可以重复传入 `-c` 混用范围和 ID，命令会先校验所有选择，再按阅读顺序下载，每章只处理一次。范围倒序、超界或 ID 不存在时返回 `2`，且不会开始下载。
+
+### 管理跨来源书架
+
+用 `search` 找到作品 URL 后，可用 `shelf add <作品 URL> --title <标题>` 加入书架。完整 URL 可自动选源，短 ID 可以用 `--source <id>` 指定来源。`--title` 可省略，默认显示来源返回的作品 ID。同一源的同一作品只添加一次；其他来源的版本保留为单独条目。
+
+- `shelf list` 输出 `条目 ID<TAB>来源 ID<TAB>订阅状态<TAB>标题`。订阅状态为 `following` 或 `not-following`。
+- `shelf follow <条目 ID>` 开启订阅，`shelf unfollow <条目 ID>` 取消订阅并保留收藏。当前版本保存订阅状态，供未来自动追更使用。
+- `shelf set-input <条目 ID> <作品输入>` 用原来的来源验证新输入，可更新同一作品的 URL 或章节分组。请使用可复用、无凭据的输入。
+- `shelf remove <条目 ID>` 移除收藏及订阅，保留已下载的 CBZ。
+
+`add` 和 `set-input` 支持 `--config`、`--extension`，需要能加载相应来源；其余书架操作可离线执行。默认数据库位于用户数据目录下的 `comic-dl/shelf.sqlite`，与扩展目录并列。可在各子命令中传入 `--shelf-db <file>` 使用另一个本地数据库。
 
 ### 脚本输出与退出码
 
