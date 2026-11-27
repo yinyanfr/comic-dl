@@ -1,3 +1,5 @@
+import type { CatalogOptions, OptionChoice } from '../source-options.js';
+
 export const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'] as const;
 export type ImageExtension = (typeof imageExtensions)[number];
 
@@ -29,7 +31,13 @@ export interface ChapterSource {
     query: string,
     page: number,
     signal: AbortSignal,
+    options?: CatalogOptions,
   ): Promise<SearchPage>;
+  catalogChoices?(
+    filter: string,
+    mode: 'browse' | 'search',
+    signal: AbortSignal,
+  ): Promise<readonly OptionChoice[]>;
   getSeries(input: string, signal: AbortSignal): Promise<Series>;
   getChapter(
     input: string,

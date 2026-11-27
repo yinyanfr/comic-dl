@@ -3,23 +3,37 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import {
+  isOutputMarker,
   nonempty,
   outputPath,
   readConfig,
+  sourceOverrides,
   userDataDirectory,
 } from './config.js';
-import { defaultRetries, downloadSeries, retrySourceRead } from './download.js';
+import type { CliConfig } from './config.js';
+import {
+  defaultJobs,
+  defaultRetries,
+  downloadSeries,
+  resolveDownloadSeries,
+  retrySourceRead,
+  selectChapters,
+} from './download.js';
 import {
   extensionPackage,
   manageExtensions,
   withExtensions,
 } from './extension-store.js';
-import { extensionApiVersion } from './extension.js';
-import type { Shelf, ShelfEntry } from './shelf.js';
-import type { CheckEvent, TaskEvent } from './shelf-updates.js';
-import { fixtureSource } from './sources/fixture.js';
+import type { CheckEvent, ShelfEntry, TaskEvent } from './shelf-types.js';
+import type { Shelf } from './shelf.js';
+import { fixtureExtension } from './sources/fixture.js';
 import { isSourceId, SourceRegistry } from './sources/index.js';
-import type { Series } from './sources/source.js';
+import {
+  assignment,
+  isOptionKey,
+  SourceOptionError,
+} from './source-options.js';
+import type { SettingsBySource } from './source-options.js';
 
 const aliases = new Map([
   ['src', 'sources'],
@@ -61,11 +75,14 @@ Update one or all installed extensions within their saved npm version ranges.`,
 Uninstall a managed npm extension by package name.`,
   sources: `Usage: comic-dl sources [options]
 
-List available source IDs.`,
+List available source IDs. Use --source <id> --options to show the source settings as JSON.`,
   search: `Usage: comic-dl search [query] [options]
 
 Omit query to browse the catalog. Requires --source <id> unless set in config.
-  --page <n>          Results page (default: 1)`,
+  --page <n>          Results page (default: 1)
+  --sort <id>         Select a source-defined sort
+  --filter <key=value> Set a source-defined filter; repeat for different keys
+  --options           Show sorts, filters and choices for this mode as JSON`,
   list: `Usage: comic-dl list <series-input> [options]
        comic-dl list --fixture <directory> [options]
 
@@ -118,6 +135,7 @@ The add, set-input, check and watch actions accept source configuration options:
 const commonHelp = `
   --config <file>     Read defaults from an explicit JSON config file
   --extension <name>  Load an installed package or local ESM file; repeat to load more
+  --set <id.key=value> Override a non-secret source setting for this run; repeat for more
   -h, --help          Show this help`;
 
 function integer(name: string, value: string, minimum: number) {
@@ -136,7 +154,37 @@ const help = { type: 'boolean', short: 'h' } as const;
 const fixture = { type: 'string' } as const;
 const source = { type: 'string' } as const;
 const extension = { type: 'string', multiple: true } as const;
-const commonOptions = { help, extension, config: { type: 'string' } } as const;
+const commonOptions = {
+  help,
+  extension,
+  config: { type: 'string' },
+  set: { type: 'string', multiple: true },
+} as const;
+
+function sourceArguments(
+  values: { extension?: string[]; set?: string[] },
+  config: CliConfig,
+) {
+  return {
+    extensions: values.extension ?? config.extensions ?? [],
+    sourceSettings: config.sourceSettings,
+    overrides: sourceOverrides(values.set),
+  };
+}
+
+function searchFilters(inputs: readonly string[] = []) {
+  const filters = new Map<string, string>();
+  for (const input of inputs) {
+    const [key, value] = assignment(input, '--filter');
+    if (!isOptionKey(key) || filters.has(key)) {
+      throw new Error(
+        '--filter requires a distinct filter key for each assignment',
+      );
+    }
+    filters.set(key, value);
+  }
+  return Object.fromEntries(filters);
+}
 
 function parseInput(
   values: { fixture?: string; source?: string },
@@ -270,16 +318,20 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
     action !== 'check' &&
     action !== 'watch'
   ) {
-    if (values.config !== undefined || values.extension !== undefined) {
+    if (
+      values.config !== undefined ||
+      values.extension !== undefined ||
+      values.set !== undefined
+    ) {
       throw new Error(
-        '--config and --extension require shelf add, set-input, check or watch',
+        '--config, --extension and --set require shelf add, set-input, check or watch',
       );
     }
     return { command, action, file, id, input } as const;
   }
 
   const config = await readConfig(values.config, signal);
-  const extensions = values.extension ?? config.extensions ?? [];
+  const sourceArgs = sourceArguments(values, config);
   const retries = config.retries;
   if (action === 'check') {
     return {
@@ -287,7 +339,7 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
       action,
       file,
       id,
-      extensions,
+      ...sourceArgs,
       retries,
       includeHistory: values['include-history'],
     } as const;
@@ -299,14 +351,7 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
         'shelf watch requires --output <directory> or "output" in config',
       );
     const outputMarker = values['require-output-marker'];
-    if (
-      outputMarker !== undefined &&
-      (!nonempty(outputMarker) ||
-        /[/\\]/u.test(outputMarker) ||
-        outputMarker === '.' ||
-        outputMarker === '..' ||
-        outputMarker.includes('\0'))
-    ) {
+    if (outputMarker !== undefined && !isOutputMarker(outputMarker)) {
       throw new Error(
         '--require-output-marker requires a filename inside the output directory',
       );
@@ -318,19 +363,27 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
       command,
       action,
       file,
-      extensions,
+      ...sourceArgs,
       retries,
       directory: outputPath(directory),
       outputMarker,
       interval: seconds * 1000,
       jobs:
         values.jobs === undefined
-          ? (config.jobs ?? 2)
+          ? (config.jobs ?? defaultJobs)
           : integer('jobs', values.jobs, 1),
     } as const;
   }
   if (action === 'set-input') {
-    return { command, action, file, id, input, extensions, retries } as const;
+    return {
+      command,
+      action,
+      file,
+      id,
+      input,
+      ...sourceArgs,
+      retries,
+    } as const;
   }
   if (values.title !== undefined && !nonempty(values.title)) {
     throw new Error('--title requires a non-empty title');
@@ -339,7 +392,7 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
     command,
     action,
     file,
-    extensions,
+    ...sourceArgs,
     retries,
     title: values.title,
     ...parseInput(values, positionals, config.source),
@@ -379,7 +432,10 @@ async function parseCommand(args: string[], signal: AbortSignal) {
     } as const;
   }
   if (command === 'sources') {
-    const { values } = parseArgs({ args: rest, options: commonOptions });
+    const { values } = parseArgs({
+      args: rest,
+      options: { ...commonOptions, source, options: { type: 'boolean' } },
+    });
     if (values.help) {
       return {
         command: 'help',
@@ -387,9 +443,15 @@ async function parseCommand(args: string[], signal: AbortSignal) {
       } as const;
     }
     const config = await readConfig(values.config, signal);
+    if (values.source !== undefined && !values.options) {
+      throw new Error('sources --source requires --options');
+    }
     return {
       command,
-      extensions: values.extension ?? config.extensions ?? [],
+      ...sourceArguments(values, config),
+      settingsSource: values.options
+        ? requireSource(values.source ?? config.source)
+        : undefined,
     } as const;
   }
   if (command === 'search') {
@@ -399,6 +461,9 @@ async function parseCommand(args: string[], signal: AbortSignal) {
         ...commonOptions,
         source,
         page: { type: 'string' },
+        sort: { type: 'string' },
+        filter: { type: 'string', multiple: true },
+        options: { type: 'boolean' },
       },
       allowPositionals: true,
     });
@@ -411,13 +476,26 @@ async function parseCommand(args: string[], signal: AbortSignal) {
     if (positionals.length > 1) {
       throw new Error('search accepts at most one query argument');
     }
+    if (
+      values.options &&
+      (values.sort !== undefined ||
+        values.filter !== undefined ||
+        values.page !== undefined)
+    ) {
+      throw new Error(
+        '--options cannot be combined with --sort, --filter or --page',
+      );
+    }
     const config = await readConfig(values.config, signal);
     return {
       command,
       sourceId: requireSource(values.source ?? config.source),
-      extensions: values.extension ?? config.extensions ?? [],
+      ...sourceArguments(values, config),
       query: positionals[0] ?? '',
       page: integer('page', values.page ?? '1', 1),
+      showOptions: values.options,
+      sort: values.sort,
+      filters: searchFilters(values.filter),
     } as const;
   }
   if (command === 'list') {
@@ -432,7 +510,7 @@ async function parseCommand(args: string[], signal: AbortSignal) {
     const config = await readConfig(values.config, signal);
     return {
       command,
-      extensions: values.extension ?? config.extensions ?? [],
+      ...sourceArguments(values, config),
       ...parseInput(values, positionals, config.source),
     } as const;
   }
@@ -488,7 +566,7 @@ async function parseCommand(args: string[], signal: AbortSignal) {
   }
   return {
     command,
-    extensions: values.extension ?? config.extensions ?? [],
+    ...sourceArguments(values, config),
     ...parseInput(values, positionals, config.source),
     selections,
     directory: outputPath(directory),
@@ -497,55 +575,12 @@ async function parseCommand(args: string[], signal: AbortSignal) {
         ? 1
         : typeof values.jobs === 'string'
           ? integer('jobs', values.jobs, 1)
-          : (config.jobs ?? 2),
+          : (config.jobs ?? defaultJobs),
     retries:
       values.retries === undefined
         ? (config.retries ?? defaultRetries)
         : integer('retries', values.retries, 0),
   } as const;
-}
-
-function selectChapters(
-  series: Series,
-  selections: readonly string[],
-  allowRanges: boolean,
-) {
-  const byId = new Map(
-    series.chapters.map((chapter, index) => [chapter.id, index]),
-  );
-  const selected = new Set<number>();
-  const unknown = new Set<string>();
-  for (const selection of selections) {
-    const index = byId.get(selection);
-    if (index !== undefined) {
-      selected.add(index);
-      continue;
-    }
-    const range = allowRanges && /^(\d+)-(\d+)$/.exec(selection);
-    if (!range) {
-      unknown.add(selection);
-      continue;
-    }
-    const first = Number(range[1]);
-    const last = Number(range[2]);
-    if (first < 1 || first > last || last > series.chapters.length) {
-      throw new Error(
-        `Invalid chapter range ${JSON.stringify(selection)}: use an ascending range within 1-${series.chapters.length}.`,
-      );
-    }
-    for (let index = first - 1; index < last; index++) {
-      selected.add(index);
-    }
-  }
-  if (unknown.size) {
-    throw new Error(
-      `Unknown chapter ID(s): ${[...unknown].map((id) => JSON.stringify(id)).join(', ')}. Run comic-dl list to see valid IDs.`,
-    );
-  }
-  return {
-    ...series,
-    chapters: series.chapters.filter((_, index) => selected.has(index)),
-  };
 }
 
 async function run(
@@ -567,24 +602,33 @@ async function run(
     return 0;
   }
   if (args.command === 'manage') {
-    await manageExtensions(args.action, args.package, signal);
+    const result = await manageExtensions(args.action, args.package, {
+      signal,
+      stdio: 'inherit',
+    });
+    if (!result.changed) console.log('No extensions installed.');
+    else if (result.action === 'remove')
+      console.log(`Removed ${result.package}`);
+    else console.log(`Installed extensions: ${result.installed.join(', ')}`);
     return 0;
   }
   if (args.command === 'shelf') {
     return runShelfCommand(args, signal);
   }
-  const sources = builtinSources();
-  return withExtensions(sources, args.extensions, signal, () =>
-    runSourceCommand(args, sources, signal),
-  );
+  const sources = builtinSources(args);
+  return withExtensions(sources, args.extensions, signal, () => {
+    sources.validateOverrides();
+    return runSourceCommand(args, sources, signal);
+  });
 }
 
-function builtinSources() {
-  return new SourceRegistry().use({
-    apiVersion: extensionApiVersion,
-    id: fixtureSource.id,
-    create: () => fixtureSource,
-  });
+function builtinSources(args: {
+  sourceSettings?: SettingsBySource;
+  overrides: SettingsBySource;
+}) {
+  return new SourceRegistry(args.sourceSettings, args.overrides).use(
+    fixtureExtension,
+  );
 }
 
 function printShelfEntry(entry: ShelfEntry) {
@@ -608,12 +652,15 @@ async function runShelfCommand(
       const { checkSubscriptions, watchShelf } =
         await import('./shelf-updates.js');
       const withSources = <T>(run: (sources: SourceRegistry) => Promise<T>) => {
-        const sources = builtinSources();
+        const sources = builtinSources(args);
         return withExtensions(
           sources,
           args.extensions,
           signal,
-          () => run(sources),
+          () => {
+            sources.validateOverrides();
+            return run(sources);
+          },
           () =>
             logError(
               'Could not load a source extension. Other available sources will still be checked.',
@@ -621,7 +668,9 @@ async function runShelfCommand(
         );
       };
       const options = { signal, retries: args.retries, onCheck: printCheck };
+      const hasOverrides = Object.keys(args.overrides).length > 0;
       if (args.action === 'watch') {
+        if (hasOverrides) await withSources(() => Promise.resolve());
         console.log('Watching shelf subscriptions. Press Ctrl+C to stop.');
         await watchShelf(shelf.tracking, withSources, {
           ...args,
@@ -638,14 +687,15 @@ async function runShelfCommand(
         logError('Subscription not found. Run comic-dl shelf list.');
         return 2;
       }
-      const result = entries.length
-        ? await withSources((sources) =>
-            checkSubscriptions(shelf.tracking, sources, entries, {
-              ...options,
-              includeHistory: args.includeHistory,
-            }),
-          )
-        : { failures: 0, queued: 0 };
+      const result =
+        entries.length || hasOverrides
+          ? await withSources((sources) =>
+              checkSubscriptions(shelf.tracking, sources, entries, {
+                ...options,
+                includeHistory: args.includeHistory,
+              }),
+            )
+          : { failures: 0, queued: 0 };
       console.log(
         `Summary: ${entries.length} checked, ${result.queued} queued, ${result.failures} failed`,
       );
@@ -678,8 +728,9 @@ async function runShelfCommand(
       return 0;
     }
 
-    const sources = builtinSources();
+    const sources = builtinSources(args);
     return await withExtensions(sources, args.extensions, signal, async () => {
+      sources.validateOverrides();
       const options = { signal, retries: args.retries };
       if (args.action === 'add') {
         const sourceId = selectSourceId(
@@ -788,6 +839,12 @@ async function runSourceCommand(
   signal: AbortSignal,
 ) {
   if (args.command === 'sources') {
+    if (args.settingsSource) {
+      console.log(
+        JSON.stringify(sources.settings(args.settingsSource), null, 2),
+      );
+      return 0;
+    }
     for (const id of sources.ids()) {
       console.log(id);
     }
@@ -801,16 +858,29 @@ async function runSourceCommand(
     args.command === 'chapter' ? 'chapter' : 'series',
   );
   if (!sourceId) return 2;
-  const source = sources.create(sourceId);
   if (args.command === 'search') {
-    if (!source.search) {
-      throw new Error(`Source ${source.id} does not support search`);
+    if (args.showOptions) {
+      console.log(
+        JSON.stringify(
+          await sources.catalog(sourceId, args.query, signal),
+          null,
+          2,
+        ),
+      );
+      return 0;
     }
-    const search = source.search.bind(source);
+    const search = await sources.prepareSearch(
+      sourceId,
+      args.query,
+      args.page,
+      signal,
+      { sort: args.sort, filters: args.filters },
+      true,
+    );
     const { results, hasNext } = await readSource(
-      source.id,
+      sourceId,
       'search the catalog',
-      () => search(args.query, args.page, signal),
+      search,
       signal,
     );
     for (const { title, url } of results) {
@@ -821,6 +891,7 @@ async function runSourceCommand(
     }
     return 0;
   }
+  const source = sources.create(sourceId);
   if (args.command === 'list') {
     const series = await readSource(
       source.id,
@@ -837,11 +908,7 @@ async function runSourceCommand(
   const series = await readSource(
     source.id,
     direct ? 'resolve the chapter' : 'list chapters',
-    async () => {
-      if (!direct) return source.getSeries(args.input, signal);
-      const { workId, chapter } = await source.getChapter(args.input, signal);
-      return { id: workId, chapters: [chapter] };
-    },
+    () => resolveDownloadSeries(source, args.input, direct, signal),
     signal,
     args.retries,
   );
@@ -949,7 +1016,7 @@ async function main() {
       return 130;
     }
     logError(error);
-    return 1;
+    return error instanceof SourceOptionError ? 2 : 1;
   } finally {
     process.off('SIGINT', interrupt);
     process.off('SIGTERM', interrupt);

@@ -23,7 +23,8 @@ import {
 
 export type ExtensionAction = 'add' | 'update' | 'remove';
 
-function storeDirectory() {
+function storeDirectory(directory?: string) {
+  if (directory !== undefined) return resolve(directory);
   if (process.env.COMIC_DL_EXTENSION_DIR) {
     return resolve(process.env.COMIC_DL_EXTENSION_DIR);
   }
@@ -100,16 +101,17 @@ export async function withExtensions<T>(
   explicit: readonly string[],
   signal: AbortSignal,
   run: () => Promise<T>,
-  onLoadError?: () => void,
+  onLoadError?: (cause: unknown) => void,
+  directory?: string,
 ): Promise<T> {
-  const store = storeDirectory();
+  const store = storeDirectory(directory);
   const ignoreLoadError =
     onLoadError &&
     ((cause: unknown) => {
       signal.throwIfAborted();
       if (cause instanceof DuplicateSourceError)
         sources.excludeAmbiguous(cause.id);
-      onLoadError();
+      onLoadError(cause);
     });
   for (;;) {
     signal.throwIfAborted();
@@ -174,7 +176,12 @@ export function extensionPackage(
   return name;
 }
 
-async function npm(project: string, args: string[], signal: AbortSignal) {
+async function npm(
+  project: string,
+  args: string[],
+  signal: AbortSignal,
+  stdio: 'inherit' | 'ignore',
+) {
   signal.throwIfAborted();
   const options = [...args, '--ignore-scripts', '--no-audit', '--no-fund'];
   const windows = process.platform === 'win32';
@@ -189,16 +196,20 @@ async function npm(project: string, args: string[], signal: AbortSignal) {
         ],
         {
           cwd: project,
-          stdio: 'inherit',
+          stdio,
           signal,
           windowsVerbatimArguments: true,
         },
       )
-    : spawn('npm', options, { cwd: project, stdio: 'inherit', signal });
+    : spawn('npm', options, { cwd: project, stdio, signal });
   await new Promise<void>((done, reject) => {
-    child.on('error', reject);
+    let failure: Error | undefined;
+    child.on('error', (error) => {
+      failure = error;
+    });
     child.on('close', (code) => {
-      if (code === 0) done();
+      if (failure) reject(failure);
+      else if (code === 0) done();
       else
         reject(new Error(`npm ${args[0]} failed (exit ${code ?? 'signal'})`));
     });
@@ -217,13 +228,32 @@ function writerIsAlive(pid: number) {
   }
 }
 
+export interface ExtensionStoreOptions {
+  directory?: string;
+  signal?: AbortSignal;
+}
+
+export interface ExtensionChange {
+  action: ExtensionAction;
+  package?: string;
+  installed: readonly string[];
+  changed: boolean;
+}
+
 export async function manageExtensions(
   action: ExtensionAction,
   input: string | undefined,
-  signal: AbortSignal,
-) {
+  {
+    directory,
+    signal = new AbortController().signal,
+    stdio = 'ignore',
+  }: ExtensionStoreOptions & { stdio?: 'inherit' | 'ignore' } = {},
+): Promise<ExtensionChange> {
+  if (action !== 'add' && action !== 'update' && action !== 'remove')
+    throw new Error('Expected an extension action: add, update, or remove');
   const name = extensionPackage(action, input);
-  const store = storeDirectory();
+  signal.throwIfAborted();
+  const store = storeDirectory(directory);
   await mkdir(store, { recursive: true });
   const writers = join(store, 'writers');
   await mkdir(writers, { recursive: true });
@@ -254,8 +284,7 @@ export async function manageExtensions(
       throw new Error(`Extension is not installed: ${name}`);
     }
     if (action === 'update' && !installed.length) {
-      console.log('No extensions installed.');
-      return;
+      return { action, package: name, installed, changed: false };
     }
     await mkdir(join(project, 'readers'), { recursive: true });
     if (previous) {
@@ -278,8 +307,8 @@ export async function manageExtensions(
         : action === 'remove'
           ? ['uninstall', name!]
           : ['update', ...(name ? [name] : [])];
-    await npm(project, [...args, '--package-lock-only'], signal);
-    await npm(project, ['ci'], signal);
+    await npm(project, [...args, '--package-lock-only'], signal, stdio);
+    await npm(project, ['ci'], signal, stdio);
     const registry = new SourceRegistry();
     const names = await loadManaged(project, registry, signal);
     if (registry.ids().includes('fixture'))
@@ -290,11 +319,7 @@ export async function manageExtensions(
     await rename(pointer, join(store, 'current'));
     committed = true;
     if (previous) await discardIfUnused(store, previous);
-    console.log(
-      action === 'remove'
-        ? `Removed ${name}`
-        : `Installed extensions: ${names.join(', ')}`,
-    );
+    return { action, package: name, installed: names, changed: true };
   } finally {
     try {
       if (!committed) await rm(project, { recursive: true, force: true });

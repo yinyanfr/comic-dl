@@ -17,6 +17,7 @@ import { execPath } from 'node:process';
 import { test } from 'node:test';
 import { fileURLToPath, URL } from 'node:url';
 import { promisify } from 'node:util';
+import { createDownloader, fixtureExtension } from 'comic-dl';
 
 const exec = promisify(execFile);
 const cli = fileURLToPath(new URL('../dist/index.js', import.meta.url));
@@ -40,6 +41,99 @@ async function makeFixture(t, chapters, workId = 'work') {
 function run(...args) {
   return exec(execPath, [cli, ...args]);
 }
+
+test('the public download API validates selections and supports direct chapters', async (t) => {
+  const { directory, output } = await makeFixture(
+    t,
+    ['1-2', 'second', 'third'].map((id) => ({
+      id,
+      title: id,
+      pages: ['page.gif'],
+    })),
+  );
+  const app = createDownloader({ source: 'fixture', output, jobs: 1 }).use(
+    fixtureExtension,
+  );
+  await assert.rejects(
+    app.download(directory, { chapters: ['second', 'missing'] }),
+    /Unknown chapter ID/,
+  );
+  await assert.rejects(readdir(output), { code: 'ENOENT' });
+  assert.equal(
+    (await app.downloadChapter(directory, { chapterId: '1-2' })).chapterId,
+    '1-2',
+  );
+  const selected = await app.download(directory, {
+    chapters: ['2-3', '1-2', 'second'],
+  });
+  assert.deepEqual(
+    selected.map(({ chapterId, status }) => [chapterId, status]),
+    [
+      ['1-2', 'skipped'],
+      ['second', 'downloaded'],
+      ['third', 'downloaded'],
+    ],
+  );
+  await writeFile(
+    join(directory, 'chapter.json'),
+    JSON.stringify({
+      workId: 'work',
+      chapterId: 'direct',
+      pages: ['page.gif'],
+    }),
+  );
+  assert.equal((await app.downloadChapter(directory)).chapterId, 'direct');
+});
+
+test('the public shelf API checks and watches the same database as the CLI', async (t) => {
+  const { directory, output, manifest, writeManifest } = await makeFixture(t, [
+    { id: 'first', title: 'First', pages: ['page.gif'] },
+  ]);
+  const file = join(directory, 'shelf.sqlite');
+  const app = createDownloader({ source: 'fixture', output }).use(
+    fixtureExtension,
+  );
+  const shelf = await app.openShelf({ file });
+  t.after(() => shelf.close());
+  const entry = await shelf.add(directory, { title: 'Series' });
+  shelf.follow(entry.id);
+  const baseline = await shelf.check({ entryId: entry.id });
+  assert.equal(baseline.events[0].status, 'baseline');
+  assert.equal(baseline.queued, 0);
+
+  manifest.chapters.push({ id: 'new', title: 'New', pages: ['page.gif'] });
+  await writeManifest();
+  assert.equal((await shelf.check({ entryId: entry.id })).queued, 1);
+  assert.equal(shelf.status(entry.id)[0].pending, 1);
+
+  const controller = new globalThis.AbortController();
+  const signal = globalThis.AbortSignal.any([
+    controller.signal,
+    globalThis.AbortSignal.timeout(5000),
+  ]);
+  await shelf
+    .watch({
+      signal,
+      onTask(event) {
+        assert.equal(event.chapterId, 'new');
+        assert.equal(event.state, 'complete');
+        controller.abort();
+      },
+    })
+    .catch((error) => {
+      if (error !== controller.signal.reason) throw error;
+    });
+  assert.equal(shelf.status(entry.id)[0].complete, 1);
+  assert.equal((await readdir(output)).length, 1);
+  assert.match(
+    (await run('shelf', 'status', entry.id, '--shelf-db', file)).stdout,
+    /1 complete/,
+  );
+  shelf.unfollow(entry.id);
+  shelf.remove(entry.id);
+  assert.deepEqual(shelf.list(), []);
+  assert.equal((await readdir(output)).length, 1);
+});
 
 test('lists chapters; series continues past a failure and can resume', async (t) => {
   const { directory, output } = await makeFixture(t, [

@@ -19,8 +19,12 @@ import { test } from 'node:test';
 import { setImmediate } from 'node:timers/promises';
 import { fileURLToPath, URL } from 'node:url';
 import { promisify } from 'node:util';
-import downloader, { createDownloader } from 'comic-dl';
-import { readConfig } from '../dist/config.js';
+import downloader, {
+  createDownloader,
+  loadExtension,
+  readConfig,
+  sourceOverrides,
+} from 'comic-dl';
 import helloExtension from '../examples/hello-extension.mjs';
 
 const exec = promisify(execFile);
@@ -31,12 +35,198 @@ const hello = './examples/hello-extension.mjs';
 function run(...args) {
   return exec(execPath, [cli, ...args], {
     cwd: root,
+    timeout: 15_000,
     env: {
       ...env,
       COMIC_DL_EXTENSION_DIR: join(root, 'test', 'no-managed-extensions'),
     },
   });
 }
+
+const configurableExtension = {
+  ...helloExtension,
+  settings: {
+    'site-url': {
+      type: 'url',
+      label: 'Website',
+      default: 'https://example.invalid',
+    },
+    limit: { type: 'integer', label: 'Limit', min: 1, default: 1 },
+  },
+  catalog: {
+    browse: {
+      sorts: [{ id: 'updated', label: 'By update' }],
+      filters: { theme: { type: 'dynamic-select', label: 'Theme' } },
+    },
+  },
+  matchesUrl(url, kind, settings) {
+    return kind === 'series' && url.origin === settings['site-url'];
+  },
+  create(api, settings) {
+    const base = helloExtension.create(api);
+    return {
+      ...base,
+      async getSeries(input, signal) {
+        assert.equal(new URL(input).origin, settings['site-url']);
+        const series = await base.getSeries('demo', signal);
+        return {
+          ...series,
+          chapters: [{ ...series.chapters[0], title: String(settings.limit) }],
+        };
+      },
+      async catalogChoices(key, mode) {
+        assert.equal(key, 'theme');
+        assert.equal(mode, 'browse');
+        return [{ id: 'adventure', label: 'Adventure' }];
+      },
+      async search(query, page, _signal, options) {
+        return {
+          hasNext: page === 1,
+          results: [
+            {
+              url: `${settings['site-url']}/demo`,
+              title: `${query}:${page}:${options?.sort ?? ''}:${options?.filters.theme ?? ''}`,
+            },
+          ],
+        };
+      },
+    };
+  },
+};
+
+test('source settings reach URL matching and calls from CLI, shelf and isolated library instances', async (t) => {
+  const directory = await makeDirectory(t);
+  const extension = join(directory, 'configured.mjs');
+  const config = join(directory, 'config.json');
+  await writeFile(
+    extension,
+    `
+    import assert from 'node:assert/strict';
+    import helloExtension from ${JSON.stringify(new URL('../examples/hello-extension.mjs', import.meta.url).href)};
+    export default {
+      ...helloExtension,
+      settings: ${JSON.stringify(configurableExtension.settings)},
+      catalog: ${JSON.stringify(configurableExtension.catalog)},
+      ${configurableExtension.matchesUrl.toString()},
+      ${configurableExtension.create.toString()}
+    };
+  `,
+  );
+  await writeFile(
+    config,
+    JSON.stringify({
+      version: 1,
+      extensions: ['./configured.mjs'],
+      sourceSettings: {
+        hello: { 'site-url': 'https://configured.invalid', limit: 3 },
+      },
+    }),
+  );
+  const args = ['--config', config];
+  const input = 'https://configured.invalid/demo';
+  assert.equal((await run('list', input, ...args)).stdout, 'welcome\t3\n');
+  assert.equal(
+    (await run('list', input, ...args, '--set', 'hello.limit=5')).stdout,
+    'welcome\t5\n',
+  );
+  await assert.rejects(
+    run('list', input, ...args, '--set', 'hello.limit=zero'),
+    {
+      code: 2,
+      stderr: /Invalid setting hello.limit/,
+    },
+  );
+  const shelf = ['--shelf-db', join(directory, 'shelf.sqlite')];
+  const { stdout } = await run('shelf', 'add', input, ...args, ...shelf);
+  const [id] = stdout.split('\t');
+  await run('shelf', 'follow', id, ...shelf);
+  const badOverride = ['--set', 'typo.site-url=https://example.invalid'];
+  await assert.rejects(
+    run('shelf', 'check', id, ...args, ...shelf, ...badOverride),
+    { code: 2, stderr: /--set refers to an unknown source: typo/ },
+  );
+  await assert.rejects(
+    run(
+      'shelf',
+      'watch',
+      ...args,
+      '--shelf-db',
+      join(directory, 'empty.sqlite'),
+      '--output',
+      directory,
+      ...badOverride,
+    ),
+    { code: 2, stderr: /--set refers to an unknown source: typo/ },
+  );
+  assert.match(
+    (await run('shelf', 'check', id, ...args, ...shelf)).stdout,
+    /baseline/,
+  );
+  const descriptor = JSON.parse(
+    (await run('search', ...args, '--source', 'hello', '--options')).stdout,
+  );
+  assert.deepEqual(descriptor.filters.theme.choices, [
+    { id: 'adventure', label: 'Adventure' },
+  ]);
+  assert.equal(
+    (
+      await run(
+        'search',
+        ...args,
+        '--source',
+        'hello',
+        '--sort',
+        'updated',
+        '--filter',
+        'theme=adventure',
+        '--page',
+        '2',
+      )
+    ).stdout,
+    `${input}\t:2:updated:adventure\n`,
+  );
+  await assert.rejects(
+    run('search', 'word', ...args, '--source', 'hello', '--sort', 'updated'),
+    {
+      code: 2,
+      stderr: /does not support that sort for search/,
+    },
+  );
+
+  const first = createDownloader().use(configurableExtension, {
+    'site-url': 'https://configured.invalid',
+  });
+  const second = createDownloader().use(configurableExtension);
+  first.sourceSettings('hello').limit.default = 9;
+  const firstCatalog = await first.catalogOptions('hello');
+  firstCatalog.sorts[0].id = 'changed';
+  firstCatalog.filters.theme.choices.length = 0;
+  assert.equal(second.sourceSettings('hello').limit.default, 1);
+  const secondCatalog = await second.catalogOptions('hello');
+  assert.equal(secondCatalog.sorts[0].id, 'updated');
+  assert.equal(secondCatalog.filters.theme.choices[0].id, 'adventure');
+  assert.equal((await first.list(input)).chapters[0].title, '1');
+  await assert.rejects(second.list(input), /No source matches/);
+  const result = await first.search('', {
+    source: 'hello',
+    sort: 'updated',
+    filters: { theme: 'adventure' },
+  });
+  assert.equal(result.results[0].title, ':1:updated:adventure');
+  assert.equal(first.validateSourceSettings('hello', { limit: 4 }).limit, 4);
+  assert.equal(first.validateSourceSettings('hello').limit, 1);
+  assert.throws(
+    () => first.validateSourceSettings('hello', { limit: 0 }),
+    /Invalid setting hello.limit/,
+  );
+  const { extensions, ...defaults } = await readConfig(config);
+  const configured = createDownloader({
+    ...defaults,
+    overrides: sourceOverrides(['hello.limit=5']),
+  }).use(await loadExtension(extensions[0]));
+  assert.equal(configured.resolveSource(input), 'hello');
+  assert.equal((await configured.list(input)).chapters[0].title, '5');
+});
 
 async function makeDirectory(t) {
   const directory = await mkdtemp(join(tmpdir(), 'comic-dl-extension-'));
@@ -390,17 +580,17 @@ test('npm-managed extensions are discovered and updates stay in range', async (t
     packument['dist-tags'].latest = version;
     registry.set(packageName, packument);
   }
-  const managed = (...args) =>
-    exec(execPath, [cli, ...args], {
-      cwd: directory,
-      env: {
-        ...env,
-        COMIC_DL_EXTENSION_DIR: join(directory, 'store'),
-        npm_config_cache: join(directory, 'npm-cache'),
-        npm_config_registry: origin,
-        npm_config_fetch_retries: '0',
-      },
-    });
+  const processOptions = {
+    cwd: directory,
+    env: {
+      ...env,
+      COMIC_DL_EXTENSION_DIR: join(directory, 'store'),
+      npm_config_cache: join(directory, 'npm-cache'),
+      npm_config_registry: origin,
+      npm_config_fetch_retries: '0',
+    },
+  };
+  const managed = (...args) => exec(execPath, [cli, ...args], processOptions);
   const list = () => managed('list', '--source', 'hello', 'demo');
   await publish('1.0.0');
   await managed('add', name);
@@ -437,5 +627,32 @@ test('npm-managed extensions are discovered and updates stay in range', async (t
   });
   assert.equal((await list()).stdout, 'welcome\t1.2.0\n');
   await managed('remove', name);
+  assert.equal((await managed('sources')).stdout, 'fixture\n');
+
+  const programmatic = await exec(
+    execPath,
+    [
+      '--input-type=module',
+      '-e',
+      `
+      import assert from 'node:assert/strict';
+      import { manageExtensions, withManagedDownloader } from ${JSON.stringify(import.meta.resolve('comic-dl'))};
+      const name = ${JSON.stringify(name)};
+      const directory = './other-store';
+      const options = { extensionDirectory: directory, source: 'hello' };
+      const title = () => withManagedDownloader(options, async (app) =>
+        (await app.list('demo')).chapters[0].title,
+      );
+      assert.deepEqual((await manageExtensions('add', name + '@^1.0.0', { directory })).installed, [name]);
+      assert.equal(await title(), '1.2.0');
+      assert.deepEqual((await manageExtensions('update', undefined, { directory })).installed, [name]);
+      assert.equal(await title(), '1.2.0');
+      assert.deepEqual((await manageExtensions('remove', name, { directory })).installed, []);
+      assert.deepEqual(await withManagedDownloader(options, async (app) => app.sources()), []);
+      `,
+    ],
+    processOptions,
+  );
+  assert.equal(programmatic.stdout, '');
   assert.equal((await managed('sources')).stdout, 'fixture\n');
 });

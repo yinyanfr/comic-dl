@@ -2,6 +2,24 @@
 
 For each version bump, add an English `## <version> — YYYY-MM-DD` entry here. Start with a short summary, then group the changes under `###` headings such as Features, Breaking changes, and Fixes. Include examples or migration links when commands or APIs change. The publish workflow uses this entry as the GitHub release body and checks it before publishing to npm.
 
+## 3.2.0 — 2026-11-27
+
+Source extensions can now expose editable runtime settings and define server-side sorting and filtering for manga catalogs. Existing API v1 extensions remain supported.
+
+### Source settings and catalog discovery
+
+- Discover settings with `comic-dl sources --source <id> --options`, save values under `sourceSettings` in a CLI config, or override them for one run with `--set <source-id>.<key>=<value>`. URL matching and shelf checks use the same settings as downloads.
+- Discover a source's browse or keyword-search options with `comic-dl search [query] --source <id> --options`, then pass `--sort` and `--filter` to select from the available options.
+- Library callers can supply settings to `.use()` and use `sourceSettings()`, `catalogOptions()`, and `search()` independently of the CLI. The TypeScript extension contract supports per-mode capabilities and dynamic filter choices.
+
+### Programmatic access to CLI capabilities
+
+- Download direct chapter links or select chapters by stable ID and inclusive reading-order range through the library.
+- Open the same SQLite shelf from Node.js to manage subscriptions, check and watch for updates, inspect status, and retry chapters.
+- Load and manage npm extensions, read CLI configuration, and validate runtime source settings through public APIs.
+
+[Compare 3.1.0 to 3.2.0](https://github.com/yinyanfr/comic-dl/compare/3.1.0...3.2.0).
+
 ## 3.1.0 — 2026-11-27
 
 comic-dl now has a local shelf for saving series across sources and a foreground watcher that downloads new chapters as CBZ files. Existing download commands and source extensions still work.

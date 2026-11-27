@@ -5,6 +5,7 @@ import { nonempty } from './config.js';
 import { defaultRetries, downloadSeries, retrySourceRead } from './download.js';
 import { OutputUnavailableError } from './output/cbz.js';
 import type { ShelfTracking, TrackedEntry } from './shelf-tracking.js';
+import type { CheckEvent, CheckProblem, TaskEvent } from './shelf-types.js';
 import { hasUrlCredentials } from './shelf.js';
 import { SourceHttpError } from './sources/http.js';
 import type { SourceRegistry } from './sources/index.js';
@@ -20,28 +21,6 @@ const restrictedDelay = 24 * hour;
 const catalogTimeout = minute;
 const shelfPoll = 1000;
 const maxChaptersPerBatch = 16;
-
-type CheckProblem =
-  | 'source-unavailable'
-  | 'authorization-failed'
-  | 'temporary-failure'
-  | 'catalog-failed'
-  | 'wrong-work'
-  | 'invalid-catalog'
-  | 'empty-catalog'
-  | 'check-conflict';
-
-export type CheckEvent = { id: string; sourceId: string } & (
-  | { status: 'baseline' | 'updated' | 'unchanged'; queued: number }
-  | { status: 'changed' }
-  | { status: 'failed'; problem: CheckProblem }
-);
-
-export interface TaskEvent {
-  entryId: string;
-  chapterId: string;
-  state: 'retry' | 'restricted' | 'complete' | 'blocked';
-}
 
 interface CheckOptions {
   signal: AbortSignal;

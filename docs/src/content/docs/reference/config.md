@@ -19,6 +19,23 @@ description: 保存常用 CLI 选项，并为漫画源配置认证。
 
 所有支持字段、类型和校验规则见[配置文件 v1 规范](../../specs/config-v1/)。
 
+## 来源运行时设置
+
+运行 `comic-dl sources --source <id> --options` 查看扩展声明的设置、默认值和可选值。把要覆盖的值按来源 ID 保存到 `sourceSettings`，例如：
+
+```json
+{
+  "version": 1,
+  "sourceSettings": {
+    "copymanga": { "site-url": "https://www.copy20.com" }
+  }
+}
+```
+
+用 `--config <file>` 加载，或用可重复的 `--set <id>.<key>=<value>` 临时覆盖单项。优先级为 `--set`、配置文件、扩展声明兼容的环境变量、扩展默认值。Cookie、密码和 API key 仍由扩展管理。
+
+设置也用于 URL 自动选源和联网的书架操作。修改 `shelf watch` 使用的配置后，需重启 watcher。
+
 ## 环境变量
 
 `COMIC_DL_EXTENSION_DIR` 可覆盖 CLI 的[扩展安装目录](../cli/#安装和管理漫画源)。各漫画源自行定义认证环境变量，例如 Zerobyw 使用 `COMIC_DL_ZEROBYW_COOKIE`。凭据不进入 CLI 配置；具体变量、获取和更新步骤见[各扩展 README](https://github.com/yinyanfr/comic-dl-extensions)。

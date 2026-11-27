@@ -18,3 +18,5 @@ description: CLI JSON configuration fields, validation, precedence, and path res
 2. `~` and `~/` in `output` refer to your home directory. Other relative output paths and local extension paths starting with `./` or `../` are resolved relative to the configuration file. Absolute paths remain absolute, and package names follow module resolution rules.
 3. Options apply only to relevant commands; for example, `list` does not use `output`. All field types and constraints are validated when loading the file.
 4. Credentials are outside the configuration format. An unreadable file, invalid JSON, invalid field, or unsupported version exits with `2`.
+
+The optional `sourceSettings` field is an object keyed by source ID. Each value is a settings object with keys matching `[a-z][a-z0-9-]*` and string, boolean, or safe integer values. The extension defines supported keys, types, and ranges, which are checked when that source is used. Override individual settings with `--set <id>.<key>=<value>`; use `true` or `false` for booleans.

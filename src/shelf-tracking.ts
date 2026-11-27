@@ -1,5 +1,10 @@
 import { realpathSync } from 'node:fs';
 import Database from 'better-sqlite3';
+import type {
+  CheckProblem,
+  ShelfAttention,
+  ShelfStatus,
+} from './shelf-types.js';
 
 export const trackingSchema = `
   ALTER TABLE shelf_entries ADD COLUMN catalog_version INTEGER NOT NULL DEFAULT 0;
@@ -37,19 +42,6 @@ export interface TrackedEntry {
   checkFailures: number;
 }
 
-interface EntryStatus {
-  id: string;
-  sourceId: string;
-  following: 0 | 1;
-  lastCheck: number | null;
-  lastSuccess: number | null;
-  result: string | null;
-  pending: number;
-  restricted: number;
-  blocked: number;
-  complete: number;
-}
-
 type TaskState = 'queued' | 'retry' | 'restricted' | 'complete' | 'blocked';
 type TaskResult = Exclude<TaskState, 'queued'>;
 
@@ -61,7 +53,7 @@ export interface ShelfTask {
 }
 
 type CheckData =
-  | { problem: string }
+  | { problem: CheckProblem }
   | { chapterIds: readonly string[]; includeHistory: boolean };
 
 const runnableStates = "state IN ('queued', 'retry', 'restricted')";
@@ -112,7 +104,7 @@ export class ShelfTracking {
 
   status(id?: string) {
     return this.db
-      .prepare<{ id: string | null }, EntryStatus>(
+      .prepare<{ id: string | null }, ShelfStatus>(
         `
         SELECT entry.id, source_id AS sourceId, following, last_check AS lastCheck,
           last_success AS lastSuccess, check_result AS result,
@@ -131,7 +123,7 @@ export class ShelfTracking {
 
   needsAttention(id: string) {
     return this.db
-      .prepare<[string], { id: string; state: string }>(
+      .prepare<[string], ShelfAttention>(
         `
         SELECT chapter_id AS id, state FROM shelf_chapters AS chapter
         JOIN shelf_entries AS entry ON entry.id = chapter.entry_id

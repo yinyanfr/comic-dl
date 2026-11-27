@@ -23,7 +23,7 @@ CBZ 直接写入输出目录。下载多部作品给阅读器使用时，请为�
 使用 Node.js 24。核心不附带在线漫画源，CLI 通过 `add` 安装扩展：
 
 ```sh
-npm install -g comic-dl
+npm install -g comic-dl@latest
 comic-dl add @comic-dl/copymanga
 comic-dl sources
 ```
@@ -39,7 +39,7 @@ comic-dl sources
 ## 在项目中使用
 
 ```sh
-npm install comic-dl @comic-dl/zerobyw
+npm install comic-dl@latest @comic-dl/zerobyw
 ```
 
 ```typescript
@@ -58,10 +58,12 @@ const results = await downloader.download(
 console.log(results);
 ```
 
+独立的 Node.js 服务或 Web UI 后端可以直接使用库 API 来搜索、选章下载、管理书架和订阅、运行自动追更，以及安装、更新或卸载扩展。书架和扩展仓库可以与 CLI 共用，也可以为服务指定独立路径。参见[库使用指南](https://yinyanfr.github.io/comic-dl/guide/library/)。
+
 ## 文档
 
 - [安装本体与添加漫画源](https://yinyanfr.github.io/comic-dl/guide/quickstart/)与[简单的使用](https://yinyanfr.github.io/comic-dl/guide/basic/)：从安装到搜索、列章和下载
 - [复杂的使用](https://yinyanfr.github.io/comic-dl/guide/advanced/)、[使用配置文件](https://yinyanfr.github.io/comic-dl/guide/config-tutorial/)与 [CLI 参考](https://yinyanfr.github.io/comic-dl/reference/cli/)
-- [作为库使用](https://yinyanfr.github.io/comic-dl/guide/library/)：注册扩展、列章、下载和获取章节结果
+- [作为库使用](https://yinyanfr.github.io/comic-dl/guide/library/)：CLI 与库 API 对照、书架追更及扩展管理示例
 - [从 2.x 升级到 3.x](https://yinyanfr.github.io/comic-dl/migration/v2-to-v3/)：迁移命令、预设和凭据，保留已下载的漫画
 - [项目开发](https://yinyanfr.github.io/comic-dl/development/contributing/)、[本地开发测试](https://yinyanfr.github.io/comic-dl/development/local-testing/)与[漫画源扩展开发](https://yinyanfr.github.io/comic-dl/extensions/develop/)
