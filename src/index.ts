@@ -116,16 +116,22 @@ Download a series. Full URLs can select the source automatically.
   follow <id>                 Subscribe to a saved work
   unfollow <id>               Unsubscribe while keeping the work on the shelf
   remove <id>                 Remove a work without deleting its downloads
-  check [id]                  Check subscriptions and queue new chapters, without downloading
+   check [id]                  Check any entry or the entire shelf, without downloading
   status [id]                 Show check and download status offline
   watch                       Check regularly and download queued chapters (foreground)
-  retry <id> <chapter-id>     Requeue a failed or restricted chapter
+   retry <id> <chapter-id>     Requeue a failed or restricted chapter
+   configure <id>              Set --auto-check on/off, --auto-download on/off, --interval seconds/default
+   chapters <id>               Show discovered chapters and their states as JSON
+   tasks [id]                  Show safe task snapshots as JSON
+   enqueue <id> <chapter-id>   Queue a discovered or baseline chapter
+   cancel <id> <chapter-id>    Cancel a queued or active chapter
 
   --shelf-db <file>           Use a separate local SQLite database (default: shelf.sqlite in user data)
   --include-history           Queue existing chapters when checking one specific subscription
   -o, --output <dir>          Required for watch (may come from config)
-  --require-output-marker <name>
-                               Defer downloading unless this file exists in the output directory
+   --require-output-marker <name>
+                                Defer downloading unless this file exists in the output directory
+   --output-root <dir>         Check the marker at this root; require an existing output subdirectory
   --interval <seconds>        Watch check interval (default: 3600)
   --jobs <n>                  Watch download concurrency (default: 2; may come from config)
 
@@ -240,7 +246,12 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
     action !== 'check' &&
     action !== 'status' &&
     action !== 'watch' &&
-    action !== 'retry'
+    action !== 'retry' &&
+    action !== 'configure' &&
+    action !== 'enqueue' &&
+    action !== 'cancel' &&
+    action !== 'chapters' &&
+    action !== 'tasks'
   ) {
     throw new Error('Unknown shelf action. Run comic-dl shelf --help.');
   }
@@ -257,6 +268,9 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
       'require-output-marker': { type: 'string' },
       interval: { type: 'string' },
       jobs: { type: 'string' },
+      'output-root': { type: 'string' },
+      'auto-check': { type: 'string' },
+      'auto-download': { type: 'string' },
     },
     allowPositionals: true,
   });
@@ -273,7 +287,6 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
     action !== 'watch' &&
     (values.output !== undefined ||
       values['require-output-marker'] !== undefined ||
-      values.interval !== undefined ||
       values.jobs !== undefined)
   ) {
     throw new Error(
@@ -286,9 +299,13 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
   ) {
     throw new Error('--include-history requires shelf check and one entry ID');
   }
-  const optionalId = action === 'check' || action === 'status';
+  const optionalId =
+    action === 'check' || action === 'status' || action === 'tasks';
   const count =
-    action === 'set-input' || action === 'retry'
+    action === 'set-input' ||
+    action === 'retry' ||
+    action === 'enqueue' ||
+    action === 'cancel'
       ? 2
       : action === 'list' || action === 'watch'
         ? 0
@@ -312,6 +329,46 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
     : join(userDataDirectory(), 'shelf.sqlite');
   const command = 'shelf' as const;
   const [id, input] = positionals;
+  if (action === 'configure') {
+    if (
+      values.config !== undefined ||
+      values.extension !== undefined ||
+      values.set !== undefined
+    )
+      throw new Error('shelf configure does not accept source configuration');
+    const boolean = (name: 'auto-check' | 'auto-download') => {
+      const value = values[name];
+      if (value === undefined) return;
+      if (value !== 'on' && value !== 'off')
+        throw new Error(`--${name} must be on or off`);
+      return value === 'on';
+    };
+    return {
+      command,
+      action,
+      file,
+      id,
+      automation: {
+        autoCheck: boolean('auto-check'),
+        autoDownload: boolean('auto-download'),
+        intervalSeconds:
+          values.interval === undefined
+            ? undefined
+            : values.interval === 'default'
+              ? null
+              : integer('interval', values.interval, 1),
+      },
+    } as const;
+  }
+  if (
+    values['auto-check'] !== undefined ||
+    values['auto-download'] !== undefined ||
+    (values.interval !== undefined && action !== 'watch') ||
+    (values['output-root'] !== undefined && action !== 'watch')
+  )
+    throw new Error(
+      'Automation options require shelf configure; output-root requires shelf watch',
+    );
   if (
     action !== 'add' &&
     action !== 'set-input' &&
@@ -367,7 +424,12 @@ async function parseShelfCommand(args: string[], signal: AbortSignal) {
       retries,
       directory: outputPath(directory),
       outputMarker,
-      interval: seconds * 1000,
+      interval: values.interval === undefined ? undefined : seconds * 1000,
+      outputRoot:
+        values['output-root'] === undefined
+          ? undefined
+          : outputPath(values['output-root']),
+      archive: config.archive,
       jobs:
         values.jobs === undefined
           ? (config.jobs ?? defaultJobs)
@@ -569,6 +631,7 @@ async function parseCommand(args: string[], signal: AbortSignal) {
     ...sourceArguments(values, config),
     ...parseInput(values, positionals, config.source),
     selections,
+    archive: config.archive,
     directory: outputPath(directory),
     jobs:
       command === 'chapter'
@@ -670,6 +733,8 @@ async function runShelfCommand(
       const options = { signal, retries: args.retries, onCheck: printCheck };
       const hasOverrides = Object.keys(args.overrides).length > 0;
       if (args.action === 'watch') {
+        if (args.interval !== undefined)
+          shelf.tracking.setDefaultInterval(args.interval / 1000);
         if (hasOverrides) await withSources(() => Promise.resolve());
         console.log('Watching shelf subscriptions. Press Ctrl+C to stop.');
         await watchShelf(shelf.tracking, withSources, {
@@ -713,6 +778,26 @@ async function runShelfCommand(
             return 2;
           }
           console.log('Chapter queued.');
+          break;
+        case 'configure':
+          printShelfEntry(shelf.configure(args.id, args.automation));
+          break;
+        case 'chapters':
+          console.log(JSON.stringify(shelf.tracking.chapters(args.id)));
+          break;
+        case 'tasks':
+          console.log(JSON.stringify(shelf.tracking.snapshots(args.id)));
+          break;
+        case 'enqueue':
+        case 'cancel':
+          if (
+            !(args.action === 'enqueue'
+              ? shelf.tracking.enqueue(args.id, args.input)
+              : shelf.tracking.cancel(args.id, args.input))
+          ) {
+            logError('No eligible chapter found');
+            return 2;
+          }
           break;
         case 'list':
           for (const entry of shelf.list()) printShelfEntry(entry);
@@ -765,7 +850,9 @@ function printCheck(event: CheckEvent) {
   } else if (event.status === 'changed') {
     console.log(`${prefix}\tchanged; check result discarded`);
   } else {
-    console.log(`${prefix}\t${event.status}\t${event.queued} queued`);
+    console.log(
+      `${prefix}\t${event.status}\t${event.queued} queued\t${event.discovered} discovered`,
+    );
   }
 }
 
@@ -788,7 +875,9 @@ function printShelfStatus(shelf: Shelf, id?: string) {
     console.log(
       `${status.id}\t${status.sourceId}\t${state}\tlast check: ${displayTime(status.lastCheck)}\t` +
         `last success: ${displayTime(status.lastSuccess)}\t${status.result ?? 'unchecked'}\t` +
-        `${status.pending} pending (${status.restricted} restricted), ${status.blocked} blocked, ${status.complete} complete`,
+        `${status.pending} pending (${status.restricted} restricted), ${status.blocked} blocked, ${status.complete} complete\t` +
+        `auto-check: ${status.autoCheck ? 'on' : 'off'}, auto-download: ${status.autoDownload ? 'on' : 'off'}, ` +
+        `next check: ${displayTime(status.nextCheck)}, interval: ${status.intervalSeconds}s, ${status.discovered} discovered`,
     );
   }
   if (id) {
@@ -929,6 +1018,7 @@ async function runSourceCommand(
   const counts = { downloaded: 0, skipped: 0, failed: 0, restricted: 0 };
   await downloadSeries(source.id, selected, {
     directory: args.directory,
+    archive: args.archive,
     jobs: args.jobs,
     retries: args.retries,
     signal,

@@ -12,21 +12,45 @@ export interface Page {
 export interface Chapter {
   readonly id: string;
   readonly title: string;
+  /** One-based position in the complete canonical catalog, never a selection. */
+  readonly number?: number;
   getPages(signal: AbortSignal): Promise<readonly Page[]>;
 }
 
 export interface Series {
   readonly id: string;
+  readonly metadata?: SeriesMetadata;
   readonly chapters: readonly Chapter[];
 }
 
+export interface SeriesMetadata {
+  readonly title?: string;
+  readonly authors?: readonly string[];
+  readonly summary?: string;
+  readonly tags?: readonly string[];
+  readonly coverUrl?: string;
+  /** Opaque source-owned identifier, usable with readCover(), never a credential. */
+  readonly coverId?: string;
+}
+
+export interface CoverImage {
+  readonly contentType: 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+  readonly bytes: Uint8Array;
+}
+
 export interface SearchPage {
-  readonly results: readonly { title: string; url: string }[];
+  readonly results: readonly {
+    title: string;
+    url: string;
+    coverUrl?: string;
+    coverId?: string;
+  }[];
   readonly hasNext: boolean;
 }
 
 export interface ChapterSource {
   readonly id: string;
+  readCover?(id: string, signal: AbortSignal): Promise<CoverImage>;
   search?(
     query: string,
     page: number,
@@ -42,7 +66,12 @@ export interface ChapterSource {
   getChapter(
     input: string,
     signal: AbortSignal,
-  ): Promise<{ workId: string; chapter: Chapter }>;
+  ): Promise<{
+    workId: string;
+    chapter: Chapter;
+    seriesInput?: string;
+    metadata?: SeriesMetadata;
+  }>;
 }
 
 export class TransientSourceError extends Error {}

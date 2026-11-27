@@ -73,6 +73,8 @@ The old `batch` controlled image concurrency; `jobs` controls chapter concurrenc
 
 ## Keep prior downloads and check removed options
 
+This page preserves the historical 2.4.0 → 3.x comparison. `comic-dl@latest` installs the latest version; the flat archive layout and subscription behavior described for 3.x are historical. Continue with the [3.x → 4.x migration](../v3-to-v4/) for current naming configuration, ZIP support, and independent automation.
+
 You can keep image folders, ZIPs, and CBZs in your current reader. The new CLI always creates one CBZ per chapter and names it using the chapter's identity. Reruns verify identity, the page-order marker, and archive integrity. A legacy CBZ is not considered complete just because its name matches. Use a new output directory and separate directories for different series. Readers that import by filename, such as Calibre, show the archive name; add titles and series information in the reader.
 
 - `--archive`, `--zip-level`, `--format`, `--info`, and `list -o` are no longer output options. There are no equivalents for renaming, indexed chapter filenames, or the old `--kavita` naming flag. The new Kavita extension is a library source.

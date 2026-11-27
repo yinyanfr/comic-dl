@@ -19,5 +19,7 @@ hero:
 - [复杂的使用](./guide/advanced/)与[使用配置文件](./guide/config-tutorial/)：精确选章、调整并发并复用设置。
 - [书架与自动追更](./shelf/manage/)：收藏不同来源的作品、管理订阅并下载新章节。
 - [作为库使用](./guide/library/)：在 Node.js 项目中注册扩展并下载。
+- [Web 后端与任务](./guide/service-api/)与[公开 API 参考](./reference/library-api/)：安全进度、独立自动化、封面、归档迁移和扩展更新预览。
+- [从 3.x 升级到 4.x](./migration/v3-to-v4/)：备份并升级书架数据库，保留既有归档。
 - [从 2.x 升级到 3.x](./migration/v2-to-v3/)：更新旧脚本和预设，保留已下载的漫画。
 - [CLI 参考手册](./reference/cli/)：查阅命令、选项和退出码。

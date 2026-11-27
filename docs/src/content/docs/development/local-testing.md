@@ -29,7 +29,7 @@ node dist/index.js sources
 node dist/index.js chapter --fixture ./demo -o ./downloads
 ```
 
-用 `unzip -l ./downloads/*.cbz` 检查归档条目，用 `unzip -t ./downloads/*.cbz` 检查完整性。原样重跑应显示 `Skipped`。要验证缺页行为，先临时移走一张图片，并改用空的输出目录：命令应返回非零，且不会留下半成品 CBZ。放回图片后可重跑。
+默认归档为 `./downloads/demo/1-1.cbz`（旧单章 fixture 没有目录序号，使用章节 ID 回退）。用 `unzip -l ./downloads/demo/1-1.cbz` 检查条目，`unzip -t ./downloads/demo/1-1.cbz` 检查完整性。原样重跑应显示 `Skipped`。要验证缺页行为，先临时移走一张图片，并改用空的输出目录：命令应返回非零，且不会留下半成品 CBZ。放回图片后可重跑。
 
 ## 验证系列列章和章节选择
 
@@ -56,3 +56,5 @@ node dist/index.js download --fixture ./demo -o ./series-output
 ```
 
 `list` 应按清单顺序列出章节 `1`、`2`。第二条命令只生成章节 `2` 的归档；第三条应生成章节 `1` 并跳过已完成的章节 `2`。`--fixture` 替代作品或章节位置参数，也不能和显式 `--source` 同时使用。完整选项和退出码见 [CLI 命令参考](../../reference/cli/)。
+
+4.x 的离线回归还覆盖 v1/v2 数据库迁移、独立自动化开关、页进度、取消与立即重试、NAS 标记及子目录消失恢复、无硬链接文件系统、归档迁移冲突、扩展只读清单与 npm 范围/标签查询。服务端集成优先显式注册 `fixtureExtension`；其本身没有搜索能力，搜索与筛选应使用实现公开扩展契约的测试源。真实站点不属于核心 CI 的依赖。

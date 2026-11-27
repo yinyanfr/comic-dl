@@ -19,5 +19,7 @@ hero:
 - [Advanced usage](./guide/advanced/) and [configuration files](./guide/config-tutorial/): Select specific chapters, adjust concurrency, and reuse settings.
 - [Shelf and automatic updates](./shelf/manage/): Save series from different sources, manage subscriptions, and download new chapters.
 - [Use as a library](./guide/library/): Register extensions and download from your Node.js project.
+- [Web backends and tasks](./guide/service-api/) and [public API reference](./reference/library-api/): Safe progress, independent automation, covers, archive migration, and extension update previews.
+- [Upgrade from 3.x to 4.x](./migration/v3-to-v4/): Back up and upgrade shelf databases while keeping existing archives.
 - [Upgrade from 2.x to 3.x](./migration/v2-to-v3/): Update scripts and presets while keeping earlier downloads.
 - [CLI reference](./reference/cli/): Look up commands, flags, and exit codes.

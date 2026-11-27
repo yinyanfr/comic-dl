@@ -3,6 +3,8 @@ title: Use as a library
 description: Use source discovery, downloads, and automatic shelf updates in a Node.js project.
 ---
 
+For 4.x task snapshots, page progress, independent automation, covers, archive migration, and read-only extension queries, see [Web backends and task APIs](../service-api/). Back up older shelf databases before upgrading.
+
 In a Node.js 24 ESM project (for example, with an `.mjs` file or `"type": "module"` in `package.json`), install the core and the extension as project dependencies:
 
 ```sh

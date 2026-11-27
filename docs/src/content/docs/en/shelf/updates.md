@@ -13,7 +13,7 @@ comic-dl shelf check "$entry_id"
 comic-dl shelf status
 ```
 
-`shelf check` scans all active subscriptions, or just the one you specify. It reads the catalog and queues chapters without downloading images. `baseline` means the first check succeeded, `updated` means chapters were queued, and `unchanged` means there are no new tasks. If a source check fails, the CLI continues checking other subscriptions and exits with `1`. If the specified entry is not followed or does not exist, it exits with `2`.
+`shelf check` scans the entire shelf or the specified entry, regardless of automatic checking. It reads catalogs, not images. New chapters remain discovered when automatic downloading is off, or enter the queue when enabled. `baseline` means the first successful check; `updated` means new chapters were found or queued; `unchanged` means no changes. A failed entry does not stop others and makes the command exit with `1`. Unknown entry IDs return `2`.
 
 By default, the first successful check only records the current catalog. Later checks queue chapter IDs that have never been seen. Renaming, reordering, or restoring an existing chapter does not queue it again. A new ID still counts if it appears earlier in the reading order.
 
@@ -23,7 +23,7 @@ By default, the first successful check only records the current catalog. Later c
 comic-dl shelf check "$entry_id" --include-history
 ```
 
-`--include-history` applies to one subscription, on the first check or a later one. It queues chapters from the current catalog that have not been queued before. Running it again does not duplicate tasks. Run `shelf watch` to download the queued chapters.
+`--include-history` applies to one shelf entry on its first or a later check. It queues baseline and discovered chapters not already queued, without duplicating tasks. Queue a single chapter with `shelf enqueue <id> <chapter-id>`; inspect chapter states with `shelf chapters <id>`. Run a watcher to consume the queue.
 
 ## Start automatic updates
 
@@ -31,7 +31,7 @@ comic-dl shelf check "$entry_id" --include-history
 comic-dl shelf watch --output "$HOME/manga" --interval 1800 --jobs 2
 ```
 
-`watch` runs in the foreground. It handles checks and downloads that are due when it starts. Press `Ctrl+C` to stop it. `--interval` is in seconds and defaults to one hour. `--jobs` controls how many chapters download at once and defaults to `2`. Pass `--config <file>` to read `output`, `jobs`, and `retries` from a [configuration file](../../guide/config-tutorial/). The command-line `--output` and `--jobs` take precedence. An output directory is required. All subscriptions write their CBZ files directly to that directory, without creating series subdirectories.
+`watch` runs in the foreground, processing due automatic checks and the independent existing download queue. Press `Ctrl+C` to stop it. `--interval` sets the global default in seconds, initially one hour; entries can override it. `--jobs` defaults to `2`. Read `output/jobs/retries/archive` with `--config <file>`; command-line output and concurrency take precedence. Archives default to `work title/number-chapter title.cbz` in work subdirectories.
 
 Run one watcher per shelf database. On restart, it continues processing the saved queue and skips existing CBZ files that pass integrity checks. To keep the watcher running on a server, use its service manager to launch the foreground command. Use the same shelf database for the service and manual commands. If an extension requires authentication, provide its credentials to the service process as described by the extension.
 
@@ -42,6 +42,8 @@ Confirm the share is mounted, then create a regular file such as `.nas-ready` in
 ```sh
 comic-dl shelf watch --output /mnt/manga --require-output-marker .nas-ready
 ```
+
+For a marker at the mount root and an existing selected subdirectory, add `--output-root /mnt/manga` and use `--output /mnt/manga/Manga`. Missing markers or selected directories defer tasks without recreating the selected directory; availability is checked again before committing archives.
 
 If the marker is unavailable, `watch` continues checking for updates and leaves downloads queued until it can retry. `--require-output-marker` takes a filename within the output directory. Keep the shelf SQLite database on the local machine.
 

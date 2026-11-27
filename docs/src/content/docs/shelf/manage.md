@@ -33,7 +33,7 @@ comic-dl shelf follow "$entry_id"
 comic-dl shelf list
 ```
 
-新增条目为 `not-following`。`follow` 将其改为 `following`；`unfollow` 暂停追更，保留收藏、检查基线和待处理章节。再次 `follow` 后，会继续追踪并检查暂停期间新增的章节。
+新增条目为 `not-following`，自动检查和自动下载均关闭。`follow/unfollow` 同时开关两项；关闭不会取消既有任务，手动检查始终可用。用 `shelf configure <id> --auto-check on --auto-download off --interval 1800` 可独立配置，`--interval default` 恢复全局间隔。显式停止章节使用 `shelf cancel <id> <chapter-id>`；重新处理用 `shelf retry`。详见[新 API 与语义](../../guide/service-api/)。
 
 ```sh
 comic-dl shelf unfollow "$entry_id"

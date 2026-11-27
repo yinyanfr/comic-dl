@@ -7,7 +7,8 @@ import {
 import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { outputFiles as readdir } from './helpers/output.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execPath } from 'node:process';
@@ -111,18 +112,18 @@ test('rebuilds a corrupt archive and detects a changed page order', async (t) =>
   await writeFile(secondPath, secondPage);
   await download();
   const [filename] = await readdir(output);
-  const archivePath = join(output, filename);
+  let archivePath = join(output, filename);
   const damaged = await readFile(archivePath);
   const offset = damaged.indexOf(firstPage);
   assert.notEqual(offset, -1);
   damaged[offset] ^= 1;
   await writeFile(archivePath, damaged);
-  assert.match((await download()).stdout, /^Downloaded: /);
+  archivePath = (await download()).stdout.trim().slice('Downloaded: '.length);
   await assertPages(archivePath, [firstPage, secondPage]);
 
   manifest.pages.reverse();
   await writeManifest();
-  assert.match((await download()).stdout, /^Downloaded: /);
+  archivePath = (await download()).stdout.trim().slice('Downloaded: '.length);
   await assertPages(archivePath, [secondPage, firstPage]);
 });
 

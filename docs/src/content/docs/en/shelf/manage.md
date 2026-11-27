@@ -33,7 +33,7 @@ comic-dl shelf follow "$entry_id"
 comic-dl shelf list
 ```
 
-New entries are `not-following`. `follow` switches the entry to `following`; `unfollow` pauses updates and keeps the entry, its baseline, and pending chapters. Follow it again to resume and check for chapters added during the pause.
+New entries are `not-following`, with automatic checks and downloads disabled. `follow/unfollow` switch both settings; disabling them does not cancel existing tasks, and manual checks always work. Configure independently with `shelf configure <id> --auto-check on --auto-download off --interval 1800`; `--interval default` restores the global interval. Explicitly cancel a chapter with `shelf cancel <id> <chapter-id>`, or requeue it with `shelf retry`. See the [new APIs and semantics](../../guide/service-api/).
 
 ```sh
 comic-dl shelf unfollow "$entry_id"

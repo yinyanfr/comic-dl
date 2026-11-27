@@ -38,4 +38,6 @@ These settings also apply to URL matching and online shelf actions. Restart `she
 
 ## Environment variables
 
+Version 4 accepts `"archive": { "template": "{title}/{number}-{chapter}", "padding": 3, "format": "zip" }` for manual and watcher downloads. Defaults are CBZ without padding. Changing settings never renames existing archives automatically; see [naming and migration](../../guide/service-api/).
+
 `COMIC_DL_EXTENSION_DIR` overrides the CLI's [extension installation directory](../cli/#install-and-manage-sources). Each source defines its own authentication variables; for example, Zerobyw uses `COMIC_DL_ZEROBYW_COOKIE`. Keep credentials out of the CLI config and consult the [extension README](https://github.com/yinyanfr/comic-dl-extensions/blob/main/README.en.md) for setup and renewal.

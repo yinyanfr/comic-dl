@@ -16,7 +16,7 @@ comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --source copymanga -o ~/manga
 
 You can also use a short series ID. `-o` sets the output directory, and `-c 2-4` selects the second through fourth chapters in reading order, inclusive. If the range exceeds the chapter list, the command fails before downloading anything.
 
-CBZ files go straight into the output directory. If you download multiple series for a reader, use a separate directory for each series, such as `-o ~/manga/series-name`.
+Archives default to `work title/number-chapter title.cbz` within the output directory. Templates, zero-padding, and ZIP are configurable. Legacy hashed CBZs remain recognized by identity and are not renamed automatically. See the [4.x migration guide](https://yinyanfr.github.io/comic-dl/en/migration/v3-to-v4/).
 
 ## Install
 
@@ -59,6 +59,8 @@ console.log(results);
 See the [Zerobyw extension README](https://github.com/yinyanfr/comic-dl-extensions/blob/main/extensions/zerobyw/README.en.md) for session setup.
 
 Independent Node.js services and Web UI backends can use the library API to search, download selected chapters, manage the shelf and subscriptions, run automatic updates, and install, update, or remove extensions. They can share the CLI's shelf and extension store or use separate paths. See the [library guide](https://yinyanfr.github.io/comic-dl/en/guide/library/).
+
+Version 4 also provides independent automation switches, safe task snapshots and page events, protected covers, extension inventory, and check-only update APIs. See [Web backends and task APIs](https://yinyanfr.github.io/comic-dl/en/guide/service-api/).
 
 ## Documentation
 

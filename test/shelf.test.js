@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { execFile, fork } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { outputFiles as readdir } from './helpers/output.js';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { env as parentEnv, execPath } from 'node:process';
@@ -229,12 +230,12 @@ test('a newer database is rejected without modifying it', async (t) => {
   const { shelf, directory } = await setup(t);
   const file = join(directory, 'newer.sqlite');
   const db = new Database(file);
-  db.exec('CREATE TABLE other (data TEXT); PRAGMA user_version = 3');
+  db.exec('CREATE TABLE other (data TEXT); PRAGMA user_version = 4');
   db.close();
   const before = await readFile(file);
   await assert.rejects(shelf('list', '--shelf-db', file), {
     code: 1,
-    stderr: /Unsupported shelf database version: 3/,
+    stderr: /Unsupported shelf database version: 4/,
   });
   assert.deepEqual(await readFile(file), before);
 });
