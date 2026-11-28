@@ -47,6 +47,10 @@ For a marker at the mount root and an existing selected subdirectory, add `--out
 
 If the marker is unavailable, `watch` continues checking for updates and leaves downloads queued until it can retry. `--require-output-marker` takes a filename within the output directory. Keep the shelf SQLite database on the local machine.
 
+## Progress and archive overrides
+
+`shelf watch` accepts `--archive-template/--archive-padding/--archive-format`, overriding config fields individually. Default `--progress auto` renders current chapter page counts/stages on stderr only in an interactive terminal. Use `plain` for redirected progress logs without terminal controls, or `off` to disable rendering. `shelf tasks` reads durable queue state, not another process's live page counts.
+
 ## Check status and retry
 
 ```sh

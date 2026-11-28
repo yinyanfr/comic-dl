@@ -13,3 +13,5 @@ Stop watchers and back up the shelf SQLite database before installing `comic-dl@
 - Separate the NAS root marker and existing selected directory with `outputRoot`. The CLI equivalent is `--output-root /mnt/comics -o /mnt/comics/Manga --require-output-marker .nas-ready`.
 
 See [Web backends and task APIs](../../guide/service-api/) for complete interfaces, cancellation and retry semantics, explicit archive migration, and extension update previews.
+
+Subsequent unreleased CLI additions include `extensions`, `update --check`, `migrate/--apply`, `list --details`, `search --json`, archive overrides, manual NAS protection, and page progress. Test these using a repository build; consult the changelog for released availability. See the [CLI reference](../../reference/cli/) and [capability comparison](../../guide/library/#capability-coverage-and-web-requirements).

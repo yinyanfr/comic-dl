@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/readme-icon.svg" alt="comic-dl icon: a comic book and download arrow" width="144" height="144" />
+  <img src="assets/project-icon.png" alt="comic-dl icon: comic books in a storage box" width="144" height="144" />
 </p>
 
 <h1 align="center">comic-dl</h1>

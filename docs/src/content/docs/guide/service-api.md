@@ -5,6 +5,8 @@ description: 独立检查和下载开关、安全任务快照、归档迁移、�
 
 这些接口从 4.0 起提供，只能在 Node.js 24 服务端使用。前端不直接加载核心、扩展或 SQLite。基础注册方式见[库指南](../library/)，升级前先阅读[迁移指南](../../migration/v3-to-v4/)。
 
+库能力与 CLI 入口并非完全相同，见[能力对照](../library/#cli-与库-api-对照)。扩展作者应阅读[开发指南](../../extensions/develop/)和[ZeroByw 教学](../../extensions/zerobyw-walkthrough/)，不要在来源内重新实现任务、归档或 Web 传输。
+
 ## 书架检查与自动化
 
 ```ts

@@ -15,6 +15,11 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'comic-dl',
+      logo: {
+        src: '../assets/project-icon.png',
+        alt: 'comic-dl',
+      },
+      favicon: '/favicon.png',
       locales: {
         root: { label: '简体中文', lang: 'zh-CN' },
         en: { label: 'English' },
@@ -46,6 +51,10 @@ export default defineConfig({
           label: '书架与自动追更',
           translations: { en: 'Shelf and automatic updates' },
           items: ['shelf/manage', 'shelf/updates'],
+        },
+        {
+          label: 'WebUI',
+          items: ['webui/usage', 'webui/deployment'],
         },
         {
           label: '扩展开发',

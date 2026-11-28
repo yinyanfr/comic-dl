@@ -33,6 +33,8 @@ comic-dl shelf watch --output "$HOME/manga" --interval 1800 --jobs 2
 
 `watch` 以前台进程运行，处理开启自动检查的到期条目，以及独立的既有下载队列；按 `Ctrl+C` 停止。`--interval` 是全局默认秒数，初始为一小时，作品可覆盖；`--jobs` 默认 `2`。用 `--config <文件>` 读取 `output/jobs/retries/archive`，命令行输出与并发选项优先。默认按 `作品名/序号-章节名.cbz` 创建作品子目录。
 
+`--archive-template/--archive-padding/--archive-format` 可逐项覆盖归档配置。`--progress auto`（默认）在交互终端的标准错误流显示当前章节页数和归档阶段；重定向时不显示，用 `--progress plain` 记录无终端控制字符的进度日志，或用 `off` 关闭。`shelf tasks` 读取持久队列，不含另一进程的实时页进度。
+
 同一个书架数据库只允许运行一个 `watch`。重启后它会接着处理持久化的队列；通过完整性校验的已有 CBZ 会被跳过。要长期运行，可以让服务器的服务管理器启动这个前台命令。服务和手动命令应使用同一个书架数据库；若扩展需要登录，请按扩展说明为服务进程提供凭据。
 
 ### 输出到 NAS

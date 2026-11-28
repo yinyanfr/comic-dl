@@ -13,3 +13,5 @@ description: 迁移书架自动化、可读归档和 Web 后端 API。
 - NAS 根标记与既有输出子目录可通过 `outputRoot` 分开配置。CLI 使用 `--output-root /mnt/comics -o /mnt/comics/Manga --require-output-marker .nas-ready`。
 
 完整接口、取消与重试语义、显式归档迁移及扩展更新预览见 [Web 后端与任务 API](../../guide/service-api/)。
+
+后续未发布 CLI 补齐项包括：`extensions`、`update --check`、`migrate/--apply`、`list --details`、`search --json`、归档覆盖参数、手动 NAS 保护和逐页终端进度。使用本仓库构建验证，发行版本以 changelog 为准；详见 [CLI 参考](../../reference/cli/)和[库/CLI 对照](../../guide/library/#cli-与库-api-对照)。

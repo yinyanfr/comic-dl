@@ -5,6 +5,8 @@ description: Independent automation, safe task snapshots, archive migration, cov
 
 These APIs are available from 4.0 and run only in a Node.js 24 backend. Do not load the core, extensions, or SQLite in the browser. See the [library guide](../library/) for registration and the [migration guide](../../migration/v3-to-v4/) before upgrading.
 
+Library and CLI surfaces intentionally differ; see the [capability comparison](../library/#capability-coverage-and-web-requirements). Adapter authors should follow [extension development](../../extensions/develop/) and the [Zerobyw walkthrough](../../extensions/zerobyw-walkthrough/) rather than reimplementing core tasks, archives, or Web transport in a source.
+
 ## Shelf checks and automation
 
 ```ts

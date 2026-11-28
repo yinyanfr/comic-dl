@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/readme-icon.svg" alt="comic-dl 图标：漫画与下载箭头" width="144" height="144" />
+  <img src="assets/project-icon.png" alt="comic-dl 图标：收纳盒中的漫画书" width="144" height="144" />
 </p>
 
 <h1 align="center">comic-dl</h1>

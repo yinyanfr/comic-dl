@@ -36,8 +36,12 @@ Load the file with `--config <file>`, or repeat `--set <id>.<key>=<value>` to ov
 
 These settings also apply to URL matching and online shelf actions. Restart `shelf watch` after changing its config.
 
-## Environment variables
+## Archive naming and format
 
 Version 4 accepts `"archive": { "template": "{title}/{number}-{chapter}", "padding": 3, "format": "zip" }` for manual and watcher downloads. Defaults are CBZ without padding. Changing settings never renames existing archives automatically; see [naming and migration](../../guide/service-api/).
+
+CLI `--archive-template`, `--archive-padding`, and `--archive-format` override individual config fields for manual downloads, watchers, and migration previews. NAS root/marker and progress options are command-line settings, not new JSON config fields; see the [CLI reference](../cli/).
+
+## Environment variables
 
 `COMIC_DL_EXTENSION_DIR` overrides the CLI's [extension installation directory](../cli/#install-and-manage-sources). Each source defines its own authentication variables; for example, Zerobyw uses `COMIC_DL_ZEROBYW_COOKIE`. Keep credentials out of the CLI config and consult the [extension README](https://github.com/yinyanfr/comic-dl-extensions/blob/main/README.en.md) for setup and renewal.

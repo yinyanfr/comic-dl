@@ -3,6 +3,9 @@ title: comic-dl 文档
 description: 安装漫画下载器、开发漫画源扩展，或参与项目开发。
 template: splash
 hero:
+  image:
+    file: ../../../../assets/project-icon.png
+    alt: 收纳盒中的漫画书
   tagline: 添加漫画源，用 CLI 或 TypeScript 库下载漫画，每章保存为独立 CBZ。
   actions:
     - text: 安装并添加漫画源

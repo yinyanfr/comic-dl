@@ -13,19 +13,24 @@ description: 适配器导出、稳定标识、读取顺序、认证和错误约�
 
 ## 漫画、章节和页面
 
-| 接口                          | 约定                                                                                                                                    |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `getSeries(input, signal)`    | 返回 `{ id, chapters }`，章节数组按阅读顺序排列                                                                                         |
-| `getChapter(input, signal)`   | 返回 `{ workId, chapter }`；直接读取的章节与系列中的同一章节使用相同作品和章节 ID                                                       |
-| `search(query, page, signal)` | 可选；空查询可浏览目录，页码从 `1` 开始。返回 `{ results: [{ title, url }], hasNext }`，其中 `url` 可直接作为系列输入；无结果返回空数组 |
-| `chapter.getPages(signal)`    | 返回按阅读顺序排列的页面；重试时可能重新调用，应支持刷新临时链接                                                                        |
-| `page.read(signal)`           | 返回原始图片字节 `Uint8Array`；支持 `jpg`、`jpeg`、`png`、`gif`、`webp`                                                                 |
+| 接口                                    | 约定                                                                                                                          |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `getSeries(input, signal)`              | 返回 `{ id, chapters, metadata? }`，章节数组按完整阅读顺序排列                                                                |
+| `getChapter(input, signal)`             | 返回 `{ workId, chapter, seriesInput?, metadata? }`；直链和目录必须使用相同作品/章节 ID                                       |
+| `search(query, page, signal, options?)` | 可选；空查询浏览目录，页码从 `1` 开始。返回 `{ results: [{ title, url, coverUrl?, coverId? }], hasNext }`；URL 可作为作品输入 |
+| `readCover(id, signal)`                 | 可选；读取来源限定的鉴权封面，返回 `{ contentType, bytes }`，不是任意 URL 代理                                                |
+| `chapter.getPages(signal)`              | 返回按阅读顺序排列的页面；重试时可能重新调用，应支持刷新临时链接                                                              |
+| `page.read(signal)`                     | 返回原始图片字节 `Uint8Array`；支持 `jpg`、`jpeg`、`png`、`gif`、`webp`                                                       |
 
 作品 ID 在源内标识作品，章节 ID 在作品内唯一，页面 ID 在章节内唯一且稳定。选择章节、归档身份和页面顺序都依赖这些标识。不要用可能改变的标题、临时签名或认证信息作为 ID；也不要把章节列表位置当作章节 ID。
 
-## 可选的运行时设置与目录能力
+## 4.x 的可选元数据与目录上下文
 
 4.x 保留 API v1，新增可选 `Series.metadata`（`title/authors/summary/tags/coverUrl/coverId`）和搜索结果 `coverUrl/coverId`。`getChapter()` 可附带可复用的 `seriesInput`，核心据此加载完整目录、核对作品与章节身份，并取得标题和规范序号；旧扩展缺失时序号未知，不假造为 1。鉴权封面实现 `readCover(id, signal): Promise<{ contentType, bytes }>`，扩展限制 ID 与请求目的地并保管凭据，不能接受任意代理 URL。字段缺失不影响旧扩展。详见[服务端接口](../../guide/service-api/)。
+
+`title/summary/coverUrl/coverId` 为字符串，`authors/tags` 为字符串数组。`Chapter.number` 可选，为完整规范目录中的一基序号，不是稳定 ID，也不是选中子集的位置。直链的 `metadata` 可提供目录不可用时的显示资料。公共封面不得带凭据，`coverId` 是来源拥有的不透明标识；图片类型为 JPEG/PNG/GIF/WebP、非空且最多 10 MiB。完整示例与离线验收见[扩展开发](../../extensions/develop/#从最小适配器到完整来源)。
+
+## 可选的运行时设置与目录能力
 
 - `settings` 是设置声明，键匹配 `[a-z][a-z0-9-]*`。每项包含 `label`、`type`，可附带 `description` 和 `default`。支持 `text`、`url`、`boolean`、`integer`（可声明 `min`、`max`）和 `select`（提供 `{ id, label }` 选项）。`env` 只用于兼容既有的非敏感环境变量。
 - 核心做通用校验后，将只读的生效设置传给 `matchesUrl(url, kind, settings)` 和 `create(api, settings)`。扩展可通过同步的 `validateSettings(settings)` 检查站点约束。保持现有调用兼容：扩展应当能在缺省 `settings` 时使用原有默认值。Cookie、密码和 API key 不通过这个接口声明。

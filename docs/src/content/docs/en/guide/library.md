@@ -73,6 +73,25 @@ This assumes the instance has registered a CopyManga extension with catalog sort
 
 For a separate Web UI project, call these APIs from a long-running Node.js backend. The backend runs the watcher, so updates continue when the browser is closed.
 
+## Capability coverage and Web requirements
+
+| CLI                                                                         | Public library equivalent                                                   |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `search --json`, `list --details`                                           | Search covers and series metadata/chapter descriptors                       |
+| `--progress auto/plain/off`                                                 | Download/watcher `onEvent`; the library does not draw a terminal by default |
+| `shelf configure/chapters/tasks/enqueue/cancel`                             | `configure()`, `chapters()`, `tasks()`, `enqueue()`, `cancel()`             |
+| `shelf watch --interval`                                                    | `setDefaultInterval()`; per-entry overrides use `configure()`               |
+| `--archive-template/--archive-padding/--archive-format` or config `archive` | Download/watcher `archive`                                                  |
+| `--output-root/--require-output-marker`                                     | Manual and watcher `outputRoot/outputMarker`                                |
+| `extensions`, `update --check`                                              | `listManagedExtensions()`, `checkExtensionUpdates()`                        |
+| `migrate`, `migrate --apply`                                                | `planArchiveMigration()`, `applyArchiveMigration()`                         |
+
+Some service APIs intentionally have no CLI command: protected cover bytes use library `readCover()` while the CLI queries descriptors. Manual `startDownload()` provides process-local handles/snapshots/cancellation/retry; CLI tasks use process control and Ctrl+C. CLI `shelf tasks` reads durable state, not live page counts from another process; a resident library handle can merge its live events. CLI migration previews one work at a time; library callers can compose multi-work plans.
+
+The seven backend requests from [comic-dl-web](https://github.com/yinyanfr/comic-dl-web) map to independent shelf automation (core #26), metadata/protected covers (#27), archive naming/migration (#28), shared tasks/page progress (#29), NAS root markers (#30), managed inventory (#31), and check-only updates (#32). All have public library APIs; the table records CLI entry points and intentional differences.
+
+All five maintained adapters provide optional metadata and canonical direct-link context; Komga/Kavita also provide protected covers. Zerobyw `0.3.1` and DM5 `0.2.1` fix public catalog covers. See [extension development](../../extensions/develop/) and the [Zerobyw walkthrough](../../extensions/zerobyw-walkthrough/). Web integrations call server-side APIs rather than parsing CLI output or editing SQLite.
+
 ## Shelf and automatic updates
 
 Use the same SQLite database as the CLI, or pass a separate file for your server. Open the shelf on an instance that has already registered the sources it needs:

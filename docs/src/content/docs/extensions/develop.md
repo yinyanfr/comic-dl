@@ -3,7 +3,7 @@ title: 开发漫画源扩展
 description: 编写、测试和打包由 comic-dl 显式加载的漫画源。
 ---
 
-漫画源扩展是独立发布的 Node.js 24 ESM 包。CLI 用户用 `comic-dl add <包名>` 安装，库用户通过 `.use()` 注册；开发时可用 `--extension` 或配置加载本地模块。扩展负责输入识别、登录会话和站点解析；核心负责并发、章节重试、取消、CBZ 和退出码。扩展可以实现 `matchesUrl`，让核心根据完整 URL 自动选源。
+漫画源扩展是独立发布的 Node.js 24 ESM 包。CLI 用户用 `comic-dl add <包名>` 安装，库用户通过 `.use()` 注册；开发时可用 `--extension` 或配置加载本地模块。扩展负责输入识别、登录会话和站点解析；核心负责并发、章节重试、取消、CBZ/ZIP、命名和任务进度，CLI 负责终端显示与退出码。扩展可以实现 `matchesUrl`，让核心根据完整 URL 自动选源。
 
 想边写边跑，可以先跟着 [Zerobyw 动手教程](../zerobyw-walkthrough/)做一遍，从解析样本到生成第一个 CBZ。
 
@@ -40,6 +40,69 @@ export default {
 ```
 
 实现前请阅读[源扩展 API v1 规范](../../specs/source-extension-v1/)，了解章节和页面标识、顺序、HTTP 会话和错误约定。
+
+## 从最小适配器到完整来源
+
+4.x 仍使用 API v1；以下均为可选能力，旧扩展不必一次全部实现。面向这些类型开发时，使用 `comic-dl@4.0.0` 或更新的兼容版本，不要在扩展内复制核心接口或导入 `dist/` 私有文件。
+
+### 作品元数据、搜索封面与直链目录
+
+`getSeries()` 返回完整阅读顺序和稳定 ID；页面有资料时附带：
+
+```ts
+return {
+  id: workId,
+  metadata: {
+    title,
+    authors,
+    summary,
+    tags,
+    coverUrl, // 经过来源校验的公开图片地址；无数据时省略
+  },
+  chapters,
+};
+```
+
+搜索结果也可以附带 `coverUrl` 或 `coverId`，但不要为每条搜索结果额外请求详情页。缺失资料不应导致浏览、列章或下载失败。DM5 的目录封面来自 `.mh-cover` 的 CSS `background-image`，而搜索可能使用 `img/data-src`；从限定节点提取 URL，不执行样式或脚本，不假定全站使用同一种 HTML。
+
+章节直链返回 `{ workId, chapter, seriesInput }`。`seriesInput` 必须是当前配置站点可再次读取的规范作品输入，保留必要的章节组；核心用它加载完整目录并交叉验证作品与章节身份。不要把单章当作目录第 1 章，也不要按选章结果重新编号。无法取得目录上下文时省略它，允许核心以稳定章节 ID 回退；直链还可附带 `metadata`。
+
+### 公共与鉴权封面
+
+- 公共 `coverUrl` 不含 Cookie、密码、API key 或带凭据的查询串；只允许来源配置范围内的地址。缺失或不安全时省略，调用方显示占位。
+- ZeroByw 的 HTTP 封面只对明确配置的可信站点/图片 origin 升级到 HTTPS，随后重新校验协议、origin、端口、凭据及查询/片段；不能把任意 HTTP 主机变成可信地址。
+- Komga/Kavita 等受保护图片返回不含凭据的 `coverId`，实现 `readCover(id, signal)`。校验 ID 后在绑定服务的固定封面端点读取，不接受任意 URL，不将 Auth Key URL 暴露给浏览器。
+- `readCover()` 返回 `{ contentType, bytes }`。核心只接受非空 JPEG/PNG/GIF/WebP，最大 10 MiB；扩展也宜在读取时限制响应体。Web 使用自己的受认证图片端点和私有缓存。
+
+### 设置、认证和目录能力
+
+非敏感设置声明在 `settings` 中，`matchesUrl(url, kind, settings)` 和 `create(api, settings)` 使用同一组值；站点特有约束放在 `validateSettings()`。真实来源需同时考虑默认站点、当前配置和用于识别的旧站点，读取时仍将稳定 ID 映射到当前站点。
+
+Cookie/key 不放进 `settings`、搜索结果或元数据。改变服务器不能自动把旧凭据发送给新服务器：ZeroByw 使用 `COMIC_DL_ZEROBYW_COOKIE_ORIGIN` 绑定 origin；Komga/Kavita 按完整服务 URL（包括反向代理路径）绑定。配置变化后重建实例，先停止旧 watcher。
+
+公开搜索、详情与图片可以使用不同 HTTP 读取器。认证请求须显式启用；只到允许的目的地，跨 origin 重定向不重新附加凭据。ZeroByw 搜索和图片始终匿名。
+
+需要浏览排序或筛选时，分别声明 `catalog.browse/search`，动态选项由 `catalogChoices()` 返回。把校验后的第四参数 `{ sort, filters }` 转换为上游查询，分页保留相同条件，不在核心内硬编码站点逻辑。
+
+### 进度不属于扩展协议
+
+扩展只实现可取消的 `getPages()` 和 `Page.read()`。核心据此发出开始、页进度、归档和结果事件；不要自行创建 CLI 进度条、SSE、持久队列或归档文件。库通过 `onEvent` 消费安全事件；CLI 使用 `--progress auto|plain|off`。无总数时调用方展示阶段，重试时当前尝试页数归零。完整生命周期见[服务 API](../../guide/service-api/)。
+
+## 离线验收清单
+
+除最小 CLI 冒烟外，使用公开 `createDownloader().use(extension, settings)` 验证同一扩展：
+
+| 场景                     | 应验证的行为                                                          |
+| ------------------------ | --------------------------------------------------------------------- |
+| 完整目录、选章、章节直链 | 稳定身份相同；选章/直链保持完整目录序号；重跑跳过有效归档             |
+| 元数据与搜索             | 资料存在时返回，缺失时仍可使用；分页和筛选无逐作品请求                |
+| 公共封面                 | HTTPS、可信 HTTP 规范化、自定义 origin/端口；拒绝不可信主机与凭据 URL |
+| 鉴权封面                 | 合法 opaque ID 可读；任意 URL、非法 ID、凭据泄露和越界目的地被拒绝    |
+| 设置与认证               | 新旧输入映射当前站点；Cookie/key 仅到绑定服务，搜索/图片按约定匿名    |
+| 页面与错误               | 页序正确、懒加载、取消、暂态重试、凭据过期与明确受限能区分            |
+| 核心任务                 | 经公开 `onEvent` 取得页数与归档阶段，不把原始异常或路径送给浏览器     |
+
+核心验证不依赖真实站点；真实站点、NAS 和自托管服务的在线联调另行记录，不能把回环测试写成真实部署验收。
 
 ## 独立打包
 

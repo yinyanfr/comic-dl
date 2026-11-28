@@ -2,6 +2,21 @@
 
 For each version bump, add an English `## <version> — YYYY-MM-DD` entry here. Start with a short summary, then group the changes under `###` headings such as Features, Breaking changes, and Fixes. Include examples or migration links when commands or APIs change. The publish workflow uses this entry as the GitHub release body and checks it before publishing to npm.
 
+## Unreleased
+
+### CLI parity and progress
+
+- Render shared core task events for manual and watcher downloads on stderr. `--progress auto` draws a bounded terminal line, `plain` emits page/stage lines without terminal controls, and `off` disables rendering. Redirected output stays quiet by default; existing stdout results and exit codes remain unchanged.
+- Add `extensions` JSON inventory and `update [package] --check` for read-only update checks with saved npm ranges/tags and per-package failures.
+- Add `search --json`, `list --details`, archive template/padding/format overrides, and NAS output-root/marker protection for manual downloads as well as watchers.
+- Add `migrate` JSON previews and explicit `migrate --apply <preview.json>` using the reviewed root-bound plan, with core identity and no-clobber revalidation.
+
+### Documentation and verification
+
+- Expand bilingual extension development and API contracts for metadata, public/protected covers, canonical direct links, source settings, credential binding, and offline acceptance.
+- Update both Zerobyw walkthroughs with trusted HTTP covers, metadata, two-chapter canonical numbering, and executable CLI/library examples. Document remaining intentional CLI/library differences and the Web backend requirements.
+- Add offline CLI regressions for page rendering, pipe compatibility, watcher interruption, JSON discovery, extension queries, NAS guards, and migration preview/apply.
+
 ## 4.0.0 — 2026-11-28
 
 Provide the public backend capabilities requested by comic-dl-web in issues #26–#32. The extension API remains version 1; new source capabilities are optional.

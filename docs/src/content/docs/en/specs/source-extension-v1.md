@@ -13,15 +13,22 @@ Import the public TypeScript interfaces from `comic-dl/extension`. See [`src/ext
 
 ## Series, chapters, and pages
 
-| Interface                     | Contract                                                                                                                                                                                                              |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `getSeries(input, signal)`    | Return `{ id, chapters }`, with chapters in reading order.                                                                                                                                                            |
-| `getChapter(input, signal)`   | Return `{ workId, chapter }`. A direct chapter and the same chapter in its series must use the same work and chapter IDs.                                                                                             |
-| `search(query, page, signal)` | Optional. An empty query can browse the catalog; page numbers start at `1`. Return `{ results: [{ title, url }], hasNext }`. Each URL can be used as a series input. Return an empty array when there are no results. |
-| `chapter.getPages(signal)`    | Return pages in reading order. Retries may call this again, so support refreshing temporary links.                                                                                                                    |
-| `page.read(signal)`           | Return raw image bytes as a `Uint8Array`. Supported extensions: `jpg`, `jpeg`, `png`, `gif`, `webp`.                                                                                                                  |
+| Interface                               | Contract                                                                                                                                                        |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getSeries(input, signal)`              | Return `{ id, chapters, metadata? }` in complete reading order.                                                                                                 |
+| `getChapter(input, signal)`             | Return `{ workId, chapter, seriesInput?, metadata? }`; direct and catalog reads share stable IDs.                                                               |
+| `search(query, page, signal, options?)` | Optional; empty queries browse, page numbers start at 1. Return `{ results: [{ title, url, coverUrl?, coverId? }], hasNext }`; URLs are reusable series inputs. |
+| `readCover(id, signal)`                 | Optional; return `{ contentType, bytes }` from a source-constrained protected cover endpoint, never an arbitrary URL proxy.                                     |
+| `chapter.getPages(signal)`              | Return pages in reading order. Retries may call this again, so support refreshing temporary links.                                                              |
+| `page.read(signal)`                     | Return raw image bytes as a `Uint8Array`. Supported extensions: `jpg`, `jpeg`, `png`, `gif`, `webp`.                                                            |
 
 A work ID identifies a work within its source, a chapter ID within its work, and a page ID within its chapter. These stable IDs determine chapter selection, archive identity, and page order. Do not derive IDs from changing titles, temporary signatures, credentials, or a chapter's current position in the list.
+
+## Optional metadata and canonical context in version 4
+
+Version 4 retains API v1 and adds optional `Series.metadata` (`title/authors/summary/tags/coverUrl/coverId`) and search result `coverUrl/coverId`. `getChapter()` may return reusable `seriesInput`; the core loads its full catalog, verifies work/chapter identity, and obtains display metadata and canonical position. Older extensions without this context report an unknown number, not a fabricated 1. Implement `readCover(id, signal): Promise<{ contentType, bytes }>` for protected covers: constrain IDs and destinations and keep credentials on the server, never accept an arbitrary proxy URL. Missing fields do not break old extensions. See the [backend APIs](../../guide/service-api/).
+
+`title/summary/coverUrl/coverId` are strings; `authors/tags` are string arrays. Optional `Chapter.number` is a one-based position in the complete canonical catalog, not an identity or a selected-subset position. Direct-read `metadata` can provide display information without canonical context. Public cover URLs must not contain credentials; `coverId` is source-owned and opaque. Cover images are nonempty JPEG/PNG/GIF/WebP up to 10 MiB. See [extension development](../../extensions/develop/#grow-a-minimal-adapter-into-a-complete-source) for examples and offline acceptance.
 
 ## Optional runtime settings and catalog capabilities
 
@@ -31,8 +38,6 @@ A work ID identifies a work within its source, a chapter ID within its work, and
 - Validated options reach the extension as the optional fourth argument to `search(query, page, signal, { sort, filters })`. The extension translates options into the upstream query and calculates `hasNext` for those same conditions.
 
 ## HTTP and errors
-
-Version 4 retains API v1 and adds optional `Series.metadata` (`title/authors/summary/tags/coverUrl/coverId`) and search result `coverUrl/coverId`. `getChapter()` may return reusable `seriesInput`; the core loads its full catalog, verifies work/chapter identity, and obtains display metadata and canonical position. Older extensions without this context report an unknown number, not a fabricated 1. Implement `readCover(id, signal): Promise<{ contentType, bytes }>` for protected covers: constrain IDs and destinations and keep credentials on the server, never accept an arbitrary proxy URL. Missing fields do not break old extensions. See the [backend APIs](../../guide/service-api/).
 
 Honor the supplied `AbortSignal` in read operations. `api.createSourceHttp({ requestHeaders, credentialHeaders, credentialOrigins, allowedOrigins })` returns a function `(url, signal, authenticated = false)` that resolves to `{ bytes, url, contentType }`. `requestHeaders` and `allowedOrigins` are optional. Use `requestHeaders` for non-credential headers sent with each request. Credential headers are attached only when authentication is explicitly requested and the destination origin is allowed; they are not reattached after a cross-origin redirect.
 

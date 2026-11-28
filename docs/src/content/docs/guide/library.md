@@ -61,15 +61,31 @@ const page = await downloader.search('', {
 
 4.x 新增的任务快照、逐页进度、独立自动化、封面、归档迁移及扩展只读查询见 [Web 后端与任务 API](../service-api/)。升级旧书架前请备份数据库。
 
-| CLI                                               | 库 API                                                                                               |
-| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `sources`、`sources --options`                    | `app.sources()`、`app.sourceSettings(source)`                                                        |
-| `search`、`search --options`                      | `app.search(query, options)`、`app.catalogOptions(source, query)`                                    |
-| `list`、`download`、`chapter`                     | `app.list()`、`app.download()`、`app.downloadChapter()`                                              |
-| `shelf add/list/set-input/follow/unfollow/remove` | `app.openShelf()` 返回的 `shelf.add()`、`list()`、`setInput()`、`follow()`、`unfollow()`、`remove()` |
-| `shelf check/status/watch/retry`                  | `shelf.check()`、`status()` 与 `needsAttention()`、`watch()`、`retry()`                              |
-| `add`、`update`、`remove`                         | `manageExtensions(action, packageName, options)`                                                     |
-| `--extension`、`--config`、`--set`                | `loadExtension()` 或 `withManagedDownloader()`、`readConfig()`、`sourceOverrides()`                  |
+| CLI                                                                      | 库 API                                                                                               |
+| ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `sources`、`sources --options`                                           | `app.sources()`、`app.sourceSettings(source)`                                                        |
+| `search`、`search --options`                                             | `app.search(query, options)`、`app.catalogOptions(source, query)`                                    |
+| `list`、`download`、`chapter`                                            | `app.list()`、`app.download()`、`app.downloadChapter()`                                              |
+| `shelf add/list/set-input/follow/unfollow/remove`                        | `app.openShelf()` 返回的 `shelf.add()`、`list()`、`setInput()`、`follow()`、`unfollow()`、`remove()` |
+| `shelf check/status/watch/retry`                                         | `shelf.check()`、`status()` 与 `needsAttention()`、`watch()`、`retry()`                              |
+| `add`、`update`、`remove`                                                | `manageExtensions(action, packageName, options)`                                                     |
+| `--extension`、`--config`、`--set`                                       | `loadExtension()` 或 `withManagedDownloader()`、`readConfig()`、`sourceOverrides()`                  |
+| `search --json`、`list --details`                                        | 搜索封面、作品元数据与完整章节描述                                                                   |
+| `--progress auto/plain/off`                                              | 下载和 watcher 的 `onEvent`；库不默认绘制终端                                                        |
+| `shelf configure/chapters/tasks/enqueue/cancel`                          | `configure()`、`chapters()`、`tasks()`、`enqueue()`、`cancel()`                                      |
+| `shelf watch --interval`                                                 | `setDefaultInterval()`；作品覆盖使用 `configure()`                                                   |
+| `--archive-template/--archive-padding/--archive-format` 或配置 `archive` | 下载、watcher 的 `archive`                                                                           |
+| `--output-root/--require-output-marker`                                  | 手动与 watcher 的 `outputRoot/outputMarker`                                                          |
+| `extensions`、`update --check`                                           | `listManagedExtensions()`、`checkExtensionUpdates()`                                                 |
+| `migrate`、`migrate --apply`                                             | `planArchiveMigration()`、`applyArchiveMigration()`                                                  |
+
+不是所有服务端能力都对应 CLI 子命令：鉴权封面字节读取使用库 `readCover()`；CLI 只查询封面描述。手动任务的独立句柄/快照/取消/重试由 `startDownload()` 提供，CLI 则用进程和 Ctrl+C 控制。CLI `shelf tasks` 只读持久队列，无法获取另一进程的实时页数；同一常驻库句柄可合并实时事件。跨作品批量迁移也由库组合，CLI 每次为一部作品预览。
+
+## Web 需求的落点
+
+[comic-dl-web](https://github.com/yinyanfr/comic-dl-web) 的七项后端需求分别对应：独立书架自动化（核心 #26）、元数据/鉴权封面（#27）、归档命名与显式迁移（#28）、统一任务和页进度（#29）、NAS 根标记（#30）、托管清单（#31）及只检查更新（#32）。均有公开库接口；上表列出 CLI 入口和有意保留的差异。
+
+五个配套扩展已提供可选元数据和直链上下文，Komga/Kavita 另有鉴权封面；ZeroByw `0.3.1` 与 DM5 `0.2.1` 修正公共目录封面。开发这些能力时阅读[扩展指南](../../extensions/develop/)与[ZeroByw 教学](../../extensions/zerobyw-walkthrough/)。Web 通过服务端 API 接入，不解析 CLI 输出、不直接操作 SQLite。
 
 单独开发 Web UI 时，在常驻 Node.js 后端调用这些接口。后台追更由服务进程维持，浏览器关闭后仍可运行。
 

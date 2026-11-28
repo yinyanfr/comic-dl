@@ -3,6 +3,9 @@ title: comic-dl documentation
 description: Install comic-dl, build manga source extensions, or contribute to the project.
 template: splash
 hero:
+  image:
+    file: ../../../../../assets/project-icon.png
+    alt: Comic books in a storage box
   tagline: Add manga sources and download through the CLI or TypeScript library. Save each chapter as its own CBZ.
   actions:
     - text: Install and add sources
