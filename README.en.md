@@ -24,7 +24,8 @@
   <a href="https://github.com/yinyanfr/comic-dl-extensions">Source extensions</a> ·
   <a href="https://github.com/yinyanfr/comic-dl-web">Web UI</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
-  <a href="README.md">简体中文</a>
+  <a href="README.md">简体中文</a> ·
+  <a href="README.ja.md">日本語</a>
 </p>
 
 ## Quick start
@@ -46,6 +47,10 @@ You can also use a short series ID. `-o` sets the output directory, and `-c 2-4`
 Archives default to `work title/number-chapter title.cbz` within the output directory. Templates, zero-padding, and ZIP are configurable. Legacy hashed CBZs remain recognized by identity and are not renamed automatically. See the [4.x migration guide](https://yinyanfr.github.io/comic-dl/en/migration/v3-to-v4/).
 
 ## Install
+
+### What's new in 4.1.0
+
+The CLI adds page progress, `extensions`, `update --check`, `search --json`, `list --details`, archive overrides, manual NAS protection, and migration preview/apply. Default progress stays on terminal stderr; use `--progress plain` for logs. See the [CLI reference](https://yinyanfr.github.io/comic-dl/en/reference/cli/) and [changelog](CHANGELOG.md#410--2026-11-28). Upgrades from 4.0 do not migrate the shelf schema again, and existing archives are never renamed automatically.
 
 Use Node.js 24. The core package does not bundle online sources; add them to the CLI separately:
 

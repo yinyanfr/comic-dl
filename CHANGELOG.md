@@ -2,7 +2,9 @@
 
 For each version bump, add an English `## <version> — YYYY-MM-DD` entry here. Start with a short summary, then group the changes under `###` headings such as Features, Breaking changes, and Fixes. Include examples or migration links when commands or APIs change. The publish workflow uses this entry as the GitHub release body and checks it before publishing to npm.
 
-## Unreleased
+## 4.1.0 — 2026-11-28
+
+Bring the CLI up to date with the 4.x backend APIs, add terminal page progress, and provide complete Japanese documentation alongside English and Simplified Chinese. Node.js 24, extension API v1, and the shelf schema introduced in 4.0 remain unchanged.
 
 ### CLI parity and progress
 
@@ -11,11 +13,28 @@ For each version bump, add an English `## <version> — YYYY-MM-DD` entry here. 
 - Add `search --json`, `list --details`, archive template/padding/format overrides, and NAS output-root/marker protection for manual downloads as well as watchers.
 - Add `migrate` JSON previews and explicit `migrate --apply <preview.json>` using the reviewed root-bound plan, with core identity and no-clobber revalidation.
 
+```sh
+comic-dl download "$series_url" -o ./downloads --progress plain --archive-padding 3
+comic-dl extensions
+comic-dl update --check
+comic-dl migrate "$series_url" -o ./downloads --archive-padding 3 > migration.json
+# Stop writers, back up archives, and review the preview before applying.
+comic-dl migrate --apply migration.json -o ./downloads
+```
+
+Migration applies the saved plan without regenerating it, refuses occupied destinations, and is not a batch transaction. See the [CLI reference](https://yinyanfr.github.io/comic-dl/en/reference/cli/) and [4.x migration guide](https://yinyanfr.github.io/comic-dl/en/migration/v3-to-v4/). Existing archives are still recognized by identity and are never renamed implicitly.
+
 ### Documentation and verification
 
-- Expand bilingual extension development and API contracts for metadata, public/protected covers, canonical direct links, source settings, credential binding, and offline acceptance.
-- Update both Zerobyw walkthroughs with trusted HTTP covers, metadata, two-chapter canonical numbering, and executable CLI/library examples. Document remaining intentional CLI/library differences and the Web backend requirements.
+- Add a Japanese README and all 23 matching documentation pages, with a Japanese language picker, translated navigation, and a searchable Japanese site at `/comic-dl/ja/`.
+- Expand extension development guides and API contracts in all three languages for metadata, public/protected covers, canonical direct links, source settings, credential binding, and offline acceptance.
+- Update Zerobyw walkthroughs with trusted HTTP covers, metadata, two-chapter canonical numbering, and executable CLI/library examples. Document remaining intentional CLI/library differences and the Web backend requirements.
+- Replace the project icon in READMEs and the documentation site's header, homepages, and favicon. Add a WebUI navigation section with usage and deployment placeholders in all three languages; these pages intentionally have no body content yet.
+- Include the Japanese README and shared project icon in the npm package.
 - Add offline CLI regressions for page rendering, pipe compatibility, watcher interruption, JSON discovery, extension queries, NAS guards, and migration preview/apply.
+- Verify watcher interruption through cross-platform test IPC while retaining a separate non-Windows real-SIGTERM test; Windows live-signal behavior is not inferred from macOS results.
+
+[Compare 4.0.0 to 4.1.0](https://github.com/yinyanfr/comic-dl/compare/4.0.0...4.1.0).
 
 ## 4.0.0 — 2026-11-28
 

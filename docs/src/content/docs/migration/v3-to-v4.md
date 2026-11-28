@@ -14,4 +14,4 @@ description: 迁移书架自动化、可读归档和 Web 后端 API。
 
 完整接口、取消与重试语义、显式归档迁移及扩展更新预览见 [Web 后端与任务 API](../../guide/service-api/)。
 
-后续未发布 CLI 补齐项包括：`extensions`、`update --check`、`migrate/--apply`、`list --details`、`search --json`、归档覆盖参数、手动 NAS 保护和逐页终端进度。使用本仓库构建验证，发行版本以 changelog 为准；详见 [CLI 参考](../../reference/cli/)和[库/CLI 对照](../../guide/library/#cli-与库-api-对照)。
+4.1.0 补齐 CLI：`extensions`、`update --check`、`migrate/--apply`、`list --details`、`search --json`、归档覆盖参数、手动 NAS 保护和逐页终端进度。从 4.0 升级不再变更书架 schema；无需重新安装兼容的 API v1 扩展。迁移前仍须停止写入并备份，改名只会在明确应用预览后执行；详见 [CLI 参考](../../reference/cli/)和[库/CLI 对照](../../guide/library/#cli-与库-api-对照)。

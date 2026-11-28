@@ -31,7 +31,7 @@ Keep site identification, authentication, and parsing in extensions. The downloa
 
 ## Maintain the documentation site
 
-Simplified Chinese Markdown lives in `docs/src/content/docs/`, and English in `docs/src/content/docs/en/`. Use the same relative filename in both languages so the language picker can switch between matching pages. When an interface changes, update both locales and check the corresponding reference and specification pages.
+Simplified Chinese Markdown lives in `docs/src/content/docs/`, English in `docs/src/content/docs/en/`, and Japanese in `docs/src/content/docs/ja/`. Use the same relative filename in all three languages so the language picker can switch between matching pages. When an interface changes, update all three locales and check the corresponding reference and specification pages.
 
 The CLI and site have separate dependencies:
 
@@ -42,7 +42,7 @@ npm run build --prefix docs
 npm run preview --prefix docs
 ```
 
-Preview at `/comic-dl/` or `/comic-dl/en/` to match the [GitHub Pages](https://yinyanfr.github.io/comic-dl/en/) base path. Documentation PRs run the site build, and pushes to `main` deploy it. Set the repository's **Settings → Pages → Source** to **GitHub Actions**.
+Preview at `/comic-dl/`, `/comic-dl/en/`, or `/comic-dl/ja/` to match the [GitHub Pages](https://yinyanfr.github.io/comic-dl/en/) base path. Documentation PRs run the site build, and pushes to `main` deploy it. Set the repository's **Settings → Pages → Source** to **GitHub Actions**.
 
 ## Publish to npm
 

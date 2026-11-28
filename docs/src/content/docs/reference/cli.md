@@ -5,7 +5,7 @@ description: 查阅命令、可用选项、标准输出和退出码。
 
 运行 `comic-dl --help` 查看命令，或运行 `comic-dl <command> --help` 查看各命令选项。`-h` 等同于 `--help`，`-V` 等同于 `--version`。从仓库运行时，把 `comic-dl` 换成 `node dist/index.js`。
 
-本文反映仓库当前代码；进度、`extensions/update --check/migrate`、详情 JSON、归档覆盖参数及手动 NAS 保护尚在 changelog 的 **Unreleased** 中，并非已发布 `4.0.0` 的 CLI 功能。
+本文对应 4.1.0。进度、`extensions`、`update --check`、`migrate`、详情 JSON、归档覆盖参数及手动 NAS 保护从 4.1.0 起可用；使用 `npm install -g comic-dl@latest` 升级。Node.js 24 和扩展 API v1 要求不变。
 
 | 命令                      | 简写  | 用途                                                     |
 | ------------------------- | ----- | -------------------------------------------------------- |

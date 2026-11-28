@@ -5,7 +5,7 @@ description: Look up commands, options, standard output, and exit codes.
 
 Run `comic-dl --help` to see available commands, or `comic-dl <command> --help` for command-specific options. `-h` is short for `--help`, and `-V` for `--version`. When running from the repository, replace `comic-dl` with `node dist/index.js`.
 
-This page reflects the current repository. Progress, `extensions/update --check/migrate`, detail JSON, archive overrides, and manual NAS protection are **Unreleased** changelog entries, not CLI features already shipped in `4.0.0`.
+This page covers 4.1.0. Progress, `extensions`, `update --check`, `migrate`, detail JSON, archive overrides, and manual NAS protection are available starting with 4.1.0; upgrade with `npm install -g comic-dl@latest`. Node.js 24 and extension API v1 requirements are unchanged.
 
 | Command                   | Alias | Purpose                                                                                   |
 | ------------------------- | ----- | ----------------------------------------------------------------------------------------- |

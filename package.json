@@ -1,6 +1,6 @@
 {
   "name": "comic-dl",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -24,6 +24,8 @@
   "files": [
     "dist",
     "README.en.md",
+    "README.ja.md",
+    "assets/project-icon.png",
     "CHANGELOG.md",
     "docs/extensions.md",
     "docs/migration.md",

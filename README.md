@@ -24,7 +24,8 @@
   <a href="https://github.com/yinyanfr/comic-dl-extensions">漫画源扩展</a> ·
   <a href="https://github.com/yinyanfr/comic-dl-web">Web 界面</a> ·
   <a href="CHANGELOG.md">更新日志</a> ·
-  <a href="README.en.md">English</a>
+  <a href="README.en.md">English</a> ·
+  <a href="README.ja.md">日本語</a>
 </p>
 
 ## 快速开始
@@ -46,6 +47,10 @@ comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --source copymanga -o ~/manga
 默认在输出目录下保存为 `作品名/序号-章节名.cbz`，支持命名模板、补零和 ZIP。旧哈希 CBZ 仍按身份识别，不自动改名。详见 [4.x 迁移](https://yinyanfr.github.io/comic-dl/migration/v3-to-v4/)。
 
 ## 安装
+
+### 4.1.0 更新
+
+CLI 新增逐页进度、`extensions`、`update --check`、`search --json`、`list --details`、归档参数、手动 NAS 保护及归档迁移预览/应用。默认进度仅在终端的 stderr 显示，日志使用 `--progress plain`。详见 [CLI 手册](https://yinyanfr.github.io/comic-dl/reference/cli/)与[更新日志](CHANGELOG.md#410--2026-11-28)。4.0 用户无需再次迁移书架 schema；旧归档不会自动改名。
 
 使用 Node.js 24。核心不附带在线漫画源，CLI 通过 `add` 安装扩展：
 
