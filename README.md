@@ -1,8 +1,35 @@
-# comic-dl
+<p align="center">
+  <img src="assets/readme-icon.svg" alt="comic-dl 图标：漫画与下载箭头" width="144" height="144" />
+</p>
 
-[English](README.en.md) · [更新日志（英文）](CHANGELOG.md)
+<h1 align="center">comic-dl</h1>
 
-comic-dl 是一个可通过扩展添加漫画源的命令行工具和 TypeScript 库，每章保存为一个 CBZ。
+<p align="center">
+  <strong>把喜欢的漫画，整理成自己的书架。</strong><br />
+  可扩展的漫画下载 CLI 与 TypeScript 库<br />
+  多来源 · 自动追更 · CBZ / ZIP 归档
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/comic-dl"><img src="https://img.shields.io/npm/v/comic-dl?style=flat-square&amp;logo=npm&amp;label=npm&amp;color=0F766E" alt="npm 版本" /></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-24-5FA04E?style=flat-square&amp;logo=nodedotjs&amp;logoColor=white" alt="Node.js 24" /></a>
+  <a href="https://github.com/yinyanfr/comic-dl/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/yinyanfr/comic-dl/ci.yml?branch=main&amp;style=flat-square&amp;label=CI" alt="CI 状态" /></a>
+  <a href="https://github.com/yinyanfr/comic-dl/actions/workflows/publish-npm.yml"><img src="https://img.shields.io/github/actions/workflow/status/yinyanfr/comic-dl/publish-npm.yml?branch=main&amp;style=flat-square&amp;label=Publish" alt="npm 发布状态" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-A96927?style=flat-square" alt="MIT 许可证" /></a>
+</p>
+
+<p align="center">
+  <a href="#快速开始">快速开始</a> ·
+  <a href="https://yinyanfr.github.io/comic-dl/">文档</a> ·
+  <a href="https://github.com/yinyanfr/comic-dl-extensions">漫画源扩展</a> ·
+  <a href="https://github.com/yinyanfr/comic-dl-web">Web 界面</a> ·
+  <a href="CHANGELOG.md">更新日志</a> ·
+  <a href="README.en.md">English</a>
+</p>
+
+## 快速开始
+
+安装核心与漫画源扩展后，每章可保存为独立 CBZ：
 
 ```sh
 comic-dl d "https://www.copy20.com/comic/xiangkanbaitiantongxuederuanruobiaoqing"
@@ -29,6 +56,10 @@ comic-dl sources
 ```
 
 `comic-dl update @comic-dl/copymanga` 更新单个扩展，`comic-dl update` 更新全部，`comic-dl remove @comic-dl/copymanga` 卸载。我们维护的扩展位于 [comic-dl-extensions](https://github.com/yinyanfr/comic-dl-extensions)；第三方也可独立发布 npm 包。
+
+## 想用浏览器管理？
+
+[comic-dl-web](https://github.com/yinyanfr/comic-dl-web) 是基于本项目的独立自托管 Web 界面，面向 NAS 与本地漫画收藏，提供来源浏览、手动下载、书架与自动追更。核心负责下载与归档，漫画源由扩展提供；部署和配置请前往 Web 仓库。
 
 ## 跨来源书架与自动追更
 
