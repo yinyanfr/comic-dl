@@ -43,3 +43,26 @@ comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --config ./profiles/copymanga
 命令行参数优先，JSON 不会被改写。命令行上的相对路径以**当前工作目录**为基准，所以示例会写到 `./preview/`，而不是 `./profiles/preview/`。也可以用 `--source` 临时改用其他源。
 
 可以为不同来源或下载目录保存多份配置，运行时选择对应的文件。Cookie、API Key 等凭据按各[扩展 README](https://github.com/yinyanfr/comic-dl-extensions)的说明配置。完整字段和高级用法见[配置与环境变量](../../reference/config/)。
+
+## 可读文件名和 ZIP
+
+将下面内容保存为 `naming.json`：
+
+```json
+{
+  "version": 1,
+  "source": "copymanga",
+  "output": "~/manga",
+  "archive": {
+    "template": "{title}/{number}-{chapter}",
+    "padding": 3,
+    "format": "zip"
+  }
+}
+```
+
+```sh
+comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --config naming.json -c 2-4
+```
+
+输出类似 `~/manga/作品名/002-章节名.zip`；序号保持完整目录中的位置。省略 `archive` 时使用默认模板、不补零、格式为 CBZ。同一配置也可给 `shelf watch` 使用；改变模板或格式不会重命名已完成的归档。需要改名时，用[服务端迁移 API](../service-api/)先预览再显式应用。模板与约束见[配置规范](../../specs/config-v1/)。

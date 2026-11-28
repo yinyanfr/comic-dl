@@ -16,7 +16,7 @@ comic-dl d xiangkanbaitiantongxuederuanruobiaoqing --source copymanga -o ~/manga
 
 也可以直接用作品短 ID。`-o` 指定下载目录，`-c 2-4` 按阅读顺序下载第 2 到第 4 个章节（含两端）。范围超出章节列表时，命令会报错，且不会开始下载。
 
-CBZ 直接写入输出目录。下载多部作品给阅读器使用时，请为每部作品指定独立目录，例如 `-o ~/manga/作品名`。
+默认在输出目录下保存为 `作品名/序号-章节名.cbz`，支持命名模板、补零和 ZIP。旧哈希 CBZ 仍按身份识别，不自动改名。详见 [4.x 迁移](https://yinyanfr.github.io/comic-dl/migration/v3-to-v4/)。
 
 ## 安装
 
@@ -59,6 +59,8 @@ console.log(results);
 ```
 
 独立的 Node.js 服务或 Web UI 后端可以直接使用库 API 来搜索、选章下载、管理书架和订阅、运行自动追更，以及安装、更新或卸载扩展。书架和扩展仓库可以与 CLI 共用，也可以为服务指定独立路径。参见[库使用指南](https://yinyanfr.github.io/comic-dl/guide/library/)。
+
+4.x 还提供独立自动检查/下载开关、安全任务快照和逐页事件、鉴权封面、扩展清单与只检查更新的 API，见 [Web 后端指南](https://yinyanfr.github.io/comic-dl/guide/service-api/)。
 
 ## 文档
 

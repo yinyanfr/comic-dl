@@ -4,6 +4,8 @@ import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { isLocalExtensionPath, isSourceId } from './sources/index.js';
 import { assignment, isOptionKey, isOptionValue } from './source-options.js';
 import type { OptionValues, SettingsBySource } from './source-options.js';
+import { validateArchive } from './output/naming.js';
+import type { ArchiveOptions } from './output/naming.js';
 
 export interface CliConfig {
   extensions?: string[];
@@ -12,6 +14,7 @@ export interface CliConfig {
   jobs?: number;
   retries?: number;
   sourceSettings?: SettingsBySource;
+  archive?: ArchiveOptions;
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -126,13 +129,25 @@ export async function readConfig(
     'jobs',
     'retries',
     'sourceSettings',
+    'archive',
   ];
   if (Object.keys(fields).some((key) => !allowed.includes(key))) {
     throw new Error(
       `Config contains an unknown field. Allowed fields: ${allowed.join(', ')}`,
     );
   }
-  const { extensions, source, output, jobs, retries, sourceSettings } = fields;
+  const { extensions, source, output, jobs, retries, sourceSettings, archive } =
+    fields;
+  if (
+    archive !== undefined &&
+    (!record(archive) ||
+      Object.keys(archive).some(
+        (key) => !['template', 'padding', 'format'].includes(key),
+      ))
+  )
+    throw new Error('Config archive requires template, padding and/or format');
+  const archiveOptions =
+    archive === undefined ? undefined : validateArchive(archive);
   if (
     extensions !== undefined &&
     (!Array.isArray(extensions) || !extensions.every(nonempty))
@@ -155,6 +170,7 @@ export async function readConfig(
         : extension,
     ),
     source,
+    archive: archiveOptions,
     output: output === undefined ? undefined : outputPath(output, directory),
     sourceSettings:
       sourceSettings === undefined

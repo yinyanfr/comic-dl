@@ -32,6 +32,8 @@ A work ID identifies a work within its source, a chapter ID within its work, and
 
 ## HTTP and errors
 
+Version 4 retains API v1 and adds optional `Series.metadata` (`title/authors/summary/tags/coverUrl/coverId`) and search result `coverUrl/coverId`. `getChapter()` may return reusable `seriesInput`; the core loads its full catalog, verifies work/chapter identity, and obtains display metadata and canonical position. Older extensions without this context report an unknown number, not a fabricated 1. Implement `readCover(id, signal): Promise<{ contentType, bytes }>` for protected covers: constrain IDs and destinations and keep credentials on the server, never accept an arbitrary proxy URL. Missing fields do not break old extensions. See the [backend APIs](../../guide/service-api/).
+
 Honor the supplied `AbortSignal` in read operations. `api.createSourceHttp({ requestHeaders, credentialHeaders, credentialOrigins, allowedOrigins })` returns a function `(url, signal, authenticated = false)` that resolves to `{ bytes, url, contentType }`. `requestHeaders` and `allowedOrigins` are optional. Use `requestHeaders` for non-credential headers sent with each request. Credential headers are attached only when authentication is explicitly requested and the destination origin is allowed; they are not reattached after a cross-origin redirect.
 
 - Use the injected `api.TransientSourceError` for retryable failures. The HTTP helper maps timeouts and some transient HTTP statuses to this type.

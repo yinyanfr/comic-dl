@@ -6,7 +6,6 @@ import {
   mkdir,
   mkdtemp,
   readFile,
-  readdir,
   rm,
   symlink,
   writeFile,
@@ -18,6 +17,7 @@ import { test } from 'node:test';
 import { fileURLToPath, URL } from 'node:url';
 import { promisify } from 'node:util';
 import { createDownloader, fixtureExtension } from 'comic-dl';
+import { outputFiles as readdir } from './helpers/output.js';
 
 const exec = promisify(execFile);
 const cli = fileURLToPath(new URL('../dist/index.js', import.meta.url));
@@ -192,7 +192,7 @@ test('downloads inclusive reading positions and validates every selection before
 
   const { stdout } = await run(...args, '-c', '2-4', '-c', '1-2', '-c', '20');
   assert.deepEqual(
-    [...stdout.matchAll(/^Downloaded: .*chapter-(.+)-[a-f0-9]+\.cbz$/gm)].map(
+    [...stdout.matchAll(/^Downloaded: .*\/\d+-(.+)\.cbz$/gm)].map(
       ([, id]) => id,
     ),
     ['1-2', '10', '20', '30'],
@@ -224,7 +224,7 @@ test('selects stable chapter IDs in reading order and rejects unknown IDs before
   const selection = ['--chapter', '20', '--chapter', '30', '--chapter', '20'];
   assert.match(
     (await run(...args, ...selection)).stdout,
-    /^Downloaded: .*chapter-30-.*\nDownloaded: .*chapter-20-.*\nSummary: 2 downloaded, 0 skipped, 0 failed, 0 cancelled\n$/,
+    /^Downloaded: .*1-Opening\.cbz\nDownloaded: .*3-Finale\.cbz\nSummary: 2 downloaded, 0 skipped, 0 failed, 0 cancelled\n$/,
   );
   assert.equal((await readdir(output)).length, 2);
   assert.match(
@@ -242,9 +242,7 @@ test('handles identical chapter titles and rejects path traversal and unsafe out
   await run(...args, output);
   const archives = await readdir(output);
   assert.equal(archives.length, 2);
-  assert.ok(
-    archives.every((name) => /^chapter-___same-[a-f0-9]+\.cbz$/.test(name)),
-  );
+  assert.ok(archives.every((name) => /^work\/[12]-Same\.cbz$/.test(name)));
 
   manifest.workId = 'other-work';
   await writeManifest();
@@ -353,10 +351,7 @@ test(
       stdout,
       /Summary: 1 downloaded, 0 skipped, 0 failed, 2 cancelled/,
     );
-    assert.match(
-      (await readdir(output)).join('\n'),
-      /^chapter-first-[a-f0-9]+\.cbz$/,
-    );
+    assert.match((await readdir(output)).join('\n'), /^work\/1-First\.cbz$/);
 
     await writeFile(join(directory, 'blocked.gif'), page);
     assert.match(

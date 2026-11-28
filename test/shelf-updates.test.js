@@ -2,14 +2,7 @@ import assert from 'node:assert/strict';
 import { Buffer } from 'node:buffer';
 import { execFile, spawn } from 'node:child_process';
 import { once } from 'node:events';
-import {
-  mkdir,
-  mkdtemp,
-  readFile,
-  readdir,
-  rm,
-  writeFile,
-} from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { env as parentEnv, execPath } from 'node:process';
@@ -17,6 +10,7 @@ import { test } from 'node:test';
 import { fileURLToPath, URL } from 'node:url';
 import { promisify } from 'node:util';
 import Database from 'better-sqlite3';
+import { outputFiles as readdir } from './helpers/output.js';
 import { Shelf } from '../dist/shelf.js';
 import { checkSubscriptions, runShelfCycle } from '../dist/shelf-updates.js';
 import { SourceRegistry } from '../dist/sources/index.js';
@@ -197,7 +191,10 @@ test('shelf checks migrate v1, keep a baseline of all seen IDs and isolate sourc
     stderr: /source-unavailable/,
   });
   await run('unfollow', 'migrated');
-  await assert.rejects(run('check', 'migrated', ...options), { code: 2 });
+  await assert.rejects(run('check', 'migrated', ...options), {
+    code: 1,
+    stderr: /authorization-failed/,
+  });
   await a.write([['1'], ['2'], ['3'], ['4']]);
   await run('follow', 'migrated');
   const checks = await Promise.all([
@@ -223,7 +220,7 @@ test('shelf checks migrate v1, keep a baseline of all seen IDs and isolate sourc
   await run('remove', 'migrated');
   const db = new Database(file, { readonly: true });
   try {
-    assert.equal(db.pragma('user_version', { simple: true }), 2);
+    assert.equal(db.pragma('user_version', { simple: true }), 3);
     assert.equal(
       db
         .prepare(
@@ -377,7 +374,8 @@ test('watch cycles retry only eligible chapters, defer missing ones and recover 
   states.clear();
   await cycle();
   assert.deepEqual(pagesRead, ['blocked']);
-  assert.equal(tracking.nextDue(), now + interval);
+  // Missing queued chapters are revisited independently of automatic checks.
+  assert.equal(tracking.nextDue(), now + 60_000);
   assert.equal(tracking.status(row.id)[0].pending, 2);
 
   now += interval;

@@ -20,3 +20,5 @@ description: CLI JSON 配置的字段、校验、合并顺序和路径规则。
 4. 凭据不属于配置格式。文件读取失败、无效 JSON、字段错误和不支持的配置版本返回退出码 `2`。
 
 可选字段 `sourceSettings` 是以来源 ID 为键的对象。每个来源的值为设置对象，键匹配 `[a-z][a-z0-9-]*`，值可为字符串、布尔值或安全整数。扩展定义可用的键、类型及范围，选用该来源时校验。用 `--set <id>.<key>=<value>` 可逐项覆盖，布尔值使用 `true` 或 `false`。
+
+4.x 增加可选 `archive` 对象，只接受 `template`、`padding`、`format`。默认模板为 `{title}/{number}-{chapter}`；`padding` 为 `0`–`12` 的安全整数，默认 `0`；`format` 为 `cbz`（默认）或 `zip`。模板支持的占位符与路径限制见[服务 API](../../guide/service-api/)。配置格式版本仍为 `1`，不支持其他归档字段。

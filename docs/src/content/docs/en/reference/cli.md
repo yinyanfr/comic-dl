@@ -81,14 +81,16 @@ All shelf commands accept `--shelf-db <file>`. `shelf add`, `set-input`, `check`
 
 ### Check updates and download automatically
 
-| Command                               | Purpose                                                                  |
-| ------------------------------------- | ------------------------------------------------------------------------ |
-| `shelf check [entry-id]`              | Check all or one subscription; use `--include-history` with one entry ID |
-| `shelf status [entry-id]`             | Show check and download status offline                                   |
-| `shelf watch`                         | Check and download in the foreground; set `--output <dir>` or use config |
-| `shelf retry <entry-id> <chapter-id>` | Requeue a failed or restricted chapter                                   |
+| Command                               | Purpose                                                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `shelf check [entry-id]`              | Check the whole shelf or any entry regardless of automation; `--include-history` requires one ID |
+| `shelf status [entry-id]`             | Show check and download status offline                                                           |
+| `shelf watch`                         | Check and download in the foreground; set `--output <dir>` or use config                         |
+| `shelf retry <entry-id> <chapter-id>` | Requeue a failed or restricted chapter                                                           |
 
 `watch` accepts `--interval <seconds>` (default `3600`), `--jobs <n>` (default `2`), and `--require-output-marker <name>` (defer downloads when the marker is unavailable). See [Check updates and download automatically](../../shelf/updates/).
+
+Version 4 adds `shelf configure <id> --auto-check on/off --auto-download on/off --interval <seconds/default>`, `shelf chapters <id>`, `shelf tasks [id]`, `shelf enqueue <id> <chapter-id>`, and `shelf cancel <id> <chapter-id>`. Chapters/tasks print JSON. Disabling automation preserves existing tasks; retry restores cancelled tasks. Omitting `--interval` retains the saved global default (initially `3600`). `--output-root <dir>` separates a root marker from an existing selected output subdirectory. See the [backend API](../../guide/service-api/) for archive configuration and public contracts.
 
 ### Script output and exit codes
 

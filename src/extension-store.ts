@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { gt, rsort, valid, validRange } from 'semver';
 import { randomUUID } from 'node:crypto';
 import {
   access,
@@ -240,6 +241,184 @@ export interface ExtensionChange {
   changed: boolean;
 }
 
+export interface ManagedExtension {
+  package: string;
+  version: string | null;
+  requested: string;
+  sourceId: string | null;
+  status: 'loaded' | 'failed';
+}
+
+/** Pin a generation while inspecting it; no package operations or pointer writes. */
+async function inspectGeneration<T>(
+  directory: string | undefined,
+  signal: AbortSignal,
+  inspect: (project: string | undefined) => Promise<T>,
+): Promise<T> {
+  const store = storeDirectory(directory);
+  for (;;) {
+    signal.throwIfAborted();
+    const project = await currentProject(store);
+    const marker = project && join(project, 'readers', randomUUID());
+    if (marker) {
+      try {
+        await writeFile(marker, '', { flag: 'wx' });
+      } catch (error) {
+        if (missing(error)) continue;
+        throw error;
+      }
+    }
+    try {
+      if (project !== (await currentProject(store))) continue;
+      return await inspect(project);
+    } finally {
+      if (marker) await rm(marker, { force: true });
+    }
+  }
+}
+
+export async function listManagedExtensions({
+  directory,
+  signal = new AbortController().signal,
+}: ExtensionStoreOptions = {}): Promise<ManagedExtension[]> {
+  return inspectGeneration(directory, signal, async (project) => {
+    if (!project) return [];
+    const { dependencies = {} } = JSON.parse(
+      await readFile(join(project, 'package.json'), 'utf8'),
+    ) as { dependencies?: Record<string, string> };
+    const registry = new SourceRegistry();
+    const results: ManagedExtension[] = [];
+    for (const name of Object.keys(dependencies).sort()) {
+      signal.throwIfAborted();
+      const result: ManagedExtension = {
+        package: name,
+        requested: dependencies[name],
+        version: null,
+        sourceId: null,
+        status: 'failed',
+      };
+      results.push(result);
+      try {
+        if (!isPackageName(name)) continue;
+        const manifest = JSON.parse(
+          await readFile(
+            join(project, 'node_modules', name, 'package.json'),
+            'utf8',
+          ),
+        ) as { version?: string };
+        result.version =
+          typeof manifest.version === 'string' && valid(manifest.version)
+            ? manifest.version
+            : null;
+        const { resolvePackage } = (await import(
+          pathToFileURL(join(project, 'resolve.mjs')).href
+        )) as { resolvePackage: (name: string) => string };
+        const extension = await importExtension(resolvePackage(name), name);
+        result.sourceId = extension.id;
+        registry.use(extension, name);
+        result.status = 'loaded';
+      } catch {
+        signal.throwIfAborted();
+      }
+    }
+    // An ambiguous mapping is not a successfully usable source.
+    for (const result of results) {
+      if (
+        results.some(
+          (other) =>
+            other !== result &&
+            other.sourceId !== null &&
+            other.sourceId === result.sourceId,
+        )
+      )
+        result.status = 'failed';
+    }
+    return results;
+  });
+}
+
+export type ExtensionUpdate = ManagedExtension &
+  (
+    | { updateStatus: 'current' | 'available'; availableVersion: string }
+    | { updateStatus: 'failed'; problem: 'query-failed' | 'not-installed' }
+  );
+
+/** npm itself resolves ranges/tags and honors the user's registry configuration. */
+export async function checkExtensionUpdates(
+  packageName?: string,
+  options: ExtensionStoreOptions = {},
+): Promise<ExtensionUpdate[]> {
+  if (packageName !== undefined && !isPackageName(packageName))
+    throw new Error('Provide an npm package name');
+  const signal = options.signal ?? new AbortController().signal;
+  const installed = await listManagedExtensions({ ...options, signal });
+  if (packageName && !installed.some((entry) => entry.package === packageName))
+    throw new Error('Extension is not installed');
+  return Promise.all(
+    installed
+      .filter((entry) => !packageName || entry.package === packageName)
+      .map(async (entry): Promise<ExtensionUpdate> => {
+        if (!entry.version)
+          return { ...entry, updateStatus: 'failed', problem: 'not-installed' };
+        try {
+          if (
+            !isPackageName(entry.package) ||
+            (!validRange(entry.requested) &&
+              !/^[a-zA-Z][a-zA-Z0-9._-]*$/.test(entry.requested))
+          )
+            throw new Error('Invalid requested version');
+          const output = await new Promise<string>((resolve, reject) => {
+            const spec = `${entry.package}@${entry.requested}`;
+            const windows = process.platform === 'win32';
+            const child = spawn(
+              windows ? 'cmd.exe' : 'npm',
+              windows
+                ? ['/d', '/s', '/c', `"npm view "${spec}" version --json"`]
+                : ['view', spec, 'version', '--json'],
+              {
+                signal,
+                stdio: ['ignore', 'pipe', 'ignore'],
+                timeout: 30_000,
+                windowsVerbatimArguments: windows,
+              },
+            );
+            let text = '';
+            child.stdout.setEncoding('utf8').on('data', (chunk: string) => {
+              text += chunk;
+            });
+            child.on('error', reject);
+            child.on('close', (code) =>
+              code === 0 ? resolve(text) : reject(new Error('Query failed')),
+            );
+          });
+          const versions: unknown = JSON.parse(output);
+          const availableVersion = Array.isArray(versions)
+            ? rsort(
+                versions.filter(
+                  (version): version is string =>
+                    typeof version === 'string' && valid(version) !== null,
+                ),
+              )[0]
+            : versions;
+          if (typeof availableVersion !== 'string')
+            throw new Error('Invalid version');
+          if (!valid(availableVersion) || !valid(entry.version))
+            throw new Error('Invalid version');
+          return {
+            ...entry,
+            updateStatus: gt(availableVersion, entry.version)
+              ? 'available'
+              : 'current',
+            availableVersion,
+          };
+        } catch {
+          signal.throwIfAborted();
+          return { ...entry, updateStatus: 'failed', problem: 'query-failed' };
+        }
+      }),
+  );
+}
+
 export async function manageExtensions(
   action: ExtensionAction,
   input: string | undefined,
@@ -308,6 +487,15 @@ export async function manageExtensions(
           ? ['uninstall', name!]
           : ['update', ...(name ? [name] : [])];
     await npm(project, [...args, '--package-lock-only'], signal, stdio);
+    if (action === 'add' && name && input !== name) {
+      const manifestPath = join(project, 'package.json');
+      const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+        dependencies: Record<string, string>;
+      };
+      manifest.dependencies[name] = input!.slice(name.length + 1);
+      await writeFile(manifestPath, JSON.stringify(manifest));
+      await npm(project, ['install', '--package-lock-only'], signal, stdio);
+    }
     await npm(project, ['ci'], signal, stdio);
     const registry = new SourceRegistry();
     const names = await loadManaged(project, registry, signal);

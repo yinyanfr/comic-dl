@@ -15,7 +15,7 @@ comic-dl d "https://www.copy20.com/comic/xiangkanbaitiantongxuederuanruobiaoqing
 
 The CLI matches the URL to an installed source and downloads the entire series to your current directory, one CBZ per chapter. `d` is short for `download`.
 
-The CLI does not create a series folder. When downloading multiple series for a reader, use a separate output directory for each, such as `-o ~/manga/series-name`. CBZ filenames are based on chapter identifiers.
+The latest version creates work subdirectories by default: `work title/number-chapter title.cbz`. `-o ~/manga` is the output root; you do not need to append the series name. Numbers come from the full catalog before selection. Use a [configuration file](../config-tutorial/) for templates, padding, or ZIP. Legacy hashed archives remain recognized by stable identity without automatic renaming.
 
 ## Download a range using a short ID
 

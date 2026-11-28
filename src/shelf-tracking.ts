@@ -5,6 +5,8 @@ import type {
   ShelfAttention,
   ShelfStatus,
 } from './shelf-types.js';
+import { safeText, taskId } from './tasks.js';
+import type { DownloadTaskSnapshot } from './tasks.js';
 
 export const trackingSchema = `
   ALTER TABLE shelf_entries ADD COLUMN catalog_version INTEGER NOT NULL DEFAULT 0;
@@ -40,6 +42,11 @@ export interface TrackedEntry {
   checkVersion: number;
   lastSuccess: number | null;
   checkFailures: number;
+  title: string;
+  autoCheck: number;
+  autoDownload: number;
+  intervalSeconds: number;
+  nextCheck: number;
 }
 
 type TaskState = 'queued' | 'retry' | 'restricted' | 'complete' | 'blocked';
@@ -50,27 +57,32 @@ export interface ShelfTask {
   state: TaskState;
   failures: number;
   readyAt: number;
+  revision: number;
 }
 
 type CheckData =
   | { problem: CheckProblem }
-  | { chapterIds: readonly string[]; includeHistory: boolean };
+  | {
+      chapterIds: readonly string[];
+      includeHistory: boolean;
+      chapters?: readonly { id: string; title: string; number?: number }[];
+    };
 
 const runnableStates = "state IN ('queued', 'retry', 'restricted')";
 const selectEntries = `
   SELECT id, source_id AS sourceId, work_id AS workId, input, revision,
     catalog_version AS catalogVersion, check_version AS checkVersion,
-    last_success AS lastSuccess, check_failures AS checkFailures
-  FROM shelf_entries AS entry WHERE following = 1
+    last_success AS lastSuccess, check_failures AS checkFailures, title,
+    auto_check AS autoCheck, auto_download AS autoDownload, next_check AS nextCheck,
+    coalesce(interval_seconds,(SELECT interval_seconds FROM shelf_settings WHERE id = 1)) AS intervalSeconds
+  FROM shelf_entries AS entry WHERE 1 = 1
 `;
 const dueTime = `
-  CASE WHEN check_failures > 0 THEN next_check ELSE
-    min(next_check, coalesce((
+    min(CASE WHEN auto_check = 1 THEN next_check ELSE 9007199254740991 END, coalesce((
       SELECT min(ready_at) FROM shelf_chapters AS chapter
       WHERE chapter.entry_id = entry.id AND chapter.catalog_version = entry.catalog_version
-        AND present = 1 AND ${runnableStates}
-    ), next_check))
-  END
+         AND ${runnableStates}
+    ), 9007199254740991))
 `;
 
 export class ShelfTracking {
@@ -96,7 +108,7 @@ export class ShelfTracking {
     return this.db
       .prepare<[], { time: number | null }>(
         `
-        SELECT min(${dueTime}) AS time FROM shelf_entries AS entry WHERE following = 1
+         SELECT min(${dueTime}) AS time FROM shelf_entries AS entry
       `,
       )
       .get()?.time;
@@ -106,12 +118,16 @@ export class ShelfTracking {
     return this.db
       .prepare<{ id: string | null }, ShelfStatus>(
         `
-        SELECT entry.id, source_id AS sourceId, following, last_check AS lastCheck,
+         SELECT entry.id, source_id AS sourceId, following, last_check AS lastCheck,
+           auto_check AS autoCheck, auto_download AS autoDownload,
+           coalesce(interval_seconds,(SELECT interval_seconds FROM shelf_settings WHERE id = 1)) AS intervalSeconds,
+           CASE WHEN auto_check = 1 THEN next_check END AS nextCheck,
           last_success AS lastSuccess, check_result AS result,
           count(*) FILTER (WHERE state IN ('queued', 'retry', 'restricted')) AS pending,
           count(*) FILTER (WHERE state = 'restricted') AS restricted,
           count(*) FILTER (WHERE state = 'blocked') AS blocked,
-          count(*) FILTER (WHERE state = 'complete') AS complete
+           count(*) FILTER (WHERE state = 'complete') AS complete,
+           count(*) FILTER (WHERE state = 'discovered') AS discovered
         FROM shelf_entries AS entry LEFT JOIN shelf_chapters AS chapter
           ON chapter.entry_id = entry.id AND chapter.catalog_version = entry.catalog_version
         WHERE @id IS NULL OR entry.id = @id
@@ -148,7 +164,7 @@ export class ShelfTracking {
             check_result = coalesce(@problem, 'ok'),
             check_failures = CASE WHEN @problem IS NULL THEN 0 ELSE check_failures + 1 END,
             next_check = @next
-        WHERE id = @id AND revision = @revision AND check_version = @checkVersion AND following = 1
+         WHERE id = @id AND revision = @revision AND check_version = @checkVersion
       `,
           )
           .run({ ...entry, now, problem, next });
@@ -178,16 +194,43 @@ export class ShelfTracking {
           `,
           )
           .run(catalog);
-        const queueNew = entry.lastSuccess !== null || data.includeHistory;
+        const queueNew =
+          (entry.lastSuccess !== null && entry.autoDownload === 1) ||
+          data.includeHistory;
         const inserted = this.db
           .prepare(
             `
-            INSERT INTO shelf_chapters (entry_id, catalog_version, chapter_id, state)
-            SELECT @entryId, @catalogVersion, value, @state FROM json_each(@chapterIds) WHERE true
+            INSERT INTO shelf_chapters (entry_id, catalog_version, chapter_id, state, discovered_at)
+            SELECT @entryId, @catalogVersion, value, @state, @discoveredAt FROM json_each(@chapterIds) WHERE true
             ON CONFLICT (entry_id, catalog_version, chapter_id) DO NOTHING
           `,
           )
-          .run({ ...catalog, state: queueNew ? 'queued' : 'seen' }).changes;
+          .run({
+            ...catalog,
+            state: queueNew
+              ? 'queued'
+              : entry.lastSuccess === null
+                ? 'seen'
+                : 'discovered',
+            discoveredAt: entry.lastSuccess === null ? null : now,
+          }).changes;
+        for (const [index, chapterId] of data.chapterIds.entries()) {
+          const chapter = data.chapters?.find(
+            (chapter) => chapter.id === chapterId,
+          );
+          this.db
+            .prepare(
+              `UPDATE shelf_chapters SET title = @title, number = @number
+            WHERE entry_id = @entryId AND catalog_version = @catalogVersion AND chapter_id = @chapterId`,
+            )
+            .run({
+              entryId: entry.id,
+              catalogVersion: entry.catalogVersion,
+              chapterId,
+              title: safeText(chapter?.title ?? chapterId),
+              number: chapter?.number ?? index + 1,
+            });
+        }
         let queued = queueNew ? inserted : 0;
         if (data.includeHistory) {
           queued += this.db
@@ -195,7 +238,7 @@ export class ShelfTracking {
               `
             UPDATE shelf_chapters SET state = 'queued'
             WHERE entry_id = @entryId AND catalog_version = @catalogVersion
-              AND present = 1 AND state = 'seen'
+               AND present = 1 AND state IN ('seen','discovered')
           `,
             )
             .run(catalog).changes;
@@ -209,22 +252,34 @@ export class ShelfTracking {
     return this.db
       .prepare<{ id: string; catalogVersion: number; now: number }, ShelfTask>(
         `
-        SELECT chapter_id AS id, state, failures, ready_at AS readyAt FROM shelf_chapters
-        WHERE entry_id = @id AND catalog_version = @catalogVersion AND present = 1
+         SELECT chapter_id AS id, state, failures, ready_at AS readyAt, revision FROM shelf_chapters
+       WHERE entry_id = @id AND catalog_version = @catalogVersion AND present = 1
           AND ${runnableStates} AND ready_at <= @now
       `,
       )
       .all({ id: entry.id, catalogVersion: entry.catalogVersion, now });
   }
 
+  refreshPresence(entry: TrackedEntry, ids: readonly string[], now: number) {
+    this.db
+      .prepare(
+        `UPDATE shelf_chapters SET
+      present = chapter_id IN (SELECT value FROM json_each(@ids)),
+      ready_at = CASE WHEN chapter_id NOT IN (SELECT value FROM json_each(@ids)) THEN max(ready_at, @next) ELSE ready_at END
+      WHERE entry_id = @id AND catalog_version = @catalogVersion
+      AND EXISTS (SELECT 1 FROM shelf_entries WHERE id = @id AND catalog_version = @catalogVersion)`,
+      )
+      .run({ ...entry, ids: JSON.stringify(ids), next: now + 60000 });
+  }
+
   isActive(entry: TrackedEntry) {
     return !!this.db
       .prepare(
         `
-      SELECT 1 FROM shelf_entries WHERE id = @id AND revision = @revision AND following = 1
+       SELECT 1 FROM shelf_entries WHERE id = @id AND catalog_version = @catalogVersion
     `,
       )
-      .get({ id: entry.id, revision: entry.revision });
+      .get({ id: entry.id, catalogVersion: entry.catalogVersion });
   }
 
   deferDownloads(entry: TrackedEntry, now: number, next: number) {
@@ -232,9 +287,9 @@ export class ShelfTracking {
       .prepare(
         `
       UPDATE shelf_chapters SET ready_at = @next
-      WHERE entry_id = @id AND catalog_version = @catalogVersion AND present = 1
+      WHERE entry_id = @id AND catalog_version = @catalogVersion
         AND ${runnableStates} AND ready_at <= @now
-        AND EXISTS (SELECT 1 FROM shelf_entries WHERE id = @id AND revision = @revision AND following = 1)
+         AND EXISTS (SELECT 1 FROM shelf_entries WHERE id = @id AND catalog_version = @catalogVersion)
     `,
       )
       .run({ ...entry, now, next });
@@ -252,8 +307,8 @@ export class ShelfTracking {
       UPDATE shelf_chapters SET state = @result, ready_at = @next,
         failures = CASE WHEN @result = 'complete' THEN 0 ELSE failures + 1 END
       WHERE entry_id = @entryId AND catalog_version = @catalogVersion AND chapter_id = @id
-        AND state = @state AND ready_at = @readyAt AND failures = @failures
-        AND EXISTS (SELECT 1 FROM shelf_entries WHERE id = @entryId AND revision = @revision AND following = 1)
+         AND state = @state AND ready_at = @readyAt AND failures = @failures AND revision = @taskRevision
+         AND EXISTS (SELECT 1 FROM shelf_entries WHERE id = @entryId AND catalog_version = @catalogVersion)
     `,
       )
       .run({
@@ -263,6 +318,7 @@ export class ShelfTracking {
         revision: entry.revision,
         result,
         next,
+        taskRevision: task.revision,
       }).changes;
   }
 
@@ -272,19 +328,151 @@ export class ShelfTracking {
         const updated = this.db
           .prepare(
             `
-        UPDATE shelf_chapters SET state = 'queued', ready_at = 0, failures = 0
-        WHERE entry_id = @id AND chapter_id = @chapterId AND state IN ('blocked', 'restricted', 'retry')
-          AND catalog_version = (SELECT catalog_version FROM shelf_entries WHERE id = @id AND following = 1)
+         UPDATE shelf_chapters SET state = 'queued', ready_at = 0, failures = 0, revision = revision + 1
+         WHERE entry_id = @id AND chapter_id = @chapterId AND state IN ('blocked', 'restricted', 'retry', 'cancelled')
+           AND catalog_version = (SELECT catalog_version FROM shelf_entries WHERE id = @id)
       `,
           )
           .run({ id, chapterId });
         if (!updated.changes) return false;
-        this.db
-          .prepare('UPDATE shelf_entries SET next_check = 0 WHERE id = ?')
-          .run(id);
         return true;
       })
       .immediate();
+  }
+
+  validateInterval(seconds: number) {
+    if (!Number.isSafeInteger(seconds) || seconds < 1 || seconds > 31536000)
+      throw new Error('intervalSeconds must be between 1 and 31536000');
+  }
+
+  setDefaultInterval(seconds: number) {
+    this.validateInterval(seconds);
+    this.db
+      .transaction(() => {
+        const previous = this.db
+          .prepare<[], { interval_seconds: number }>(
+            'SELECT interval_seconds FROM shelf_settings WHERE id = 1',
+          )
+          .get()!;
+        if (previous.interval_seconds === seconds) return;
+        this.db
+          .prepare(
+            'UPDATE shelf_settings SET interval_seconds = ? WHERE id = 1',
+          )
+          .run(seconds);
+        this.db
+          .prepare(
+            `UPDATE shelf_entries SET next_check = ? + ? * 1000, revision = revision + 1
+        WHERE interval_seconds IS NULL`,
+          )
+          .run(Date.now(), seconds);
+      })
+      .immediate();
+  }
+
+  chapters(id: string): import('./shelf-types.js').ShelfChapter[] {
+    return this.db
+      .prepare<[string], import('./shelf-types.js').ShelfChapter>(
+        `
+      SELECT chapter_id AS chapterId, shelf_chapters.title AS chapterTitle, number, discovered_at AS discoveredAt, state
+      FROM shelf_chapters JOIN shelf_entries AS entry ON entry.id = entry_id AND entry.catalog_version = shelf_chapters.catalog_version
+      WHERE entry_id = ? ORDER BY number, chapter_id`,
+      )
+      .all(id)
+      .map((chapter) => ({
+        ...chapter,
+        number: chapter.number ?? undefined,
+        chapterTitle: chapter.chapterTitle || chapter.chapterId,
+      }));
+  }
+
+  enqueue(id: string, chapterId: string) {
+    return !!this.db
+      .prepare(
+        `UPDATE shelf_chapters SET state = 'queued', ready_at = 0, failures = 0, revision = revision + 1
+      WHERE entry_id = @id AND chapter_id = @chapterId AND state IN ('seen','discovered','cancelled')
+      AND catalog_version = (SELECT catalog_version FROM shelf_entries WHERE id = @id)`,
+      )
+      .run({ id, chapterId }).changes;
+  }
+
+  cancel(id: string, chapterId: string) {
+    return !!this.db
+      .prepare(
+        `UPDATE shelf_chapters SET state = 'cancelled', revision = revision + 1
+      WHERE entry_id = @id AND chapter_id = @chapterId AND state IN ('queued','retry','restricted','blocked')
+      AND catalog_version = (SELECT catalog_version FROM shelf_entries WHERE id = @id)`,
+      )
+      .run({ id, chapterId }).changes;
+  }
+
+  taskActive(
+    id: string,
+    chapterId: string,
+    catalogVersion: number,
+    revision: number,
+  ) {
+    return !!this.db
+      .prepare(
+        `SELECT 1 FROM shelf_chapters AS chapter JOIN shelf_entries AS entry
+      ON entry.id = chapter.entry_id AND entry.catalog_version = chapter.catalog_version
+      WHERE entry_id = @id AND chapter_id = @chapterId AND chapter.catalog_version = @catalogVersion
+      AND state IN ('queued','retry','restricted') AND chapter.revision = @revision`,
+      )
+      .get({ id, chapterId, catalogVersion, revision });
+  }
+
+  snapshots(id?: string): DownloadTaskSnapshot[] {
+    type Row = {
+      entryId: string;
+      sourceId: string;
+      workId: string;
+      workTitle: string;
+      chapterId: string;
+      chapterTitle: string;
+      number: number;
+      state: string;
+      failures: number;
+      readyAt: number;
+    };
+    return this.db
+      .prepare<{ id: string | null }, Row>(
+        `SELECT entry.id AS entryId, source_id AS sourceId, work_id AS workId,
+       entry.title AS workTitle, chapter_id AS chapterId, chapter.title AS chapterTitle, number, state, failures, ready_at AS readyAt
+      FROM shelf_chapters AS chapter JOIN shelf_entries AS entry ON entry.id = entry_id
+      AND entry.catalog_version = chapter.catalog_version
+      WHERE state NOT IN ('seen','discovered') AND (@id IS NULL OR entry.id = @id) ORDER BY entry.created_at, number`,
+      )
+      .all({ id: id ?? null })
+      .map((row): DownloadTaskSnapshot => ({
+        id: taskId(row.sourceId, row.workId, row.chapterId, row.entryId),
+        origin: 'shelf',
+        entryId: row.entryId,
+        sourceId: safeText(row.sourceId),
+        workId: safeText(row.workId),
+        workTitle: safeText(row.workTitle),
+        chapterId: safeText(row.chapterId),
+        chapterTitle: safeText(row.chapterTitle || row.chapterId),
+        number: row.number ?? undefined,
+        state:
+          row.state === 'complete'
+            ? 'downloaded'
+            : row.state === 'blocked'
+              ? 'failed'
+              : (row.state as DownloadTaskSnapshot['state']),
+        pagesDownloaded: 0,
+        attempt: row.failures,
+        readyAt: row.readyAt,
+        problem:
+          row.state === 'blocked'
+            ? 'download-failed'
+            : row.state === 'restricted'
+              ? 'access-restricted'
+              : undefined,
+        retryable: ['blocked', 'restricted', 'retry', 'cancelled'].includes(
+          row.state,
+        ),
+      }));
   }
 
   acquireWatcher() {

@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
+import { outputFiles } from './helpers/output.js';
 import { downloadSeries } from '../dist/download.js';
 import { TransientSourceError } from '../dist/sources/source.js';
 
@@ -132,8 +133,8 @@ test('retries only transient errors within budget and restarts the chapter from 
   );
   assert.match(results[1].error, /Page 1: rate limited/);
   assert.match(
-    (await readdir(directory)).join('\n'),
-    /^chapter-recovers-[a-f0-9]+\.cbz$/,
+    (await outputFiles(directory)).join('\n'),
+    /^work\/recovers-recovers\.cbz$/,
   );
 
   await downloadSeries(

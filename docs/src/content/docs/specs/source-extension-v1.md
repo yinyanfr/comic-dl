@@ -25,6 +25,8 @@ description: 适配器导出、稳定标识、读取顺序、认证和错误约�
 
 ## 可选的运行时设置与目录能力
 
+4.x 保留 API v1，新增可选 `Series.metadata`（`title/authors/summary/tags/coverUrl/coverId`）和搜索结果 `coverUrl/coverId`。`getChapter()` 可附带可复用的 `seriesInput`，核心据此加载完整目录、核对作品与章节身份，并取得标题和规范序号；旧扩展缺失时序号未知，不假造为 1。鉴权封面实现 `readCover(id, signal): Promise<{ contentType, bytes }>`，扩展限制 ID 与请求目的地并保管凭据，不能接受任意代理 URL。字段缺失不影响旧扩展。详见[服务端接口](../../guide/service-api/)。
+
 - `settings` 是设置声明，键匹配 `[a-z][a-z0-9-]*`。每项包含 `label`、`type`，可附带 `description` 和 `default`。支持 `text`、`url`、`boolean`、`integer`（可声明 `min`、`max`）和 `select`（提供 `{ id, label }` 选项）。`env` 只用于兼容既有的非敏感环境变量。
 - 核心做通用校验后，将只读的生效设置传给 `matchesUrl(url, kind, settings)` 和 `create(api, settings)`。扩展可通过同步的 `validateSettings(settings)` 检查站点约束。保持现有调用兼容：扩展应当能在缺省 `settings` 时使用原有默认值。Cookie、密码和 API key 不通过这个接口声明。
 - `catalog.browse` 和 `catalog.search` 分别声明无关键词浏览和关键词搜索的 `sorts`、`filters`。排序用稳定的 `{ id, label }`；筛选用设置支持的类型，还可以声明 `dynamic-select`，再由 `catalogChoices(key, mode, signal)` 返回当前可用选项。

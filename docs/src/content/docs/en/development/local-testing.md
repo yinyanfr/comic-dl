@@ -29,7 +29,7 @@ Put two test images, `cover.png` and `page-2.jpg`, in `./demo` alongside a `chap
 node dist/index.js chapter --fixture ./demo -o ./downloads
 ```
 
-Use `unzip -l ./downloads/*.cbz` to inspect the entries and `unzip -t ./downloads/*.cbz` to check archive integrity. Running the command again with the same inputs should report `Skipped`. To test a missing page, move one image out of the fixture and use an empty output directory: the command should exit nonzero and leave no partial CBZ. Restore the image and try again.
+The default archive is `./downloads/demo/1-1.cbz`: this old single-chapter fixture has no canonical position, so its ID is the filename fallback. Use `unzip -l ./downloads/demo/1-1.cbz` to inspect entries and `unzip -t ./downloads/demo/1-1.cbz` to check integrity. Rerunning should report `Skipped`. To test a missing page, move an image out and use an empty output directory: the command should fail without leaving a partial CBZ. Restore the image and try again.
 
 ## Verify series listing and chapter selection
 
@@ -56,3 +56,5 @@ node dist/index.js download --fixture ./demo -o ./series-output
 ```
 
 `list` should print chapters `1` and `2` in manifest order. The second command creates only chapter `2`; the last should create chapter `1` and skip the completed chapter `2`. `--fixture` replaces the positional series or chapter input and cannot be combined with an explicit `--source`. See the [CLI reference](../../reference/cli/) for options and exit codes.
+
+The 4.x offline suite also covers v1/v2 shelf migration, independent automation, page progress, cancellation and immediate retry, NAS marker/subdirectory recovery, filesystems without hardlinks, migration conflicts, read-only extension inventory, and npm range/tag checks. Explicitly register `fixtureExtension` for server integration tests. It has no search capability; use a test source implementing the public contract for search/filter cases. Core CI does not depend on real sites.

@@ -1,6 +1,6 @@
 {
   "name": "comic-dl",
-  "version": "3.2.0",
+  "version": "4.0.0",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -50,6 +50,8 @@
     "@eslint/js": "^10.0.1",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^24.19.4",
+    "@types/proper-lockfile": "^4.1.4",
+    "@types/semver": "^7.8.0",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.0.0",
     "husky": "^9.1.7",
@@ -67,6 +69,8 @@
   },
   "dependencies": {
     "@zip.js/zip.js": "^2.25.0",
-    "better-sqlite3": "^13.2.0"
+    "better-sqlite3": "^13.2.0",
+    "proper-lockfile": "^4.1.2",
+    "semver": "^7.8.6"
   }
 }

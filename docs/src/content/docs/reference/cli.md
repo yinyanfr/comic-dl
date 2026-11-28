@@ -81,14 +81,16 @@ comic-dl remove @comic-dl/zerobyw
 
 ### 检查更新和自动下载
 
-| 命令                                  | 用途                                                         |
-| ------------------------------------- | ------------------------------------------------------------ |
-| `shelf check [entry-id]`              | 检查全部或指定订阅；指定条目时可加 `--include-history`       |
-| `shelf status [entry-id]`             | 离线查询检查和下载状态                                       |
-| `shelf watch`                         | 在前台定期检查并下载，需指定 `--output <dir>` 或在配置中设置 |
-| `shelf retry <entry-id> <chapter-id>` | 重新排队指定失败或受限章节                                   |
+| 命令                                  | 用途                                                                     |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| `shelf check [entry-id]`              | 检查全书架或指定条目，不受自动开关限制；指定条目可加 `--include-history` |
+| `shelf status [entry-id]`             | 离线查询检查和下载状态                                                   |
+| `shelf watch`                         | 在前台定期检查并下载，需指定 `--output <dir>` 或在配置中设置             |
+| `shelf retry <entry-id> <chapter-id>` | 重新排队指定失败或受限章节                                               |
 
 `watch` 支持 `--interval <seconds>`（默认 `3600`）、`--jobs <n>`（默认 `2`）和 `--require-output-marker <name>`（标记文件不可用时推迟下载）。详见[检查更新与自动下载](../../shelf/updates/)。
+
+4.x 增加 `shelf configure <id> --auto-check on/off --auto-download on/off --interval <秒数/default>`、`shelf chapters <id>`、`shelf tasks [id]`、`shelf enqueue <id> <chapter-id>` 和 `shelf cancel <id> <chapter-id>`。`chapters/tasks` 输出 JSON。关闭自动化不会取消既有任务，取消后可用 `retry` 恢复。watcher 省略 `--interval` 时沿用数据库中的全局默认（初始 `3600`）。用 `--output-root <dir>` 将根标记与既有输出子目录分开。归档配置和公开接口见[服务 API](../../guide/service-api/)。
 
 ### 脚本输出与退出码
 

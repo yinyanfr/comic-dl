@@ -39,6 +39,7 @@ export default defineConfig({
             'guide/advanced',
             'guide/config-tutorial',
             'guide/library',
+            'guide/service-api',
           ],
         },
         {
@@ -59,7 +60,7 @@ export default defineConfig({
         {
           label: '参考手册',
           translations: { en: 'Reference' },
-          items: ['reference/cli', 'reference/config'],
+          items: ['reference/cli', 'reference/config', 'reference/library-api'],
         },
         {
           label: '规范',
@@ -69,7 +70,7 @@ export default defineConfig({
         {
           label: '从旧版迁移',
           translations: { en: 'Migration' },
-          items: ['migration/v2-to-v3'],
+          items: ['migration/v2-to-v3', 'migration/v3-to-v4'],
         },
       ],
     }),

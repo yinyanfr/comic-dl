@@ -120,7 +120,11 @@ export const fixtureSource: ChapterSource = {
         pages,
       );
     });
-    return { id, chapters };
+    const metadata =
+      manifest.metadata && typeof manifest.metadata === 'object'
+        ? (manifest.metadata as import('./source.js').SeriesMetadata)
+        : undefined;
+    return { id, chapters, metadata };
   },
 };
 

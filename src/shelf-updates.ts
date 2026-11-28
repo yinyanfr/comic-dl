@@ -2,8 +2,14 @@ import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { nonempty } from './config.js';
-import { defaultRetries, downloadSeries, retrySourceRead } from './download.js';
+import {
+  defaultRetries,
+  downloadSeries,
+  retrySourceRead,
+  numberedChapter,
+} from './download.js';
 import { OutputUnavailableError } from './output/cbz.js';
+import { createOutputGuard } from './output/guard.js';
 import type { ShelfTracking, TrackedEntry } from './shelf-tracking.js';
 import type { CheckEvent, CheckProblem, TaskEvent } from './shelf-types.js';
 import { hasUrlCredentials } from './shelf.js';
@@ -37,6 +43,9 @@ interface WatchOptions extends CheckOptions {
   outputMarker?: string;
   onOutputUnavailable?: () => void;
   onTask: (event: TaskEvent) => void;
+  outputRoot?: string;
+  archive?: import('./output/naming.js').ArchiveOptions;
+  onEvent?: (event: import('./tasks.js').DownloadEvent) => void;
 }
 
 function retryDelay(failures: number) {
@@ -101,6 +110,9 @@ async function checkEntry(
   options: CheckOptions,
 ): Promise<{ event: CheckEvent; series?: Series }> {
   options.signal.throwIfAborted();
+  const known = new Set(
+    tracking.chapters(entry.id).map((chapter) => chapter.chapterId),
+  );
   const result = await readCatalog(sources, entry, options);
   options.signal.throwIfAborted();
   const now = (options.now ?? Date.now)();
@@ -121,16 +133,28 @@ async function checkEntry(
     entry,
     {
       chapterIds: result.chapterIds,
+      chapters: result.series.chapters,
       includeHistory: options.includeHistory ?? false,
     },
     now,
-    now + (options.interval ?? 0),
+    now + entry.intervalSeconds * 1000,
   );
   if (queued === undefined)
     return { event: { ...identity, status: 'changed' } };
+  const discovered =
+    entry.lastSuccess === null
+      ? 0
+      : result.chapterIds.filter((id) => !known.has(id)).length;
   const status =
-    entry.lastSuccess === null ? 'baseline' : queued ? 'updated' : 'unchanged';
-  return { event: { ...identity, status, queued }, series: result.series };
+    entry.lastSuccess === null
+      ? 'baseline'
+      : queued || discovered
+        ? 'updated'
+        : 'unchanged';
+  return {
+    event: { ...identity, status, queued, discovered },
+    series: result.series,
+  };
 }
 
 export async function checkSubscriptions(
@@ -184,19 +208,34 @@ async function downloadPending(
 ) {
   if (!tracking.isActive(entry)) return;
   const now = options.now ?? Date.now;
+  tracking.refreshPresence(
+    entry,
+    series.chapters.map((chapter) => chapter.id),
+    now(),
+  );
   const tasks = new Map(
     tracking.tasks(entry, now()).map((task) => [task.id, task]),
   );
   const chapters = series.chapters
+    .map((chapter, index) => numberedChapter(chapter, index + 1))
     .filter((chapter) => tasks.has(chapter.id))
     .slice(0, maxChaptersPerBatch);
   if (!chapters.length) return;
 
   const changed = new AbortController();
   const signal = AbortSignal.any([options.signal, changed.signal]);
-  const marker =
-    options.outputMarker && join(options.directory, options.outputMarker);
-  const validateOutput = marker ? () => verifyOutputMarker(marker) : undefined;
+  const validateOutput = options.outputRoot
+    ? createOutputGuard(
+        options.outputRoot,
+        options.directory,
+        options.outputMarker,
+      )
+    : options.outputMarker
+      ? () => verifyOutputMarker(join(options.directory, options.outputMarker!))
+      : undefined;
+  const cancellations = new Map(
+    chapters.map((chapter) => [chapter.id, new AbortController()]),
+  );
   const outputAvailable = async () => {
     try {
       await validateOutput?.();
@@ -216,6 +255,17 @@ async function downloadPending(
   const monitor = setInterval(() => {
     try {
       if (!tracking.isActive(entry)) changed.abort();
+      for (const [chapterId, control] of cancellations) {
+        if (
+          !tracking.taskActive(
+            entry.id,
+            chapterId,
+            entry.catalogVersion,
+            tasks.get(chapterId)!.revision,
+          )
+        )
+          control.abort();
+      }
     } catch (error) {
       changed.abort(error);
     }
@@ -230,6 +280,25 @@ async function downloadPending(
         retries: options.retries ?? defaultRetries,
         signal,
         validateOutput,
+        archive: options.archive,
+        requireExistingDirectory: options.outputRoot !== undefined,
+        origin: 'shelf',
+        entryId: entry.id,
+        workTitle: series.metadata?.title ?? entry.title,
+        taskSignal: (id) => {
+          const control = cancellations.get(id);
+          if (
+            !tracking.taskActive(
+              entry.id,
+              id,
+              entry.catalogVersion,
+              tasks.get(id)!.revision,
+            )
+          )
+            control?.abort();
+          return control?.signal;
+        },
+        onEvent: options.onEvent,
         async onResult(result, retryable) {
           if (validateOutput && !(await outputAvailable())) return;
           const task = tasks.get(result.chapterId)!;
@@ -268,14 +337,27 @@ export async function runShelfCycle(
   options: WatchOptions,
 ) {
   for (const entry of entries) {
-    const { series, event } = await checkEntry(
-      tracking,
-      sources,
-      entry,
-      options,
-    );
-    options.onCheck(event);
-    if (series) await downloadPending(tracking, entry, series, options);
+    const now = (options.now ?? Date.now)();
+    if (entry.autoCheck && entry.nextCheck <= now) {
+      const { series, event } = await checkEntry(
+        tracking,
+        sources,
+        entry,
+        options,
+      );
+      options.onCheck(event);
+      if (series) await downloadPending(tracking, entry, series, options);
+    } else {
+      const result = await readCatalog(sources, entry, options);
+      if ('series' in result)
+        await downloadPending(tracking, entry, result.series, options);
+      else
+        tracking.deferDownloads(
+          entry,
+          now,
+          now + retryDelay(entry.checkFailures),
+        );
+    }
   }
 }
 
@@ -286,6 +368,12 @@ export async function watchShelf(
   ) => Promise<void>,
   options: WatchOptions,
 ) {
+  if (options.outputRoot)
+    createOutputGuard(
+      options.outputRoot,
+      options.directory,
+      options.outputMarker,
+    );
   const release = tracking.acquireWatcher();
   try {
     for (;;) {

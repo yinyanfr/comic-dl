@@ -3,6 +3,8 @@ title: Configuration file v1
 description: CLI JSON configuration fields, validation, precedence, and path resolution.
 ---
 
+Version 4 additionally accepts optional `archive: { template, padding, format }`. The default template is `{title}/{number}-{chapter}`, padding is an integer from `0` to `12` (default `0`), and format is `cbz` (default) or `zip`. Unknown archive fields are rejected. See [backend APIs](../../guide/service-api/) for placeholders and path restrictions. The configuration version remains `1`.
+
 `--config <file>` specifies a UTF-8 JSON file. The top level must be an object, and `version` must be the number `1`. Unknown fields are rejected. Every field except `version` is optional.
 
 | Field        | Type and constraints                       | Purpose                                                     |

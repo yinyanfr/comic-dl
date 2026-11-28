@@ -29,6 +29,8 @@ export type {
   Page,
   SearchPage,
   Series,
+  SeriesMetadata,
+  CoverImage,
 } from './sources/source.js';
 
 export const extensionApiVersion = 1;

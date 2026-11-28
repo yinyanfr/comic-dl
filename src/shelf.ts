@@ -8,10 +8,11 @@ import { ShelfTracking, trackingSchema } from './shelf-tracking.js';
 import type { ShelfEntry } from './shelf-types.js';
 import type { SourceRegistry } from './sources/index.js';
 
-const schemaVersion = 2;
+const schemaVersion = 3;
 const columns = `
   id, source_id AS sourceId, work_id AS workId, input, title, following,
-  created_at AS createdAt, updated_at AS updatedAt, revision
+  created_at AS createdAt, updated_at AS updatedAt, revision,
+  auto_check AS autoCheck, auto_download AS autoDownload, interval_seconds AS intervalSeconds
 `;
 
 export function hasUrlCredentials(value: string) {
@@ -58,7 +59,32 @@ export class Shelf {
               ) STRICT;
             `);
           }
-          db.exec(trackingSchema);
+          if (version < 2) db.exec(trackingSchema);
+          db.exec(`
+            ALTER TABLE shelf_entries ADD COLUMN auto_check INTEGER NOT NULL DEFAULT 0 CHECK (auto_check IN (0,1));
+            ALTER TABLE shelf_entries ADD COLUMN auto_download INTEGER NOT NULL DEFAULT 0 CHECK (auto_download IN (0,1));
+            ALTER TABLE shelf_entries ADD COLUMN interval_seconds INTEGER;
+            UPDATE shelf_entries SET auto_check = following, auto_download = following;
+            CREATE TABLE shelf_settings (id INTEGER PRIMARY KEY CHECK (id = 1), interval_seconds INTEGER NOT NULL);
+            INSERT INTO shelf_settings VALUES (1, 3600);
+            ALTER TABLE shelf_chapters RENAME TO shelf_chapters_old;
+            DROP INDEX shelf_chapters_due;
+            CREATE TABLE shelf_chapters (
+              entry_id TEXT NOT NULL REFERENCES shelf_entries(id) ON DELETE CASCADE,
+              catalog_version INTEGER NOT NULL, chapter_id TEXT NOT NULL,
+              present INTEGER NOT NULL DEFAULT 1 CHECK (present IN (0,1)),
+              state TEXT NOT NULL CHECK (state IN ('seen','discovered','queued','retry','restricted','complete','blocked','cancelled')),
+              failures INTEGER NOT NULL DEFAULT 0, ready_at INTEGER NOT NULL DEFAULT 0,
+              revision INTEGER NOT NULL DEFAULT 0,
+              title TEXT NOT NULL DEFAULT '', number INTEGER, discovered_at INTEGER,
+              PRIMARY KEY (entry_id,catalog_version,chapter_id)
+            ) STRICT;
+            INSERT INTO shelf_chapters (entry_id,catalog_version,chapter_id,present,state,failures,ready_at)
+              SELECT entry_id,catalog_version,chapter_id,present,state,failures,ready_at FROM shelf_chapters_old;
+            DROP TABLE shelf_chapters_old;
+            CREATE INDEX shelf_chapters_due ON shelf_chapters (entry_id,catalog_version,present,ready_at)
+              WHERE state IN ('queued','retry','restricted');
+          `);
           db.pragma(`user_version = ${schemaVersion}`);
         }).immediate();
       }
@@ -70,7 +96,12 @@ export class Shelf {
 
   #schemaVersion() {
     const version = this.#db.pragma('user_version', { simple: true });
-    if (version === 0 || version === 1 || version === schemaVersion)
+    if (
+      version === 0 ||
+      version === 1 ||
+      version === 2 ||
+      version === schemaVersion
+    )
       return version;
     throw new Error(`Unsupported shelf database version: ${String(version)}.`);
   }
@@ -110,13 +141,16 @@ export class Shelf {
     }
     const locator = sourceId === 'fixture' ? outputPath(input) : input;
     let workId;
+    let title: string | undefined;
     try {
       const source = sources.create(sourceId);
-      ({ id: workId } = await retrySourceRead(
+      const series = await retrySourceRead(
         () => source.getSeries(locator, signal),
         signal,
         retries,
-      ));
+      );
+      workId = series.id;
+      title = series.metadata?.title;
     } catch (cause) {
       signal.throwIfAborted();
       throw new Error(
@@ -130,7 +164,7 @@ export class Shelf {
         `${sourceId}: expected a stable work ID without credentials.`,
       );
     }
-    return { locator, workId };
+    return { locator, workId, title };
   }
 
   async add(
@@ -139,7 +173,7 @@ export class Shelf {
     input: string,
     options: { title?: string; signal: AbortSignal; retries?: number },
   ) {
-    const { locator, workId } = await this.#resolve(
+    const { locator, workId, title } = await this.#resolve(
       sources,
       sourceId,
       input,
@@ -151,7 +185,7 @@ export class Shelf {
       sourceId,
       workId,
       input: locator,
-      title: options.title ?? workId,
+      title: options.title ?? title ?? workId,
       now: new Date().toISOString(),
     };
     return this.#db.transaction(() => {
@@ -230,18 +264,67 @@ export class Shelf {
   }
 
   setFollowing(id: string, following: boolean) {
+    return this.configure(id, {
+      autoCheck: following,
+      autoDownload: following,
+    });
+  }
+
+  configure(id: string, options: import('./shelf-types.js').ShelfAutomation) {
+    if (
+      (options.autoCheck !== undefined &&
+        typeof options.autoCheck !== 'boolean') ||
+      (options.autoDownload !== undefined &&
+        typeof options.autoDownload !== 'boolean')
+    )
+      throw new Error('Automation switches must be booleans');
+    const current = this.#get(id);
+    if (
+      options.intervalSeconds !== undefined &&
+      options.intervalSeconds !== null
+    )
+      this.tracking.validateInterval(options.intervalSeconds);
+    const autoCheck =
+      options.autoCheck === undefined
+        ? current.autoCheck
+        : Number(options.autoCheck);
+    const autoDownload =
+      options.autoDownload === undefined
+        ? current.autoDownload
+        : Number(options.autoDownload);
+    const interval =
+      options.intervalSeconds === undefined
+        ? current.intervalSeconds
+        : options.intervalSeconds;
+    if (
+      autoCheck === current.autoCheck &&
+      autoDownload === current.autoDownload &&
+      interval === current.intervalSeconds
+    )
+      return current;
+    const now = Date.now();
     const entry = this.#db
-      .prepare<{ id: string; following: number; now: string }, ShelfEntry>(
+      .prepare<Record<string, string | number | null>, ShelfEntry>(
         `
         UPDATE shelf_entries
-        SET updated_at = CASE WHEN following = @following THEN updated_at ELSE @now END,
-            next_check = CASE WHEN following = @following THEN next_check ELSE 0 END,
-            revision = revision + (following <> @following), following = @following
+        SET updated_at = @updated, auto_check = @autoCheck, auto_download = @autoDownload,
+            interval_seconds = @interval, following = @autoCheck,
+            next_check = CASE WHEN auto_check = 0 AND @autoCheck = 1 THEN 0
+              WHEN interval_seconds IS NOT @interval THEN @now + 1000 * coalesce(@interval,
+                (SELECT interval_seconds FROM shelf_settings WHERE id = 1)) ELSE next_check END,
+            revision = revision + 1
         WHERE id = @id
         RETURNING ${columns}
       `,
       )
-      .get({ id, following: Number(following), now: new Date().toISOString() });
+      .get({
+        id,
+        autoCheck,
+        autoDownload,
+        interval,
+        now,
+        updated: new Date(now).toISOString(),
+      });
     if (!entry)
       throw new Error('Shelf entry not found. Run comic-dl shelf list.');
     return entry;

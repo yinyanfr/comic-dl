@@ -16,6 +16,7 @@ import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { env, execPath, pid } from 'node:process';
 import { test } from 'node:test';
+import { outputFiles } from './helpers/output.js';
 import { setImmediate } from 'node:timers/promises';
 import { fileURLToPath, URL } from 'node:url';
 import { promisify } from 'node:util';
@@ -274,8 +275,8 @@ test('the CLI loads multiple explicit extensions and downloads through an indepe
     /0 downloaded, 1 skipped, 0 restricted, 0 failed/,
   );
   assert.match(
-    (await readdir(outputDirectory)).join('\n'),
-    /^chapter-welcome-[a-f0-9]+\.cbz$/,
+    (await outputFiles(outputDirectory)).join('\n'),
+    /^demo\/welcome-Welcome\.cbz$/,
   );
 });
 
@@ -636,7 +637,7 @@ test('npm-managed extensions are discovered and updates stay in range', async (t
       '-e',
       `
       import assert from 'node:assert/strict';
-      import { manageExtensions, withManagedDownloader } from ${JSON.stringify(import.meta.resolve('comic-dl'))};
+       import { manageExtensions, withManagedDownloader, listManagedExtensions, checkExtensionUpdates } from ${JSON.stringify(import.meta.resolve('comic-dl'))};
       const name = ${JSON.stringify(name)};
       const directory = './other-store';
       const options = { extensionDirectory: directory, source: 'hello' };
@@ -644,11 +645,16 @@ test('npm-managed extensions are discovered and updates stay in range', async (t
         (await app.list('demo')).chapters[0].title,
       );
       assert.deepEqual((await manageExtensions('add', name + '@^1.0.0', { directory })).installed, [name]);
-      assert.equal(await title(), '1.2.0');
+       assert.equal(await title(), '1.2.0');
+       assert.equal((await listManagedExtensions({ directory }))[0].requested, '^1.0.0');
+       assert.equal((await checkExtensionUpdates(name, { directory }))[0].updateStatus, 'current');
       assert.deepEqual((await manageExtensions('update', undefined, { directory })).installed, [name]);
       assert.equal(await title(), '1.2.0');
       assert.deepEqual((await manageExtensions('remove', name, { directory })).installed, []);
-      assert.deepEqual(await withManagedDownloader(options, async (app) => app.sources()), []);
+       assert.deepEqual(await withManagedDownloader(options, async (app) => app.sources()), []);
+       await manageExtensions('add', name + '@latest', { directory });
+       assert.equal((await listManagedExtensions({ directory }))[0].requested, 'latest');
+       await manageExtensions('remove', name, { directory });
       `,
     ],
     processOptions,

@@ -11,15 +11,24 @@ import type {
 import { Shelf } from './shelf.js';
 import { checkSubscriptions, watchShelf } from './shelf-updates.js';
 import type { SourceRegistry } from './sources/index.js';
+import type { DownloadTaskSnapshot } from './tasks.js';
+import { validateArchive } from './output/naming.js';
 
 export function openShelf(
   sources: SourceRegistry,
   resolveSource: (input: string, kind: 'series', source?: string) => string,
   defaults: DownloaderOptions,
-  { file = join(userDataDirectory(), 'shelf.sqlite') }: ShelfOptions = {},
+  {
+    file = join(userDataDirectory(), 'shelf.sqlite'),
+    intervalSeconds,
+  }: ShelfOptions = {},
 ): ShelfHandle {
   const shelf = new Shelf(outputPath(file));
   const { tracking } = shelf;
+  if (intervalSeconds !== undefined)
+    tracking.setDefaultInterval(intervalSeconds);
+  const live = new Map<string, DownloadTaskSnapshot>();
+  let watching = false;
 
   function readOptions({
     signal = new AbortController().signal,
@@ -36,7 +45,11 @@ export function openShelf(
   }
 
   return {
-    close: () => shelf.close(),
+    close: () => {
+      if (watching)
+        throw new Error('Stop and await the watcher before closing the shelf');
+      shelf.close();
+    },
     list: () => shelf.list(),
     async add(
       input: string,
@@ -58,13 +71,35 @@ export function openShelf(
     status: (id?: string) => tracking.status(id),
     needsAttention: (id: string) => tracking.needsAttention(id),
     retry: (id: string, chapterId: string) => tracking.retry(id, chapterId),
+    configure: (id, options) => shelf.configure(id, options),
+    setDefaultInterval: (seconds) => tracking.setDefaultInterval(seconds),
+    chapters: (id) => tracking.chapters(id),
+    enqueue: (id, chapterId) => tracking.enqueue(id, chapterId),
+    cancel: (id, chapterId) => tracking.cancel(id, chapterId),
+    tasks: (id) =>
+      tracking.snapshots(id).map((snapshot) => {
+        const current = live.get(snapshot.id);
+        if (
+          current &&
+          ['starting', 'reading', 'archiving'].includes(current.state) &&
+          ['queued', 'retry', 'restricted'].includes(snapshot.state)
+        )
+          return { ...current };
+        if (
+          current &&
+          (current.state === snapshot.state ||
+            (snapshot.state === 'downloaded' && current.state === 'skipped'))
+        )
+          return { ...current, readyAt: snapshot.readyAt };
+        return snapshot;
+      }),
     async check({ entryId, includeHistory, onCheck, ...options } = {}) {
       if (includeHistory && !entryId)
-        throw new Error('includeHistory requires a specific subscription');
+        throw new Error('includeHistory requires a specific shelf entry');
       const read = readOptions(options);
       const entries = tracking.subscriptions(entryId);
       if (entryId !== undefined && !entries.length)
-        throw new Error('Subscription not found.');
+        throw new Error('Shelf entry not found.');
       const events: CheckEvent[] = [];
       const summary = await checkSubscriptions(tracking, sources, entries, {
         ...read,
@@ -80,39 +115,55 @@ export function openShelf(
       signal,
       directory = defaults.output,
       jobs = defaults.jobs ?? defaultJobs,
-      intervalSeconds = 3600,
+      intervalSeconds,
       outputMarker,
       onCheck = () => {},
       onTask = () => {},
       onOutputUnavailable,
       retries,
+      outputRoot,
+      archive = defaults.archive,
+      onEvent,
     }) {
+      if (watching)
+        throw new Error('This shelf handle already has a running watcher');
       if (!signal) throw new Error('Provide an AbortSignal for watch');
       if (!directory?.trim())
         throw new Error('Provide a watch output directory');
       if (!Number.isSafeInteger(jobs) || jobs < 1)
         throw new RangeError('jobs must be a positive integer');
-      if (
-        !Number.isSafeInteger(intervalSeconds) ||
-        intervalSeconds < 1 ||
-        intervalSeconds > 365 * 24 * 3600
-      )
-        throw new RangeError('intervalSeconds must be between 1 and 31536000');
+      if (intervalSeconds !== undefined)
+        tracking.setDefaultInterval(intervalSeconds);
+      validateArchive(archive);
       if (outputMarker !== undefined && !isOutputMarker(outputMarker))
         throw new Error(
           'outputMarker must be a filename inside the output directory',
         );
       const read = readOptions({ signal, retries });
-      await watchShelf(tracking, (run) => run(sources), {
-        ...read,
-        directory: outputPath(directory),
-        jobs,
-        interval: intervalSeconds * 1000,
-        outputMarker,
-        onCheck,
-        onTask,
-        onOutputUnavailable,
-      });
+      watching = true;
+      try {
+        await watchShelf(tracking, (run) => run(sources), {
+          ...read,
+          directory: outputPath(directory),
+          jobs,
+          interval:
+            intervalSeconds === undefined ? undefined : intervalSeconds * 1000,
+          outputMarker,
+          onCheck,
+          onTask,
+          onOutputUnavailable,
+          outputRoot:
+            outputRoot === undefined ? undefined : outputPath(outputRoot),
+          archive,
+          onEvent(event) {
+            live.set(event.task.id, { ...event.task });
+            onEvent?.(event);
+          },
+        });
+      } finally {
+        watching = false;
+        live.clear();
+      }
     },
   };
 }

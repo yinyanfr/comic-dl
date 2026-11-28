@@ -2,6 +2,42 @@
 
 For each version bump, add an English `## <version> — YYYY-MM-DD` entry here. Start with a short summary, then group the changes under `###` headings such as Features, Breaking changes, and Fixes. Include examples or migration links when commands or APIs change. The publish workflow uses this entry as the GitHub release body and checks it before publishing to npm.
 
+## 4.0.0 — 2026-11-28
+
+Provide the public backend capabilities requested by comic-dl-web in issues #26–#32. The extension API remains version 1; new source capabilities are optional.
+
+### Breaking changes and migration
+
+- Manual shelf checks now include every saved work, not only followed works. Automatic checking and automatic downloading are independent, and disabling either no longer cancels existing tasks. `follow` and `unfollow` remain shortcuts for switching both.
+- Upgrade shelf databases transactionally to schema v3, preserving baselines, pending work, failures, and completed results. Back up before upgrading: older cores cannot open the new schema.
+- Default archives use `{title}/{number}-{chapter}.cbz`. Existing identity-marked hashed CBZs remain recognized and are never renamed implicitly. See the [migration guide](https://yinyanfr.github.io/comic-dl/en/migration/v3-to-v4/).
+
+### Shelf automation and tasks
+
+- Configure global and per-entry check intervals without resetting baselines. Record discovered but unqueued chapters and their discovery times; expose chapter states, next checks, manual enqueue, persistent cancellation, and retry.
+- Separate due catalog checks from queue consumption. Existing tasks continue with automatic checks disabled, including bounded rechecks for temporarily missing chapters.
+- Add manual download handles and common browser-safe task snapshots/events for direct, series, selected, and watcher downloads. Report canonical identity, display metadata, page progress, archive finalization, cancellation, and safe problems without filesystem paths or raw errors.
+- Keep durable watcher tasks across restarts and prevent stale results after cancellation/retry or catalog changes.
+
+### Archives, metadata, and NAS
+
+- Add validated naming templates, zero-padding, and CBZ/ZIP formats. Preserve full-catalog numbering before selection; updated extensions can associate direct links with their canonical series.
+- Disambiguate work directories, sanitize and bound names, validate existing archives by identity/page order/CRC, and commit complete archives without clobbering occupied destinations. Preview and apply archive renames explicitly through public migration APIs.
+- Check a mount marker at `outputRoot` while writing to an existing child directory. Missing markers or selected directories defer tasks without recreating the selected directory, with availability checked again before commit.
+- Add optional search covers and series metadata, plus a constrained server-side cover reader that rejects unsupported or oversized results.
+
+### Managed extensions
+
+- Add `listManagedExtensions()` for actual versions, saved ranges/tags, source mappings, and isolated loading failures.
+- Add check-only `checkExtensionUpdates()` for one package or all packages, resolving npm ranges/tags without installing or changing the active generation. Partial registry failures remain per-package results.
+- Preserve explicitly supplied tags and ranges during installation. Document all new APIs, CLI automation controls, and migration behavior in English and Simplified Chinese.
+
+### Review fixes
+
+- Use portable directory locks and atomic renames for work ownership, archive commits, and migrations instead of requiring filesystem hardlinks. Serialize cooperating writers and recheck occupied destinations under the lock.
+- Isolate permission and disappearing-directory errors in unrelated archive-index subdirectories while preserving errors on the selected output root.
+- Keep raw chapter identities private to manual task handles so retries continue to work when browser-facing IDs are redacted.
+
 ## 3.2.0 — 2026-11-27
 
 Source extensions can now expose editable runtime settings and define server-side sorting and filtering for manga catalogs. Existing API v1 extensions remain supported.
