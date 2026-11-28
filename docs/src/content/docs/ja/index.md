@@ -26,3 +26,4 @@ hero:
 - [3.x から 4.x への移行](./migration/v3-to-v4/)：本棚 DB をバックアップ・更新し、既存アーカイブを維持。
 - [2.x から 3.x への移行](./migration/v2-to-v3/)：旧スクリプトや設定を更新し、ダウンロード済みの漫画を維持。
 - [CLI リファレンス](./reference/cli/)：コマンド、オプション、終了コード。
+- [Agent Skills](./agent-skills/)：CLI、ライブラリー、WebUI 配置、拡張機能、コア開発の手順を agent に導入。

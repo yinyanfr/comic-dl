@@ -26,3 +26,4 @@ hero:
 - [从 3.x 升级到 4.x](./migration/v3-to-v4/)：备份并升级书架数据库，保留既有归档。
 - [从 2.x 升级到 3.x](./migration/v2-to-v3/)：更新旧脚本和预设，保留已下载的漫画。
 - [CLI 参考手册](./reference/cli/)：查阅命令、选项和退出码。
+- [Agent Skills](./agent-skills/)：为 AI agent 安装 CLI、库、WebUI 部署、扩展开发和核心开发技能。

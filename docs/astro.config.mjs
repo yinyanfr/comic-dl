@@ -61,6 +61,18 @@ export default defineConfig({
           items: ['webui/usage', 'webui/deployment'],
         },
         {
+          label: 'Agent Skills',
+          translations: { en: 'Agent Skills', ja: 'Agent Skills' },
+          items: [
+            'agent-skills',
+            'agent-skills/cli',
+            'agent-skills/library',
+            'agent-skills/webui',
+            'agent-skills/extensions',
+            'agent-skills/core',
+          ],
+        },
+        {
           label: '扩展开发',
           translations: { en: 'Extension development', ja: '拡張機能の開発' },
           items: ['extensions/develop', 'extensions/zerobyw-walkthrough'],

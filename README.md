@@ -28,6 +28,8 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
+> **给 AI Agent：** 使用 CLI／库、部署 WebUI、开发扩展或修改核心前，请先阅读 [Agent Skills 文档](https://yinyanfr.github.io/comic-dl/agent-skills/)，按任务加载 [`skills/`](skills/) 中对应的 `SKILL.md`，并遵守目标项目的 `AGENTS.md` 与用户授权范围。
+
 ## 快速开始
 
 安装核心与漫画源扩展后，每章可保存为独立 CBZ：

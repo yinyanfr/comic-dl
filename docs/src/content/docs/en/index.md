@@ -26,3 +26,4 @@ hero:
 - [Upgrade from 3.x to 4.x](./migration/v3-to-v4/): Back up and upgrade shelf databases while keeping existing archives.
 - [Upgrade from 2.x to 3.x](./migration/v2-to-v3/): Update scripts and presets while keeping earlier downloads.
 - [CLI reference](./reference/cli/): Look up commands, flags, and exit codes.
+- [Agent Skills](./agent-skills/): Install agent workflows for the CLI, library, WebUI deployment, extensions, and core development.

@@ -28,6 +28,8 @@
   <a href="README.ja.md">日本語</a>
 </p>
 
+> **For AI agents:** Before using the CLI/library, deploying WebUI, developing extensions, or changing the core, read the [Agent Skills guide](https://yinyanfr.github.io/comic-dl/en/agent-skills/) and load the relevant `SKILL.md` from [`skills/`](skills/). Follow the target project's `AGENTS.md` and the user's authorization boundaries.
+
 ## Quick start
 
 Install the core and a source extension to save each chapter as a separate CBZ archive:

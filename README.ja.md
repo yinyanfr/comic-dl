@@ -28,6 +28,8 @@
   <a href="README.en.md">English</a>
 </p>
 
+> **AI Agent 向け：** CLI／ライブラリの利用、WebUI のデプロイ、拡張機能やコアの開発を始める前に、[Agent Skills ガイド](https://yinyanfr.github.io/comic-dl/ja/agent-skills/)を読み、[`skills/`](skills/) から作業に合う `SKILL.md` を読み込んでください。対象プロジェクトの `AGENTS.md` とユーザーの許可範囲に従ってください。
+
 ## クイックスタート
 
 コアとソース拡張機能をインストールすると、各チャプターを個別の CBZ として保存できます。
